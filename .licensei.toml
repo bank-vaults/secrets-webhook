@@ -1,0 +1,56 @@
+approved = [
+  "mit",
+  "apache-2.0",
+  "bsd-3-clause",
+  "bsd-2-clause",
+  "mpl-2.0",
+  "isc"
+]
+
+ignored = [
+  "github.com/aliyun/aliyun-oss-go-sdk", # Apache License 2.0.
+  "github.com/ghodss/yaml", # MIT
+  "sigs.k8s.io/yaml", # Forked from above
+  "github.com/gogo/protobuf", # 3-Clause BSD
+  "logur.dev/adapter/logrus", # MIT
+  "logur.dev/logur", # MIT
+  "emperror.dev/errors", # MIT
+  "github.com/hashicorp/vault/api", # Mozilla Public License 2.0
+  "github.com/hashicorp/vault/api/auth/aws", # Mozilla Public License 2.0
+  "github.com/hashicorp/vault/api/auth/azure", # Mozilla Public License 2.0
+  "github.com/hashicorp/vault/api/auth/gcp", # Mozilla Public License 2.0
+  "github.com/hashicorp/vault/api/auth/kubernetes", # Mozilla Public License 2.0
+
+  # Unsupported VCS
+  "gopkg.in/fsnotify.v1",
+  "gopkg.in/square/go-jose.v2", # Apache 2.0
+  "google.golang.org/grpc",
+  "google.golang.org/genproto",
+  "google.golang.org/api",
+  "google.golang.org/protobuf",
+  "cloud.google.com/go",
+  "cloud.google.com/go/storage",
+
+  "gomodules.xyz/orderedmap", # MIT
+  "github.com/form3tech-oss/jwt-go", # MIT
+  "gomodules.xyz/jsonpatch/v2", # Apache 2.0
+  "gomodules.xyz/jsonpatch/v3", # Apache 2.0
+]
+
+[header]
+authors = ["Banzai Cloud", "Bank-Vaults Maintainers"]
+ignorePaths = [".direnv", ".devenv", "vendor"]
+ignoreFiles = ["zz_generated.*.go"]
+template = """// Copyright © :YEAR: :AUTHOR:
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License."""

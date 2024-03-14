@@ -1,0 +1,22 @@
+env:
+  VAULT_IMAGE: hashicorp/vault:1.14.8
+
+replicaCount: 1
+
+image:
+  pullPolicy: Never
+
+configMapMutation: true
+configmapFailurePolicy: "Fail"
+podsFailurePolicy: "Fail"
+secretsFailurePolicy: "Fail"
+
+namespaceSelector:
+  matchExpressions:
+    # https://kubernetes.io/docs/reference/labels-annotations-taints/#kubernetes-io-metadata-name
+    - key: kubernetes.io/metadata.name
+      operator: NotIn
+      values:
+        - kube-system
+        - vault-operator
+        - secrets-webhook
