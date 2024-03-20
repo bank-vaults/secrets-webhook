@@ -41,7 +41,7 @@ import (
 )
 
 func init() {
-	webhook.SetConfigDefaults()
+	webhook.SetWebhookAndSecretInitDefaults()
 }
 
 func newK8SClient() (kubernetes.Interface, error) {
@@ -147,6 +147,8 @@ func main() {
 	}
 
 	whLogger := webhook.NewWhLogger(logger)
+
+	// itt vagjuk el
 
 	mutator := webhook.ErrorLoggerMutator(mutatingWebhook.VaultSecretsMutator, whLogger)
 

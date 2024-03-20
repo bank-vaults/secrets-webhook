@@ -100,6 +100,51 @@ type VaultConfig struct {
 	FromPath                      string
 }
 
+type BaoConfig struct {
+	ObjectNamespace               string
+	Addr                          string
+	AuthMethod                    string
+	Role                          string
+	Path                          string
+	SkipVerify                    bool
+	TLSSecret                     string
+	ClientTimeout                 time.Duration
+	UseAgent                      bool
+	TransitKeyID                  string
+	TransitPath                   string
+	TransitBatchSize              int
+	CtConfigMap                   string
+	CtImage                       string
+	CtInjectInInitcontainers      bool
+	CtOnce                        bool
+	CtImagePullPolicy             corev1.PullPolicy
+	CtShareProcess                bool
+	CtShareProcessDefault         string
+	CtCPU                         resource.Quantity
+	CtMemory                      resource.Quantity
+	ConfigfilePath                string
+	AgentConfigMap                string
+	AgentOnce                     bool
+	AgentShareProcess             bool
+	AgentShareProcessDefault      string
+	AgentCPULimit                 resource.Quantity
+	AgentMemoryLimit              resource.Quantity
+	AgentCPURequest               resource.Quantity
+	AgentMemoryRequest            resource.Quantity
+	AgentImage                    string
+	AgentImagePullPolicy          corev1.PullPolicy
+	AgentEnvVariables             string
+	ServiceAccountTokenVolumeName string
+	TokenAuthMount                string
+	VaultNamespace                string
+	VaultServiceAccount           string
+	Token                         string
+	IgnoreMissingSecrets          string
+	Passthrough                   string
+	LogLevel                      string
+	FromPath                      string
+}
+
 func parseConfig(obj metav1.Object) Config {
 	Config := Config{}
 
@@ -302,11 +347,13 @@ func parseVaultConfig(obj metav1.Object, ar *model.AdmissionReview) VaultConfig 
 	} else {
 		vaultConfig.IgnoreMissingSecrets = viper.GetString("vault_ignore_missing_secrets")
 	}
+
 	if val, ok := annotations[common.VaultPassthroughAnnotation]; ok {
 		vaultConfig.Passthrough = val
 	} else {
 		vaultConfig.Passthrough = viper.GetString("vault_passthrough")
 	}
+
 	if val, ok := annotations[common.VaultConfigfilePathAnnotation]; ok {
 		vaultConfig.ConfigfilePath = val
 	} else if val, ok := annotations[common.VaultConsuleTemplateSecretsMountPathAnnotation]; ok {
@@ -462,6 +509,262 @@ func parseVaultConfig(obj metav1.Object, ar *model.AdmissionReview) VaultConfig 
 	return vaultConfig
 }
 
+func parseBaoConfig(obj metav1.Object, ar *model.AdmissionReview) BaoConfig {
+	baoConfig := BaoConfig{
+		ObjectNamespace: ar.Namespace,
+	}
+
+	annotations := obj.GetAnnotations()
+
+	if val, ok := annotations[common.BaoAddrAnnotation]; ok {
+		baoConfig.Addr = val
+	} else {
+		baoConfig.Addr = viper.GetString("bao_addr")
+	}
+
+	if val, ok := annotations[common.BaoRoleAnnotation]; ok {
+		baoConfig.Role = val
+	} else {
+		if val := viper.GetString("bao_role"); val != "" {
+			baoConfig.Role = val
+		} else {
+			switch p := obj.(type) {
+			case *corev1.Pod:
+				baoConfig.Role = p.Spec.ServiceAccountName
+			default:
+				baoConfig.Role = "default"
+			}
+		}
+	}
+
+	if val, ok := annotations[common.BaoAuthMethodAnnotation]; ok {
+		baoConfig.AuthMethod = val
+	} else {
+		baoConfig.AuthMethod = viper.GetString("bao_auth_method")
+	}
+
+	if val, ok := annotations[common.BaoPathAnnotation]; ok {
+		baoConfig.Path = val
+	} else {
+		baoConfig.Path = viper.GetString("bao_path")
+	}
+
+	if val, ok := annotations[common.BaoServiceaccountAnnotation]; ok {
+		baoConfig.VaultServiceAccount = val
+	} else {
+		baoConfig.VaultServiceAccount = viper.GetString("bao_serviceaccount")
+	}
+
+	if val, ok := annotations[common.BaoSkipVerifyAnnotation]; ok {
+		baoConfig.SkipVerify, _ = strconv.ParseBool(val)
+	} else {
+		baoConfig.SkipVerify = viper.GetBool("bao_skip_verify")
+	}
+
+	if val, ok := annotations[common.BaoTLSSecretAnnotation]; ok {
+		baoConfig.TLSSecret = val
+	} else {
+		baoConfig.TLSSecret = viper.GetString("bao_tls_secret")
+	}
+
+	if val, ok := annotations[common.BaoClientTimeoutAnnotation]; ok {
+		baoConfig.ClientTimeout, _ = time.ParseDuration(val)
+	} else {
+		baoConfig.ClientTimeout, _ = time.ParseDuration(viper.GetString("bao_client_timeout"))
+	}
+
+	if val, ok := annotations[common.BaoAgentAnnotation]; ok {
+		baoConfig.UseAgent, _ = strconv.ParseBool(val)
+	} else {
+		baoConfig.UseAgent, _ = strconv.ParseBool(viper.GetString("bao_agent"))
+	}
+
+	if val, ok := annotations[common.BaoConsulTemplateConfigmapAnnotation]; ok {
+		baoConfig.CtConfigMap = val
+	} else {
+		baoConfig.CtConfigMap = ""
+	}
+
+	if val, ok := annotations[common.BaoServiceAccountTokenVolumeNameAnnotation]; ok {
+		baoConfig.ServiceAccountTokenVolumeName = val
+	} else if viper.GetString("SERVICE_ACCOUNT_TOKEN_VOLUME_NAME") != "" {
+		baoConfig.ServiceAccountTokenVolumeName = viper.GetString("SERVICE_ACCOUNT_TOKEN_VOLUME_NAME")
+	} else {
+		baoConfig.ServiceAccountTokenVolumeName = "/var/run/secrets/kubernetes.io/serviceaccount"
+	}
+
+	if val, ok := annotations[common.BaoConsulTemplateImageAnnotation]; ok {
+		baoConfig.CtImage = val
+	} else {
+		baoConfig.CtImage = viper.GetString("bao_ct_image")
+	}
+
+	if val, ok := annotations[common.BaoIgnoreMissingSecretsAnnotation]; ok {
+		baoConfig.IgnoreMissingSecrets = val
+	} else {
+		baoConfig.IgnoreMissingSecrets = viper.GetString("bao_ignore_missing_secrets")
+	}
+
+	if val, ok := annotations[common.BaoPassthroughAnnotation]; ok {
+		baoConfig.Passthrough = val
+	} else {
+		baoConfig.Passthrough = viper.GetString("bao_passthrough")
+	}
+
+	if val, ok := annotations[common.BaoConfigfilePathAnnotation]; ok {
+		baoConfig.ConfigfilePath = val
+	} else if val, ok := annotations[common.BaoConsuleTemplateSecretsMountPathAnnotation]; ok {
+		baoConfig.ConfigfilePath = val
+	} else {
+		baoConfig.ConfigfilePath = "/bao/secrets"
+	}
+
+	if val, ok := annotations[common.BaoConsulTemplatePullPolicyAnnotation]; ok {
+		baoConfig.CtImagePullPolicy = getPullPolicy(val)
+	} else {
+		baoConfig.CtImagePullPolicy = getPullPolicy(viper.GetString("bao_ct_pull_policy"))
+	}
+
+	if val, ok := annotations[common.BaoConsulTemplateOnceAnnotation]; ok {
+		baoConfig.CtOnce, _ = strconv.ParseBool(val)
+	} else {
+		baoConfig.CtOnce = false
+	}
+
+	if val, err := resource.ParseQuantity(annotations[common.BaoConsulTemplateCPUAnnotation]); err == nil {
+		baoConfig.CtCPU = val
+	} else {
+		baoConfig.CtCPU = resource.MustParse("100m")
+	}
+
+	if val, err := resource.ParseQuantity(annotations[common.BaoConsulTemplateMemoryAnnotation]); err == nil {
+		baoConfig.CtMemory = val
+	} else {
+		baoConfig.CtMemory = resource.MustParse("128Mi")
+	}
+
+	if val, ok := annotations[common.BaoConsulTemplateShareProcessNamespaceAnnotation]; ok {
+		baoConfig.CtShareProcessDefault = "found"
+		baoConfig.CtShareProcess, _ = strconv.ParseBool(val)
+	} else {
+		baoConfig.CtShareProcessDefault = "empty"
+		baoConfig.CtShareProcess = false
+	}
+
+	if val, ok := annotations[common.BaoLogLevelAnnotation]; ok {
+		baoConfig.LogLevel = val
+	} else {
+		baoConfig.LogLevel = viper.GetString("bao_log_level")
+	}
+
+	if val, ok := annotations[common.BaoTransitKeyIDAnnotation]; ok {
+		baoConfig.TransitKeyID = val
+	} else {
+		baoConfig.TransitKeyID = viper.GetString("transit_key_id")
+	}
+
+	if val, ok := annotations[common.BaoTransitPathAnnotation]; ok {
+		baoConfig.TransitPath = val
+	} else {
+		baoConfig.TransitPath = viper.GetString("transit_path")
+	}
+
+	if val, ok := annotations[common.BaoAgentConfigmapAnnotation]; ok {
+		baoConfig.AgentConfigMap = val
+	} else {
+		baoConfig.AgentConfigMap = ""
+	}
+
+	if val, ok := annotations[common.BaoAgentOnceAnnotation]; ok {
+		baoConfig.AgentOnce, _ = strconv.ParseBool(val)
+	} else {
+		baoConfig.AgentOnce = false
+	}
+
+	if val, err := resource.ParseQuantity(annotations[common.BaoAgentCPUAnnotation]); err == nil {
+		baoConfig.AgentCPULimit = val
+	} else if val, err := resource.ParseQuantity(annotations[common.BaoAgentCPULimitAnnotation]); err == nil {
+		baoConfig.AgentCPULimit = val
+	} else {
+		baoConfig.AgentCPULimit = resource.MustParse("100m")
+	}
+
+	if val, err := resource.ParseQuantity(annotations[common.BaoAgentMemoryAnnotation]); err == nil {
+		baoConfig.AgentMemoryLimit = val
+	} else if val, err := resource.ParseQuantity(annotations[common.BaoAgentMemoryLimitAnnotation]); err == nil {
+		baoConfig.AgentMemoryLimit = val
+	} else {
+		baoConfig.AgentMemoryLimit = resource.MustParse("128Mi")
+	}
+
+	if val, err := resource.ParseQuantity(annotations[common.BaoAgentCPURequestAnnotation]); err == nil {
+		baoConfig.AgentCPURequest = val
+	} else {
+		baoConfig.AgentCPURequest = resource.MustParse("100m")
+	}
+
+	if val, err := resource.ParseQuantity(annotations[common.BaoAgentMemoryRequestAnnotation]); err == nil {
+		baoConfig.AgentMemoryRequest = val
+	} else {
+		baoConfig.AgentMemoryRequest = resource.MustParse("128Mi")
+	}
+
+	if val, ok := annotations[common.BaoAgentShareProcessNamespaceAnnotation]; ok {
+		baoConfig.AgentShareProcessDefault = "found"
+		baoConfig.AgentShareProcess, _ = strconv.ParseBool(val)
+	} else {
+		baoConfig.AgentShareProcessDefault = "empty"
+		baoConfig.AgentShareProcess = false
+	}
+
+	if val, ok := annotations[common.BaoFromPathAnnotation]; ok {
+		baoConfig.FromPath = val
+	}
+
+	if val, ok := annotations[common.TokenAuthMountAnnotation]; ok {
+		baoConfig.TokenAuthMount = val
+	}
+
+	if val, ok := annotations[common.BaoImageAnnotation]; ok {
+		baoConfig.AgentImage = val
+	} else {
+		baoConfig.AgentImage = viper.GetString("bao_image")
+	}
+
+	if val, ok := annotations[common.BaoImagePullPolicyAnnotation]; ok {
+		baoConfig.AgentImagePullPolicy = getPullPolicy(val)
+	} else {
+		baoConfig.AgentImagePullPolicy = getPullPolicy(viper.GetString("bao_image_pull_policy"))
+	}
+
+	if val, ok := annotations[common.BaoAgentEnvVariablesAnnotation]; ok {
+		baoConfig.AgentEnvVariables = val
+	}
+
+	if val, ok := annotations[common.BaoNamespaceAnnotation]; ok {
+		baoConfig.VaultNamespace = val
+	} else {
+		baoConfig.VaultNamespace = viper.GetString("BAO_NAMESPACE")
+	}
+
+	if val, ok := annotations[common.BaoConsuleTemplateInjectInInitcontainersAnnotation]; ok {
+		baoConfig.CtInjectInInitcontainers, _ = strconv.ParseBool(val)
+	} else {
+		baoConfig.CtInjectInInitcontainers = false
+	}
+
+	if val, ok := annotations[common.TransitBatchSizeAnnotation]; ok {
+		batchSize, _ := strconv.ParseInt(val, 10, 32)
+		baoConfig.TransitBatchSize = int(batchSize)
+	} else {
+		baoConfig.TransitBatchSize = viper.GetInt("transit_batch_size")
+	}
+
+	baoConfig.Token = viper.GetString("bao_token")
+
+	return baoConfig
+}
+
 func getPullPolicy(pullPolicyStr string) corev1.PullPolicy {
 	switch pullPolicyStr {
 	case "Never", "never":
@@ -475,11 +778,41 @@ func getPullPolicy(pullPolicyStr string) corev1.PullPolicy {
 	return corev1.PullIfNotPresent
 }
 
-func SetConfigDefaults() {
-	viper.SetDefault("vault_image", "hashicorp/vault:latest")
-	viper.SetDefault("vault_image_pull_policy", string(corev1.PullIfNotPresent))
+func SetWebhookAndSecretInitDefaults() {
+	// Webhook defaults
+	viper.SetDefault("psp_allow_privilege_escalation", "false")
+	viper.SetDefault("run_as_non_root", "false")
+	viper.SetDefault("run_as_user", "0")
+	viper.SetDefault("run_as_group", "0")
+	viper.SetDefault("readonly_root_fs", "false")
+	viper.SetDefault("registry_skip_verify", "false")
+	viper.SetDefault("mutate_configmap", "false")
+	viper.SetDefault("default_image_pull_secret", "")
+	viper.SetDefault("default_image_pull_secret_service_account", "")
+	viper.SetDefault("default_image_pull_secret_namespace", "")
+	viper.SetDefault("tls_cert_file", "")
+	viper.SetDefault("tls_private_key_file", "")
+	viper.SetDefault("listen_address", ":8443")
+	viper.SetDefault("telemetry_listen_address", "")
+	viper.SetDefault("log_level", "info")
+	// Secret-init defaults
+	viper.SetDefault("secret_init_daemon", "false")
+	viper.SetDefault("secret_init_json_log", "false")
 	viper.SetDefault("secret_init_image", "ghcr.io/bank-vaults/secret-init:latest")
 	viper.SetDefault("secret_init_image_pull_policy", string(corev1.PullIfNotPresent))
+	viper.SetDefault("SECRET_INIT_CPU_REQUEST", "")
+	viper.SetDefault("SECRET_INIT_MEMORY_REQUEST", "")
+	viper.SetDefault("SECRET_INIT_CPU_LIMIT", "")
+	viper.SetDefault("SECRET_INIT_MEMORY_LIMIT", "")
+	viper.SetDefault("SECRET_INIT_LOG_SERVER", "")
+	viper.SetDefault("SECRET_INIT_LOG_LEVEL", "info")
+	viper.AutomaticEnv()
+}
+
+func SetVaultDefaults() {
+	// Used by vault via secret-init
+	viper.SetDefault("vault_image", "hashicorp/vault:latest")
+	viper.SetDefault("vault_image_pull_policy", string(corev1.PullIfNotPresent))
 	viper.SetDefault("vault_ct_image", "hashicorp/consul-template:0.32.0")
 	viper.SetDefault("vault_ct_pull_policy", string(corev1.PullIfNotPresent))
 	viper.SetDefault("vault_addr", "https://vault:8200")
@@ -490,40 +823,39 @@ func SetConfigDefaults() {
 	viper.SetDefault("vault_tls_secret", "")
 	viper.SetDefault("vault_client_timeout", "10s")
 	viper.SetDefault("vault_agent", "false")
-	viper.SetDefault("secret_init_daemon", "false")
 	viper.SetDefault("vault_ct_share_process_namespace", "")
-	viper.SetDefault("psp_allow_privilege_escalation", "false")
-	viper.SetDefault("run_as_non_root", "false")
-	viper.SetDefault("run_as_user", "0")
-	viper.SetDefault("run_as_group", "0")
-	viper.SetDefault("readonly_root_fs", "false")
 	viper.SetDefault("vault_ignore_missing_secrets", "false")
 	viper.SetDefault("vault_passthrough", "")
-	viper.SetDefault("mutate_configmap", "false")
-	viper.SetDefault("tls_cert_file", "")
-	viper.SetDefault("tls_private_key_file", "")
-	viper.SetDefault("listen_address", ":8443")
-	viper.SetDefault("telemetry_listen_address", "")
+	viper.SetDefault("vault_agent_share_process_namespace", "")
+	viper.SetDefault("vault_log_level", "info")
+	viper.SetDefault("VAULT_NAMESPACE", "")
 	viper.SetDefault("transit_key_id", "")
 	viper.SetDefault("transit_path", "")
 	viper.SetDefault("transit_batch_size", 25)
-	viper.SetDefault("default_image_pull_secret", "")
-	viper.SetDefault("default_image_pull_secret_service_account", "")
-	viper.SetDefault("default_image_pull_secret_namespace", "")
-	viper.SetDefault("registry_skip_verify", "false")
-	viper.SetDefault("secret_init_json_log", "false")
-	// Used by the webhook
-	viper.SetDefault("log_level", "info")
-	// Used by vault via secret-init
-	viper.SetDefault("vault_log_level", "info")
-	viper.SetDefault("vault_agent_share_process_namespace", "")
-	viper.SetDefault("SECRET_INIT_CPU_REQUEST", "")
-	viper.SetDefault("SECRET_INIT_MEMORY_REQUEST", "")
-	viper.SetDefault("SECRET_INIT_CPU_LIMIT", "")
-	viper.SetDefault("SECRET_INIT_MEMORY_LIMIT", "")
-	viper.SetDefault("SECRET_INIT_LOG_SERVER", "")
-	viper.SetDefault("SECRET_INIT_LOG_LEVEL", "info")
-	viper.SetDefault("VAULT_NAMESPACE", "")
+	viper.AutomaticEnv()
+}
 
+func SetBaoDefaults() {
+	viper.SetDefault("bao_image", "openbao/bao:latest")
+	viper.SetDefault("bao_image_pull_policy", string(corev1.PullIfNotPresent))
+	viper.SetDefault("bao_ct_image", "hashicorp/consul-template:0.32.0")
+	viper.SetDefault("bao_ct_pull_policy", string(corev1.PullIfNotPresent))
+	viper.SetDefault("bao_addr", "https://bao:8300")
+	viper.SetDefault("bao_skip_verify", "false")
+	viper.SetDefault("bao_path", "kubernetes")
+	viper.SetDefault("bao_auth_method", "jwt")
+	viper.SetDefault("bao_role", "")
+	viper.SetDefault("bao_tls_secret", "")
+	viper.SetDefault("bao_client_timeout", "10s")
+	viper.SetDefault("bao_agent", "false")
+	viper.SetDefault("bao_ct_share_process_namespace", "")
+	viper.SetDefault("bao_ignore_missing_secrets", "false")
+	viper.SetDefault("bao_passthrough", "")
+	viper.SetDefault("bao_agent_share_process_namespace", "")
+	viper.SetDefault("bao_log_level", "info")
+	viper.SetDefault("BAO_NAMESPACE", "")
+	viper.SetDefault("transit_key_id", "")
+	viper.SetDefault("transit_path", "")
+	viper.SetDefault("transit_batch_size", 25)
 	viper.AutomaticEnv()
 }

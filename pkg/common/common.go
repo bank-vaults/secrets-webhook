@@ -75,7 +75,7 @@ const (
 	VaultAgentEnvVariablesAnnotation          = "vault.security.banzaicloud.io/vault-agent-env-variables"
 
 	// Consul template annotations
-	// https://bank-vaults.dev/docs/mutating-webhook/consul-template/
+	// ref: https://bank-vaults.dev/docs/mutating-webhook/consul-template/
 	VaultConsulTemplateConfigmapAnnotation               = "vault.security.banzaicloud.io/vault-ct-configmap"
 	VaultConsulTemplateImageAnnotation                   = "vault.security.banzaicloud.io/vault-ct-image"
 	VaultConsulTemplateOnceAnnotation                    = "vault.security.banzaicloud.io/vault-ct-once"
@@ -85,8 +85,62 @@ const (
 	VaultConsulTemplateMemoryAnnotation                  = "vault.security.banzaicloud.io/vault-ct-memory"
 	VaultConsuleTemplateSecretsMountPathAnnotation       = "vault.security.banzaicloud.io/vault-ct-secrets-mount-path"
 	VaultConsuleTemplateInjectInInitcontainersAnnotation = "vault.security.banzaicloud.io/vault-ct-inject-in-initcontainers"
+
+	// Bao annotations
+	// ref: https://bank-vaults.dev/docs/mutating-webhook/bao/
+	BaoAddrAnnotation                          = "bao.security.banzaicloud.io/bao-addr"
+	BaoImageAnnotation                         = "bao.security.banzaicloud.io/bao-image"
+	BaoImagePullPolicyAnnotation               = "bao.security.banzaicloud.io/bao-image-pull-policy"
+	BaoRoleAnnotation                          = "bao.security.banzaicloud.io/bao-role"
+	BaoPathAnnotation                          = "bao.security.banzaicloud.io/bao-path"
+	BaoSkipVerifyAnnotation                    = "bao.security.banzaicloud.io/bao-skip-verify"
+	BaoTLSSecretAnnotation                     = "bao.security.banzaicloud.io/bao-tls-secret"
+	BaoIgnoreMissingSecretsAnnotation          = "bao.security.banzaicloud.io/bao-ignore-missing-secrets"
+	BaoClientTimeoutAnnotation                 = "bao.security.banzaicloud.io/bao-client-timeout"
+	BaoTransitKeyIDAnnotation                  = "bao.security.banzaicloud.io/bao-transit-key-id"
+	BaoTransitPathAnnotation                   = "bao.security.banzaicloud.io/bao-transit-path"
+	BaoAuthMethodAnnotation                    = "bao.security.banzaicloud.io/bao-auth-method"
+	BaoTransitBatchSizeAnnotation              = "bao.security.banzaicloud.io/bao-transit-batch-size"
+	BaoTokenAuthMountAnnotation                = "bao.security.banzaicloud.io/bao-token-auth-mount"
+	BaoServiceaccountAnnotation                = "bao.security.banzaicloud.io/bao-serviceaccount"
+	BaoNamespaceAnnotation                     = "bao.security.banzaicloud.io/bao-namespace"
+	BaoServiceAccountTokenVolumeNameAnnotation = "bao.security.banzaicloud.io/bao-service-account-token-volume-name"
+	BaoLogLevelAnnotation                      = "bao.security.banzaicloud.io/bao-log-level"
+	BaoPassthroughAnnotation                   = "bao.security.banzaicloud.io/bao-passthrough"
+	BaoFromPathAnnotation                      = "bao.security.banzaicloud.io/bao-from-path"
+
+	// Bao agent annotations
+	// ref: https://bank-vaults.dev/docs/mutating-webhook/bao-agent-templating/
+	BaoAgentAnnotation                      = "bao.security.banzaicloud.io/bao-agent"
+	BaoAgentConfigmapAnnotation             = "bao.security.banzaicloud.io/bao-agent-configmap"
+	BaoAgentOnceAnnotation                  = "bao.security.banzaicloud.io/bao-agent-once"
+	BaoAgentShareProcessNamespaceAnnotation = "bao.security.banzaicloud.io/bao-agent-share-process-namespace"
+	BaoAgentCPUAnnotation                   = "bao.security.banzaicloud.io/bao-agent-cpu"
+	BaoAgentCPULimitAnnotation              = "bao.security.banzaicloud.io/bao-agent-cpu-limit"
+	BaoAgentCPURequestAnnotation            = "bao.security.banzaicloud.io/bao-agent-cpu-request"
+	BaoAgentMemoryAnnotation                = "bao.security.banzaicloud.io/bao-agent-memory"
+	BaoAgentMemoryLimitAnnotation           = "bao.security.banzaicloud.io/bao-agent-memory-limit"
+	BaoAgentMemoryRequestAnnotation         = "bao.security.banzaicloud.io/bao-agent-memory-request"
+	BaoConfigfilePathAnnotation             = "bao.security.banzaicloud.io/bao-configfile-path"
+	BaoAgentEnvVariablesAnnotation          = "bao.security.banzaicloud.io/bao-agent-env-variables"
+
+	// Consul template annotations
+	// ref: https://bank-vaults.dev/docs/mutating-webhook/consul-template/
+	BaoConsulTemplateConfigmapAnnotation               = "bao.security.banzaicloud.io/bao-ct-configmap"
+	BaoConsulTemplateImageAnnotation                   = "bao.security.banzaicloud.io/bao-ct-image"
+	BaoConsulTemplateOnceAnnotation                    = "bao.security.banzaicloud.io/bao-ct-once"
+	BaoConsulTemplatePullPolicyAnnotation              = "bao.security.banzaicloud.io/bao-ct-pull-policy"
+	BaoConsulTemplateShareProcessNamespaceAnnotation   = "bao.security.banzaicloud.io/bao-ct-share-process-namespace"
+	BaoConsulTemplateCPUAnnotation                     = "bao.security.banzaicloud.io/bao-ct-cpu"
+	BaoConsulTemplateMemoryAnnotation                  = "bao.security.banzaicloud.io/bao-ct-memory"
+	BaoConsuleTemplateSecretsMountPathAnnotation       = "bao.security.banzaicloud.io/bao-ct-secrets-mount-path"
+	BaoConsuleTemplateInjectInInitcontainersAnnotation = "bao.security.banzaicloud.io/bao-ct-inject-in-initcontainers"
 )
 
 func HasVaultPrefix(value string) bool {
 	return strings.HasPrefix(value, "vault:") || strings.HasPrefix(value, ">>vault:")
+}
+
+func HasBaoPrefix(value string) bool {
+	return strings.HasPrefix(value, "bao:") || strings.HasPrefix(value, ">>bao:")
 }

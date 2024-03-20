@@ -53,7 +53,8 @@ func (mw *MutatingWebhook) VaultSecretsMutator(ctx context.Context, ar *model.Ad
 	secretInitConfig := parseSecretInitConfig(obj)
 	vaultConfig := parseVaultConfig(obj, ar)
 
-	if webhookConfig.Mutate {
+	// If vault.security.banzaicloud.io/mutate is false, return immediately
+	if !webhookConfig.Mutate {
 		return &mutating.MutatorResult{}, nil
 	}
 
