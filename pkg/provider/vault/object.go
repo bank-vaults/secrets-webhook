@@ -1,28 +1,14 @@
-// Copyright © 2021 Banzai Cloud
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-package webhook
+package vault
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 
-	"emperror.dev/errors"
 	"github.com/bank-vaults/internal/injector"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
 	"github.com/bank-vaults/secrets-webhook/pkg/common"
+	"github.com/bank-vaults/vault-sdk/vault"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 type element interface {
@@ -120,22 +106,17 @@ func traverseObject(o interface{}, secretInjector *injector.SecretInjector) erro
 	return nil
 }
 
-func (mw *MutatingWebhook) MutateObject(object *unstructured.Unstructured, vaultConfig VaultConfig) error {
-	mw.logger.Debug(fmt.Sprintf("mutating object: %s.%s", object.GetNamespace(), object.GetName()))
+func objectMutator(obj *unstructured.Unstructured, config Config, client *vault.Client) error {
+	slog.Debug(fmt.Sprintf("mutating object: %s.%s", obj.GetNamespace(), obj.GetName()))
 
-	vaultClient, err := mw.newVaultClient(vaultConfig)
-	if err != nil {
-		return errors.Wrap(err, "failed to create vault client")
+	defer client.Close()
+
+	injectorConfig := injector.Config{
+		TransitKeyID:     config.TransitKeyID,
+		TransitPath:      config.TransitPath,
+		TransitBatchSize: config.TransitBatchSize,
 	}
+	secretInjector := injector.NewSecretInjector(injectorConfig, client, nil, slog.Default())
 
-	defer vaultClient.Close()
-
-	config := injector.Config{
-		TransitKeyID:     vaultConfig.TransitKeyID,
-		TransitPath:      vaultConfig.TransitPath,
-		TransitBatchSize: vaultConfig.TransitBatchSize,
-	}
-	secretInjector := injector.NewSecretInjector(config, vaultClient, nil, logger)
-
-	return traverseObject(object.Object, &secretInjector)
+	return traverseObject(obj.Object, &secretInjector)
 }

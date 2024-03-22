@@ -1,30 +1,17 @@
-// Copyright © 2021 Banzai Cloud
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-package webhook
+package vault
 
 import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"emperror.dev/errors"
 	"github.com/bank-vaults/internal/injector"
-	corev1 "k8s.io/api/core/v1"
-
 	"github.com/bank-vaults/secrets-webhook/pkg/common"
+	"github.com/bank-vaults/vault-sdk/vault"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type dockerCredentials struct {
@@ -81,7 +68,7 @@ func secretNeedsMutation(secret *corev1.Secret) (bool, error) {
 	return false, nil
 }
 
-func (mw *MutatingWebhook) MutateSecret(secret *corev1.Secret, vaultConfig VaultConfig) error {
+func secretMutator(secret *corev1.Secret, config Config, client *vault.Client) error {
 	// do an early exit and don't construct the Vault client if not needed
 	requiredToMutate, err := secretNeedsMutation(secret)
 	if err != nil {
@@ -92,19 +79,14 @@ func (mw *MutatingWebhook) MutateSecret(secret *corev1.Secret, vaultConfig Vault
 		return nil
 	}
 
-	vaultClient, err := mw.newVaultClient(vaultConfig)
-	if err != nil {
-		return errors.Wrap(err, "failed to create vault client")
-	}
+	defer client.Close()
 
-	defer vaultClient.Close()
-
-	config := injector.Config{
-		TransitKeyID:     vaultConfig.TransitKeyID,
-		TransitPath:      vaultConfig.TransitPath,
-		TransitBatchSize: vaultConfig.TransitBatchSize,
+	injectorConfig := injector.Config{
+		TransitKeyID:     config.TransitKeyID,
+		TransitPath:      config.TransitPath,
+		TransitBatchSize: config.TransitBatchSize,
 	}
-	secretInjector := injector.NewSecretInjector(config, vaultClient, nil, logger)
+	secretInjector := injector.NewSecretInjector(injectorConfig, client, nil, slog.Default())
 
 	if value, ok := secret.Data[corev1.DockerConfigJsonKey]; ok {
 		var dc dockerCredentials
@@ -112,13 +94,13 @@ func (mw *MutatingWebhook) MutateSecret(secret *corev1.Secret, vaultConfig Vault
 		if err != nil {
 			return errors.Wrap(err, "unmarshal dockerconfig json failed")
 		}
-		err = mw.mutateDockerCreds(secret, &dc, &secretInjector)
+		err = mutateDockerCreds(secret, &dc, &secretInjector)
 		if err != nil {
 			return errors.Wrap(err, "mutate dockerconfig json failed")
 		}
 	}
 
-	err = mw.mutateSecretData(secret, &secretInjector)
+	err = mutateSecretData(secret, &secretInjector)
 	if err != nil {
 		return errors.Wrap(err, "mutate generic secret failed")
 	}
@@ -126,7 +108,7 @@ func (mw *MutatingWebhook) MutateSecret(secret *corev1.Secret, vaultConfig Vault
 	return nil
 }
 
-func (mw *MutatingWebhook) mutateDockerCreds(secret *corev1.Secret, dc *dockerCredentials, secretInjector *injector.SecretInjector) error {
+func mutateDockerCreds(secret *corev1.Secret, dc *dockerCredentials, secretInjector *injector.SecretInjector) error {
 	assembled := dockerCredentials{Auths: map[string]dockerAuthConfig{}}
 
 	for key, creds := range dc.Auths {
@@ -175,7 +157,7 @@ func (mw *MutatingWebhook) mutateDockerCreds(secret *corev1.Secret, dc *dockerCr
 	return nil
 }
 
-func (mw *MutatingWebhook) mutateSecretData(secret *corev1.Secret, secretInjector *injector.SecretInjector) error {
+func mutateSecretData(secret *corev1.Secret, secretInjector *injector.SecretInjector) error {
 	convertedData := make(map[string]string, len(secret.Data))
 
 	for k := range secret.Data {

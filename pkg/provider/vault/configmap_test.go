@@ -15,15 +15,18 @@
 //go:build integration
 // +build integration
 
-package webhook
+package vault
 
 import (
 	"testing"
 
+	"github.com/bank-vaults/secrets-webhook/pkg/registry"
 	"github.com/bank-vaults/vault-sdk/vault"
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
+	kubernetesConfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 func TestMutateConfigMap(t *testing.T) {
@@ -44,8 +47,6 @@ func TestMutateConfigMap(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	mw := MutatingWebhook{}
-
 	configMap := corev1.ConfigMap{
 		Data: map[string]string{
 			"aws-access-key-id": "vault:secret/data/account#access_key",
@@ -58,7 +59,19 @@ func TestMutateConfigMap(t *testing.T) {
 		},
 	}
 
-	err = mw.MutateConfigMap(&configMap, VaultConfig{Addr: config.Address})
+	kubeConfig, err := kubernetesConfig.GetConfig()
+	assert.NoError(t, err)
+
+	k8sClient, err := kubernetes.NewForConfig(kubeConfig)
+	assert.NoError(t, err)
+
+	vaultConfig := Config{
+		Addr: "http://localhost:8200",
+	}
+
+	provider := NewProvider(client, k8sClient, registry.NewRegistry(), vaultConfig)
+
+	err = provider.MutateConfigMap(&configMap)
 	assert.NoError(t, err)
 
 	assert.Equal(t, map[string]string{

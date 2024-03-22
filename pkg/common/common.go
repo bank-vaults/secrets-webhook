@@ -15,27 +15,33 @@
 package common
 
 import (
+	"context"
 	"strings"
+
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 const (
 	// Webhook annotations
 	// ref: https://bank-vaults.dev/docs/mutating-webhook/annotations/
-	PSPAllowPrivilegeEscalationAnnotation = "vault.security.banzaicloud.io/psp-allow-privilege-escalation"
-	RunAsNonRootAnnotation                = "vault.security.banzaicloud.io/run-as-non-root"
-	RunAsUserAnnotation                   = "vault.security.banzaicloud.io/run-as-user"
-	RunAsGroupAnnotation                  = "vault.security.banzaicloud.io/run-as-group"
-	ReadOnlyRootFsAnnotation              = "vault.security.banzaicloud.io/readonly-root-fs"
-	RegistrySkipVerifyAnnotation          = "vault.security.banzaicloud.io/registry-skip-verify"
-	MutateAnnotation                      = "vault.security.banzaicloud.io/mutate"
-	MutateProbesAnnotation                = "vault.security.banzaicloud.io/mutate-probes"
+	PSPAllowPrivilegeEscalationAnnotation = "secrets-webhook.security.banzaicloud.io/psp-allow-privilege-escalation"
+	RunAsNonRootAnnotation                = "secrets-webhook.security.banzaicloud.io/run-as-non-root"
+	RunAsUserAnnotation                   = "secrets-webhook.security.banzaicloud.io/run-as-user"
+	RunAsGroupAnnotation                  = "secrets-webhook.security.banzaicloud.io/run-as-group"
+	ReadOnlyRootFsAnnotation              = "secrets-webhook.security.banzaicloud.io/readonly-root-fs"
+	RegistrySkipVerifyAnnotation          = "secrets-webhook.security.banzaicloud.io/registry-skip-verify"
+	MutateAnnotation                      = "secrets-webhook.security.banzaicloud.io/mutate"
+	MutateProbesAnnotation                = "secrets-webhook.security.banzaicloud.io/mutate-probes"
+	ProvidersAnnotation                   = "secrets-webhook.security.banzaicloud.io/providers"
 
 	// Secret-init annotations
-	SecretInitDaemonAnnotation          = "vault.security.banzaicloud.io/secret-init-daemon"
-	SecretInitDelayAnnotation           = "vault.security.banzaicloud.io/secret-init-delay"
-	SecretInitJSONLogAnnotation         = "vault.security.banzaicloud.io/secret-init-json-log"
-	SecretInitImageAnnotation           = "vault.security.banzaicloud.io/secret-init-image"
-	SecretInitImagePullPolicyAnnotation = "vault.security.banzaicloud.io/secret-init-image-pull-policy"
+	SecretInitDaemonAnnotation          = "secrets-webhook.security.banzaicloud.io/secret-init-daemon"
+	SecretInitDelayAnnotation           = "secrets-webhook.security.banzaicloud.io/secret-init-delay"
+	SecretInitJSONLogAnnotation         = "secrets-webhook.security.banzaicloud.io/secret-init-json-log"
+	SecretInitImageAnnotation           = "secrets-webhook.security.banzaicloud.io/secret-init-image"
+	SecretInitImagePullPolicyAnnotation = "secrets-webhook.security.banzaicloud.io/secret-init-image-pull-policy"
 
 	// Vault annotations
 	VaultAddrAnnotation                     = "vault.security.banzaicloud.io/vault-addr"
@@ -143,4 +149,33 @@ func HasVaultPrefix(value string) bool {
 
 func HasBaoPrefix(value string) bool {
 	return strings.HasPrefix(value, "bao:") || strings.HasPrefix(value, ">>bao:")
+}
+
+func GetPullPolicy(pullPolicyStr string) corev1.PullPolicy {
+	switch pullPolicyStr {
+	case "Never", "never":
+		return corev1.PullNever
+	case "Always", "always":
+		return corev1.PullAlways
+	case "IfNotPresent", "ifnotpresent":
+		return corev1.PullIfNotPresent
+	}
+
+	return corev1.PullIfNotPresent
+}
+
+func GetDataFromConfigmap(k8sClient kubernetes.Interface, cmName string, ns string) (map[string]string, error) {
+	configMap, err := k8sClient.CoreV1().ConfigMaps(ns).Get(context.Background(), cmName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return configMap.Data, nil
+}
+
+func GetDataFromSecret(k8sClient kubernetes.Interface, secretName string, ns string) (map[string][]byte, error) {
+	secret, err := k8sClient.CoreV1().Secrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return secret.Data, nil
 }
