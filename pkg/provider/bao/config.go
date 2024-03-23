@@ -18,12 +18,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bank-vaults/secrets-webhook/pkg/common"
 	"github.com/slok/kubewebhook/v2/pkg/model"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/bank-vaults/secrets-webhook/pkg/common"
 )
 
 type Config struct {

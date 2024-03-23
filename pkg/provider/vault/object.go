@@ -1,3 +1,17 @@
+// Copyright © 2021 Banzai Cloud
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package vault
 
 import (
@@ -5,10 +19,12 @@ import (
 	"log/slog"
 	"strings"
 
+	"emperror.dev/errors"
 	"github.com/bank-vaults/internal/injector"
-	"github.com/bank-vaults/secrets-webhook/pkg/common"
-	"github.com/bank-vaults/vault-sdk/vault"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/client-go/kubernetes"
+
+	"github.com/bank-vaults/secrets-webhook/pkg/common"
 )
 
 type element interface {
@@ -106,8 +122,13 @@ func traverseObject(o interface{}, secretInjector *injector.SecretInjector) erro
 	return nil
 }
 
-func objectMutator(obj *unstructured.Unstructured, config Config, client *vault.Client) error {
+func objectMutator(obj *unstructured.Unstructured, config Config, k8sClient kubernetes.Interface, namespace string) error {
 	slog.Debug(fmt.Sprintf("mutating object: %s.%s", obj.GetNamespace(), obj.GetName()))
+
+	client, err := NewClient(k8sClient, namespace, config)
+	if err != nil {
+		return errors.Wrap(err, "failed to create Vault client")
+	}
 
 	defer client.Close()
 

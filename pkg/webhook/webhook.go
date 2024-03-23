@@ -27,7 +27,6 @@ import (
 	"github.com/slok/kubewebhook/v2/pkg/webhook/mutating"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/common"
@@ -45,38 +44,34 @@ type MutatingWebhook struct {
 
 func (mw *MutatingWebhook) SecretsMutator(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
 	appConfig := common.ParseAppConfig(obj)
-	secretInitConfig := common.ParseSecretInitConfig(obj)
+	// secretInitConfig := common.ParseSecretInitConfig(obj)
 
 	// If vault.security.banzaicloud.io/mutate is false, return immediately
 	if !appConfig.Mutate {
 		return &mutating.MutatorResult{}, nil
 	}
 
-	for _, providerName := range appConfig.Providers {
-		provider, err := newProvider(providerName, mw, obj, ar)
-		if err != nil {
-			return nil, err
-		}
-
-		switch v := obj.(type) {
-		case *corev1.Pod:
-			return &mutating.MutatorResult{MutatedObject: v}, provider.MutatePod(ctx, v, appConfig, secretInitConfig, ar.DryRun)
-
-		case *corev1.Secret:
-			return &mutating.MutatorResult{MutatedObject: v}, provider.MutateSecret(v)
-
-		case *corev1.ConfigMap:
-			return &mutating.MutatorResult{MutatedObject: v}, provider.MutateConfigMap(v)
-
-		case *unstructured.Unstructured:
-			return &mutating.MutatorResult{MutatedObject: v}, provider.MutateObject(v)
-
-		default:
-			return &mutating.MutatorResult{}, nil
-		}
+	providers, err := getSecretProviders(appConfig.Providers, mw, obj, ar)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get secret providers")
 	}
 
-	return &mutating.MutatorResult{}, nil
+	switch v := obj.(type) {
+	// case *corev1.Pod:
+	// 	return &mutating.MutatorResult{MutatedObject: v}, provider.MutatePod(ctx, v, appConfig, secretInitConfig, ar.DryRun)
+
+	case *corev1.Secret:
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateSecret(v, providers)
+
+	// case *corev1.ConfigMap:
+	// 	return &mutating.MutatorResult{MutatedObject: v}, provider.MutateConfigMap(v)
+
+	// case *unstructured.Unstructured:
+	// 	return &mutating.MutatorResult{MutatedObject: v}, provider.MutateObject(v)
+
+	default:
+		return &mutating.MutatorResult{}, nil
+	}
 }
 
 func (mw *MutatingWebhook) ServeMetrics(addr string, handler http.Handler) {
@@ -121,23 +116,24 @@ func ErrorLoggerMutator(mutator mutating.MutatorFunc, logger log.Logger) mutatin
 	}
 }
 
-func newProvider(providerName string, mw *MutatingWebhook, obj metav1.Object, ar *model.AdmissionReview) (provider.Provider, error) {
-	switch providerName {
-	case "vault":
-		vaultConfig, err := vault.ParseConfig(obj, ar)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse vault config")
+func getSecretProviders(providers []string, mw *MutatingWebhook, obj metav1.Object, ar *model.AdmissionReview) (map[string]provider.Provider, error) {
+	providerMap := make(map[string]provider.Provider)
+
+	for _, providerName := range providers {
+		switch providerName {
+		case "vault":
+			vaultConfig, err := vault.ParseConfig(obj, ar)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to parse vault config")
+			}
+			provider := vault.NewProvider(mw.K8sClient, mw.Namespace, mw.Registry, mw.Logger, vaultConfig)
+
+			providerMap[providerName] = provider
+
+		default:
+			return nil, errors.Errorf("provider %s not supported", providerName)
 		}
-
-		vaultClient, err := vault.NewClient(mw.K8sClient, mw.Namespace, mw.Registry, vaultConfig)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create vault client")
-		}
-
-		provider := vault.NewProvider(vaultClient, mw.K8sClient, mw.Registry, vaultConfig)
-
-		return provider, nil
-	default:
-		return nil, errors.Errorf("provider %s not supported", providerName)
 	}
+
+	return providerMap, nil
 }

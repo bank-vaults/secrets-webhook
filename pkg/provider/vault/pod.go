@@ -1,3 +1,17 @@
+// Copyright © 2021 Banzai Cloud
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package vault
 
 import (
@@ -10,14 +24,15 @@ import (
 
 	"emperror.dev/errors"
 	"github.com/bank-vaults/internal/injector"
-	"github.com/bank-vaults/secrets-webhook/pkg/common"
-	"github.com/bank-vaults/secrets-webhook/pkg/registry"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeVer "k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/bank-vaults/secrets-webhook/pkg/common"
+	"github.com/bank-vaults/secrets-webhook/pkg/registry"
 )
 
 const (
@@ -42,8 +57,8 @@ auto_auth {
 	SecretInitVolumeName = "secret-init"
 )
 
-func podMutator(ctx context.Context, pod *corev1.Pod, appConfig common.AppConfig, secretInitConfig common.SecretInitConfig, config Config, k8sClient kubernetes.Interface, registry registry.ImageRegistry, dryRun bool) error {
-	slog.Debug("Successfully connected to the API")
+func podMutator(ctx context.Context, pod *corev1.Pod, appConfig common.AppConfig, secretInitConfig common.SecretInitConfig, config Config, k8sClient kubernetes.Interface, registry registry.ImageRegistry, logger *slog.Logger, dryRun bool) error {
+	logger.Debug("Successfully connected to the API")
 
 	if isPodAlreadyMutated(pod) {
 		slog.Info(fmt.Sprintf("Pod %s is already mutated, skipping mutation.", pod.Name))
@@ -711,6 +726,7 @@ mountSearch:
 			}
 		}
 	}
+
 	return serviceAccountMount
 }
 

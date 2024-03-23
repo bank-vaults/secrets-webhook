@@ -1,20 +1,34 @@
+// Copyright © 2021 Banzai Cloud
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package vault
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 	"time"
 
-	"github.com/bank-vaults/secrets-webhook/pkg/common"
-	"github.com/bank-vaults/secrets-webhook/pkg/registry"
 	"github.com/google/go-cmp/cmp"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
-	kubernetesConfig "sigs.k8s.io/controller-runtime/pkg/client/config"
+
+	"github.com/bank-vaults/secrets-webhook/pkg/common"
+	"github.com/bank-vaults/secrets-webhook/pkg/registry"
 )
 
 var webhookConfig = common.AppConfig{
@@ -1662,22 +1676,9 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 		t.Run(ttp.name, func(t *testing.T) {
 			t.Parallel()
 
-			kubeConfig, err := kubernetesConfig.GetConfig()
-			assert.NoError(t, err)
+			provider := NewProvider(ttp.fields.k8sClient, "default", ttp.fields.registry, slog.Default(), ttp.args.vaultConfig)
 
-			k8sClient, err := kubernetes.NewForConfig(kubeConfig)
-			assert.NoError(t, err)
-
-			vaultConfig := Config{
-				Addr: "http://localhost:8200",
-			}
-
-			client, err := NewClient(k8sClient, "", registry.NewRegistry(), vaultConfig)
-			assert.NoError(t, err)
-
-			provider := NewProvider(client, k8sClient, registry.NewRegistry(), vaultConfig)
-
-			err = provider.MutatePod(context.Background(), ttp.args.pod, ttp.args.webhookConfig, ttp.args.secretInitConfig, false)
+			err := provider.MutatePod(context.Background(), ttp.args.pod, ttp.args.webhookConfig, ttp.args.secretInitConfig, false)
 			if (err != nil) != ttp.wantErr {
 				t.Errorf("MutatingWebhook.MutatePod() error = %v, wantErr %v", err, ttp.wantErr)
 				return
