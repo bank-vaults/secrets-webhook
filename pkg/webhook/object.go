@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/common"
+	"github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 )
 
 type element interface {
@@ -76,7 +77,49 @@ func sliceIterator(s []interface{}) iterator {
 	return c
 }
 
-func traverseObject(o interface{}, secretInjector *injector.SecretInjector) error {
+func (mw *MutatingWebhook) MutateObject(object *unstructured.Unstructured, providers []string) error {
+	mw.logger.Debug(fmt.Sprintf("mutating object: %s.%s", object.GetNamespace(), object.GetName()))
+
+	for _, providerName := range providers {
+		switch providerName {
+		case "vault":
+			vaultConfig, err := vault.ParseConfig(object, admissionReview)
+			if err != nil {
+				return errors.Wrap(err, "failed to parse vault config")
+			}
+
+			err = mw.mutateObjectForVault(object, vaultConfig)
+			if err != nil {
+				return errors.Wrap(err, "failed to mutate secret")
+			}
+
+		default:
+			return errors.Errorf("unknown provider: %s", providerName)
+		}
+	}
+
+	return nil
+}
+
+func (mw *MutatingWebhook) mutateObjectForVault(object *unstructured.Unstructured, vaultConfig vault.Config) error {
+	vaultClient, err := mw.newVaultClient(vaultConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create vault client")
+	}
+
+	defer vaultClient.Close()
+
+	config := injector.Config{
+		TransitKeyID:     vaultConfig.TransitKeyID,
+		TransitPath:      vaultConfig.TransitPath,
+		TransitBatchSize: vaultConfig.TransitBatchSize,
+	}
+	secretInjector := injector.NewSecretInjector(config, vaultClient, nil, logger)
+
+	return traverseObject_Vault(object.Object, &secretInjector)
+}
+
+func traverseObject_Vault(o interface{}, secretInjector *injector.SecretInjector) error {
 	var iterator iterator
 
 	switch value := o.(type) {
@@ -110,7 +153,7 @@ func traverseObject(o interface{}, secretInjector *injector.SecretInjector) erro
 				e.Set(dataFromVault)
 			}
 		case map[string]interface{}, []interface{}:
-			err := traverseObject(e.Get(), secretInjector)
+			err := traverseObject_Vault(e.Get(), secretInjector)
 			if err != nil {
 				return err
 			}
@@ -118,24 +161,4 @@ func traverseObject(o interface{}, secretInjector *injector.SecretInjector) erro
 	}
 
 	return nil
-}
-
-func (mw *MutatingWebhook) MutateObject(object *unstructured.Unstructured, vaultConfig VaultConfig) error {
-	mw.logger.Debug(fmt.Sprintf("mutating object: %s.%s", object.GetNamespace(), object.GetName()))
-
-	vaultClient, err := mw.newVaultClient(vaultConfig)
-	if err != nil {
-		return errors.Wrap(err, "failed to create vault client")
-	}
-
-	defer vaultClient.Close()
-
-	config := injector.Config{
-		TransitKeyID:     vaultConfig.TransitKeyID,
-		TransitPath:      vaultConfig.TransitPath,
-		TransitBatchSize: vaultConfig.TransitBatchSize,
-	}
-	secretInjector := injector.NewSecretInjector(config, vaultClient, nil, logger)
-
-	return traverseObject(object.Object, &secretInjector)
 }

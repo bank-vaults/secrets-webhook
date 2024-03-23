@@ -22,6 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/common"
+	"github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 )
 
 func configMapNeedsMutation(configMap *corev1.ConfigMap) bool {
@@ -39,7 +40,29 @@ func configMapNeedsMutation(configMap *corev1.ConfigMap) bool {
 	return false
 }
 
-func (mw *MutatingWebhook) MutateConfigMap(configMap *corev1.ConfigMap, vaultConfig VaultConfig) error {
+func (mw *MutatingWebhook) MutateConfigMap(configMap *corev1.ConfigMap, providers []string) error {
+	for _, providerName := range providers {
+		switch providerName {
+		case "vault":
+			vaultConfig, err := vault.ParseConfig(configMap, admissionReview)
+			if err != nil {
+				return errors.Wrap(err, "failed to parse vault config")
+			}
+
+			err = mw.mutateConfigMapForVault(configMap, vaultConfig)
+			if err != nil {
+				return errors.Wrap(err, "failed to mutate secret")
+			}
+
+		default:
+			return errors.Errorf("unknown provider: %s", providerName)
+		}
+	}
+
+	return nil
+}
+
+func (mw *MutatingWebhook) mutateConfigMapForVault(configMap *corev1.ConfigMap, vaultConfig vault.Config) error {
 	// do an early exit and don't construct the Vault client if not needed
 	if !configMapNeedsMutation(configMap) {
 		return nil
@@ -69,7 +92,7 @@ func (mw *MutatingWebhook) MutateConfigMap(configMap *corev1.ConfigMap, vaultCon
 			binaryData := map[string]string{
 				key: string(value),
 			}
-			err := mw.mutateConfigMapBinaryData(configMap, binaryData, &secretInjector)
+			err := mw.mutateConfigMapBinaryData_Vault(configMap, binaryData, &secretInjector)
 			if err != nil {
 				return err
 			}
@@ -79,7 +102,7 @@ func (mw *MutatingWebhook) MutateConfigMap(configMap *corev1.ConfigMap, vaultCon
 	return nil
 }
 
-func (mw *MutatingWebhook) mutateConfigMapBinaryData(configMap *corev1.ConfigMap, data map[string]string, secretInjector *injector.SecretInjector) error {
+func (mw *MutatingWebhook) mutateConfigMapBinaryData_Vault(configMap *corev1.ConfigMap, data map[string]string, secretInjector *injector.SecretInjector) error {
 	mapData, err := secretInjector.GetDataFromVault(data)
 	if err != nil {
 		return err
