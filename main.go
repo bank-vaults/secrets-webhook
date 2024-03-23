@@ -37,11 +37,12 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	kubernetesConfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 
+	"github.com/bank-vaults/secrets-webhook/pkg/common"
 	"github.com/bank-vaults/secrets-webhook/pkg/webhook"
 )
 
 func init() {
-	webhook.SetConfigDefaults()
+	common.SetWebhookAndSecretInitDefaults()
 }
 
 func newK8SClient() (kubernetes.Interface, error) {
@@ -148,7 +149,7 @@ func main() {
 
 	whLogger := webhook.NewWhLogger(logger)
 
-	mutator := webhook.ErrorLoggerMutator(mutatingWebhook.VaultSecretsMutator, whLogger)
+	mutator := webhook.ErrorLoggerMutator(mutatingWebhook.SecretsMutator, whLogger)
 
 	promRegistry := prometheus.NewRegistry()
 	metricsRecorder, err := whmetrics.NewRecorder(whmetrics.RecorderConfig{Registry: promRegistry})

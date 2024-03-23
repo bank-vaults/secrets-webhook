@@ -21,8 +21,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"strings"
-	"text/template"
 
 	"emperror.dev/errors"
 	injector "github.com/bank-vaults/internal/pkg/vaultinjector"
@@ -39,7 +37,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/common"
+	vaultprov "github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 )
+
+var admissionReview *model.AdmissionReview
 
 type MutatingWebhook struct {
 	k8sClient kubernetes.Interface
@@ -48,45 +49,28 @@ type MutatingWebhook struct {
 	logger    *slog.Logger
 }
 
-func (mw *MutatingWebhook) VaultSecretsMutator(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
-	webhookConfig := parseConfig(obj)
-	secretInitConfig := parseSecretInitConfig(obj)
-	vaultConfig := parseVaultConfig(obj, ar)
+func (mw *MutatingWebhook) SecretsMutator(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
+	admissionReview = ar
 
-	if webhookConfig.Mutate {
+	webhookConfig := common.ParseWebhookConfig(obj)
+	secretInitConfig := common.ParseSecretInitConfig(obj)
+
+	if webhookConfig.Mutate || len(webhookConfig.Providers) == 0 {
 		return &mutating.MutatorResult{}, nil
 	}
 
-	// parse resulting vaultConfig.Role as potential template with fields of vaultConfig
-	tmpl, err := template.New("vaultRole").Option("missingkey=error").Parse(vaultConfig.Role)
-	if err != nil {
-		return &mutating.MutatorResult{}, errors.Wrap(err, "error parsing vault_role")
-	}
-	var vRoleBuf strings.Builder
-	if err = tmpl.Execute(&vRoleBuf, map[string]string{
-		"authmethod":     vaultConfig.AuthMethod,
-		"name":           obj.GetName(),
-		"namespace":      vaultConfig.ObjectNamespace,
-		"path":           vaultConfig.Path,
-		"serviceaccount": vaultConfig.VaultServiceAccount,
-	}); err != nil {
-		return &mutating.MutatorResult{}, errors.Wrap(err, "error templating vault_role")
-	}
-	vaultConfig.Role = vRoleBuf.String()
-	mw.logger.Debug(fmt.Sprintf("vaultConfig.Role = '%s'", vaultConfig.Role))
-
 	switch v := obj.(type) {
 	case *corev1.Pod:
-		return &mutating.MutatorResult{MutatedObject: v}, mw.MutatePod(ctx, v, webhookConfig, secretInitConfig, vaultConfig, ar.DryRun)
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutatePod(ctx, v, webhookConfig, secretInitConfig, ar.DryRun, webhookConfig.Providers)
 
 	case *corev1.Secret:
-		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateSecret(v, vaultConfig)
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateSecret(v, webhookConfig.Providers)
 
 	case *corev1.ConfigMap:
-		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateConfigMap(v, vaultConfig)
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateConfigMap(v, webhookConfig.Providers)
 
 	case *unstructured.Unstructured:
-		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateObject(v, vaultConfig)
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateObject(v, webhookConfig.Providers)
 
 	default:
 		return &mutating.MutatorResult{}, nil
@@ -109,7 +93,7 @@ func (mw *MutatingWebhook) getDataFromSecret(secretName string, ns string) (map[
 	return secret.Data, nil
 }
 
-func (mw *MutatingWebhook) lookForEnvFrom(envFrom []corev1.EnvFromSource, ns string) ([]corev1.EnvVar, error) {
+func (mw *MutatingWebhook) lookForEnvFrom_Vault(envFrom []corev1.EnvFromSource, ns string) ([]corev1.EnvVar, error) {
 	var envVars []corev1.EnvVar
 
 	for _, ef := range envFrom {
@@ -156,7 +140,7 @@ func (mw *MutatingWebhook) lookForEnvFrom(envFrom []corev1.EnvFromSource, ns str
 	return envVars, nil
 }
 
-func (mw *MutatingWebhook) lookForValueFrom(env corev1.EnvVar, ns string) (*corev1.EnvVar, error) {
+func (mw *MutatingWebhook) lookForValueFrom_Vault(env corev1.EnvVar, ns string) (*corev1.EnvVar, error) {
 	if env.ValueFrom.ConfigMapKeyRef != nil {
 		data, err := mw.getDataFromConfigmap(env.ValueFrom.ConfigMapKeyRef.Name, ns)
 		if err != nil {
@@ -194,7 +178,7 @@ func (mw *MutatingWebhook) lookForValueFrom(env corev1.EnvVar, ns string) (*core
 	return nil, nil
 }
 
-func (mw *MutatingWebhook) newVaultClient(vaultConfig VaultConfig) (*vault.Client, error) {
+func (mw *MutatingWebhook) newVaultClient(vaultConfig vaultprov.Config) (*vault.Client, error) {
 	clientConfig := vaultapi.DefaultConfig()
 	if clientConfig.Error != nil {
 		return nil, clientConfig.Error
