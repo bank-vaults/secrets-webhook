@@ -53,22 +53,17 @@ type dockerAuthConfig struct {
 	RegistryToken string `json:"registrytoken,omitempty"`
 }
 
-func (mw *MutatingWebhook) MutateSecret(secret *corev1.Secret, providers []string) error {
-	for _, providerName := range providers {
-		switch providerName {
-		case "vault":
-			vaultConfig, err := vault.ParseConfig(secret, admissionReview)
-			if err != nil {
-				return errors.Wrap(err, "failed to parse vault config")
-			}
-
-			err = mw.mutateSecretForVault(secret, vaultConfig)
+func (mw *MutatingWebhook) MutateSecret(secret *corev1.Secret, configs []interface{}) error {
+	for _, config := range configs {
+		switch providerConfig := config.(type) {
+		case vault.Config:
+			err := mw.mutateSecretForVault(secret, providerConfig)
 			if err != nil {
 				return errors.Wrap(err, "failed to mutate secret")
 			}
 
 		default:
-			return errors.Errorf("unknown provider: %s", providerName)
+			return errors.Errorf("unknown provider config type: %T", config)
 		}
 	}
 

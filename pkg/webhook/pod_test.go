@@ -20,8 +20,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bank-vaults/secrets-webhook/pkg/common"
-	"github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 	cmp "github.com/google/go-cmp/cmp"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/slok/kubewebhook/v2/pkg/model"
@@ -30,28 +28,35 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	fake "k8s.io/client-go/kubernetes/fake"
+
+	"github.com/bank-vaults/secrets-webhook/pkg/common"
+	"github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 )
 
-var webhookConfig = common.Config{
-	RunAsNonRoot: true,
-	RunAsUser:    int64(1000),
-	RunAsGroup:   int64(1000),
-}
+var (
+	webhookConfig = common.Config{
+		RunAsNonRoot: true,
+		RunAsUser:    int64(1000),
+		RunAsGroup:   int64(1000),
+	}
 
-var secretInitConfig = common.SecretInitConfig{
-	JSONLog: "enableJSONLog",
-}
+	secretInitConfig = common.SecretInitConfig{
+		JSONLog: "enableJSONLog",
+	}
 
-var vaultConfig = vault.Config{
-	Addr:                 "addr",
-	SkipVerify:           false,
-	Path:                 "path",
-	Role:                 "role",
-	AuthMethod:           "jwt",
-	IgnoreMissingSecrets: "ignoreMissingSecrets",
-	Passthrough:          "vaultPassthrough",
-	ClientTimeout:        10 * time.Second,
-}
+	providerConfigs = map[string]interface{}{
+		"vault": vault.Config{
+			Addr:                 "addr",
+			SkipVerify:           false,
+			Path:                 "path",
+			Role:                 "role",
+			AuthMethod:           "jwt",
+			IgnoreMissingSecrets: "ignoreMissingSecrets",
+			Passthrough:          "vaultPassthrough",
+			ClientTimeout:        10 * time.Second,
+		},
+	}
+)
 
 type MockRegistry struct {
 	Image v1.Config
@@ -61,10 +66,10 @@ func (r *MockRegistry) GetImageConfig(_ context.Context, _ kubernetes.Interface,
 	return &r.Image, nil
 }
 
-func Test_mutatingWebhook_mutateContainers(t *testing.T) {
+func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 	t.Parallel()
 
-	vaultConfigEnvFrom := vaultConfig
+	vaultConfigEnvFrom := providerConfigs["vault"].(vault.Config)
 	vaultConfigEnvFrom.FromPath = "secrets/application"
 
 	type fields struct {
@@ -111,7 +116,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				vaultConfig:      vaultConfig,
+				vaultConfig:      providerConfigs["vault"].(vault.Config),
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -162,7 +167,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				vaultConfig:      vaultConfig,
+				vaultConfig:      providerConfigs["vault"].(vault.Config),
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -215,7 +220,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				vaultConfig:      vaultConfig,
+				vaultConfig:      providerConfigs["vault"].(vault.Config),
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -335,7 +340,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				vaultConfig:      vaultConfig,
+				vaultConfig:      providerConfigs["vault"].(vault.Config),
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -379,7 +384,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				vaultConfig:      vaultConfig,
+				vaultConfig:      providerConfigs["vault"].(vault.Config),
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -468,7 +473,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				vaultConfig:      vaultConfig,
+				vaultConfig:      providerConfigs["vault"].(vault.Config),
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -600,7 +605,6 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 		pod              *corev1.Pod
 		webhookConfig    common.Config
 		secretInitConfig common.SecretInitConfig
-		vaultConfig      vault.Config
 	}
 
 	defaultMode := int32(420)
@@ -677,6 +681,19 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 			},
 			args: args{
 				pod: &corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							common.VaultConsulTemplateConfigmapAnnotation:  "config-map-test",
+							common.VaultConfigfilePathAnnotation:           "/vault/secrets",
+							common.VaultAddrAnnotation:                     "test",
+							common.VaultSkipVerifyAnnotation:               "false",
+							common.VaultConsulTemplateCPUAnnotation:        "50m",
+							common.VaultConsulTemplateMemoryAnnotation:     "128Mi",
+							common.VaultImageAnnotation:                    "hashicorp/vault:latest",
+							common.VaultImagePullPolicyAnnotation:          "IfNotPresent",
+							common.ServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
+						},
+					},
 					Spec: corev1.PodSpec{
 						Containers: []corev1.Container{
 							{
@@ -704,19 +721,21 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 					CPULimit:      resource.MustParse("250m"),
 					MemoryLimit:   resource.MustParse("64Mi"),
 				},
-				vaultConfig: vault.Config{
-					CtConfigMap:                   "config-map-test",
-					ConfigfilePath:                "/vault/secrets",
-					Addr:                          "test",
-					SkipVerify:                    false,
-					CtCPU:                         resource.MustParse("50m"),
-					CtMemory:                      resource.MustParse("128Mi"),
-					AgentImage:                    "hashicorp/vault:latest",
-					AgentImagePullPolicy:          "IfNotPresent",
-					ServiceAccountTokenVolumeName: "/var/run/secrets/kubernetes.io/serviceaccount",
-				},
 			},
 			wantedPod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						common.VaultConsulTemplateConfigmapAnnotation:  "config-map-test",
+						common.VaultConfigfilePathAnnotation:           "/vault/secrets",
+						common.VaultAddrAnnotation:                     "test",
+						common.VaultSkipVerifyAnnotation:               "false",
+						common.VaultConsulTemplateCPUAnnotation:        "50m",
+						common.VaultConsulTemplateMemoryAnnotation:     "128Mi",
+						common.VaultImageAnnotation:                    "hashicorp/vault:latest",
+						common.VaultImagePullPolicyAnnotation:          "IfNotPresent",
+						common.ServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
+					},
+				},
 				Spec: corev1.PodSpec{
 					InitContainers: []corev1.Container{
 						{
@@ -762,8 +781,9 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 					},
 					Containers: []corev1.Container{
 						{
-							Name: "consul-template",
-							Args: []string{"-config", "/vault/ct-config/config.hcl"},
+							Name:  "consul-template",
+							Image: "hashicorp/consul-template:0.32.0",
+							Args:  []string{"-config", "/vault/ct-config/config.hcl"},
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
 									corev1.ResourceCPU:    resource.MustParse("50m"),
@@ -780,6 +800,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									Value: "false",
 								},
 							},
+							ImagePullPolicy: "IfNotPresent",
 							SecurityContext: baseSecurityContext,
 							VolumeMounts: []corev1.VolumeMount{
 								{
@@ -877,6 +898,20 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 			},
 			args: args{
 				pod: &corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							common.VaultConsulTemplateConfigmapAnnotation:  "config-map-test",
+							common.VaultConsulTemplateOnceAnnotation:       "true",
+							common.VaultConfigfilePathAnnotation:           "/vault/secrets",
+							common.VaultAddrAnnotation:                     "test",
+							common.VaultSkipVerifyAnnotation:               "false",
+							common.VaultConsulTemplateCPUAnnotation:        "50m",
+							common.VaultConsulTemplateMemoryAnnotation:     "128Mi",
+							common.VaultImageAnnotation:                    "hashicorp/vault:latest",
+							common.VaultImagePullPolicyAnnotation:          "IfNotPresent",
+							common.ServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
+						},
+					},
 					Spec: corev1.PodSpec{
 						Containers: []corev1.Container{
 							{
@@ -904,20 +939,22 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 					CPULimit:      resource.MustParse("250m"),
 					MemoryLimit:   resource.MustParse("64Mi"),
 				},
-				vaultConfig: vault.Config{
-					CtConfigMap:                   "config-map-test",
-					CtOnce:                        true,
-					ConfigfilePath:                "/vault/secrets",
-					Addr:                          "test",
-					SkipVerify:                    false,
-					CtCPU:                         resource.MustParse("50m"),
-					CtMemory:                      resource.MustParse("128Mi"),
-					AgentImage:                    "hashicorp/vault:latest",
-					AgentImagePullPolicy:          "IfNotPresent",
-					ServiceAccountTokenVolumeName: "/var/run/secrets/kubernetes.io/serviceaccount",
-				},
 			},
 			wantedPod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						common.VaultConsulTemplateConfigmapAnnotation:  "config-map-test",
+						common.VaultConsulTemplateOnceAnnotation:       "true",
+						common.VaultConfigfilePathAnnotation:           "/vault/secrets",
+						common.VaultAddrAnnotation:                     "test",
+						common.VaultSkipVerifyAnnotation:               "false",
+						common.VaultConsulTemplateCPUAnnotation:        "50m",
+						common.VaultConsulTemplateMemoryAnnotation:     "128Mi",
+						common.VaultImageAnnotation:                    "hashicorp/vault:latest",
+						common.VaultImagePullPolicyAnnotation:          "IfNotPresent",
+						common.ServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
+					},
+				},
 				Spec: corev1.PodSpec{
 					InitContainers: []corev1.Container{
 						{
@@ -961,8 +998,9 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "consul-template",
-							Args: []string{"-config", "/vault/ct-config/config.hcl", "-once"},
+							Name:  "consul-template",
+							Image: "hashicorp/consul-template:0.32.0",
+							Args:  []string{"-config", "/vault/ct-config/config.hcl", "-once"},
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
 									corev1.ResourceCPU:    resource.MustParse("50m"),
@@ -979,6 +1017,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									Value: "false",
 								},
 							},
+							ImagePullPolicy: "IfNotPresent",
 							SecurityContext: baseSecurityContext,
 							VolumeMounts: []corev1.VolumeMount{
 								{
@@ -1078,6 +1117,22 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 			},
 			args: args{
 				pod: &corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							common.VaultAgentConfigmapAnnotation:           "config-map-test",
+							common.VaultConfigfilePathAnnotation:           "/vault/secrets",
+							common.VaultAddrAnnotation:                     "test",
+							common.VaultSkipVerifyAnnotation:               "false",
+							common.VaultAgentCPURequestAnnotation:          "200m",
+							common.VaultAgentMemoryRequestAnnotation:       "256Mi",
+							common.VaultAgentCPULimitAnnotation:            "500m",
+							common.VaultAgentMemoryLimitAnnotation:         "384Mi",
+							common.VaultImageAnnotation:                    "hashicorp/vault:latest",
+							common.VaultImagePullPolicyAnnotation:          "IfNotPresent",
+							common.ServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
+							common.VaultAgentEnvVariablesAnnotation:        "[{\"Name\": \"SKIP_SETCAP\",\"Value\": \"1\"}]",
+						},
+					},
 					Spec: corev1.PodSpec{
 						Containers: []corev1.Container{
 							{
@@ -1099,22 +1154,24 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 					RunAsUser:    int64(1000),
 					RunAsGroup:   int64(1000),
 				},
-				vaultConfig: vault.Config{
-					AgentConfigMap:                "config-map-test",
-					ConfigfilePath:                "/vault/secrets",
-					Addr:                          "test",
-					SkipVerify:                    false,
-					AgentCPURequest:               resource.MustParse("200m"),
-					AgentMemoryRequest:            resource.MustParse("256Mi"),
-					AgentCPULimit:                 resource.MustParse("500m"),
-					AgentMemoryLimit:              resource.MustParse("384Mi"),
-					AgentImage:                    "hashicorp/vault:latest",
-					AgentImagePullPolicy:          "IfNotPresent",
-					ServiceAccountTokenVolumeName: "/var/run/secrets/kubernetes.io/serviceaccount",
-					AgentEnvVariables:             "[{\"Name\": \"SKIP_SETCAP\",\"Value\": \"1\"}]",
-				},
 			},
 			wantedPod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						common.VaultAgentConfigmapAnnotation:           "config-map-test",
+						common.VaultConfigfilePathAnnotation:           "/vault/secrets",
+						common.VaultAddrAnnotation:                     "test",
+						common.VaultSkipVerifyAnnotation:               "false",
+						common.VaultAgentCPURequestAnnotation:          "200m",
+						common.VaultAgentMemoryRequestAnnotation:       "256Mi",
+						common.VaultAgentCPULimitAnnotation:            "500m",
+						common.VaultAgentMemoryLimitAnnotation:         "384Mi",
+						common.VaultImageAnnotation:                    "hashicorp/vault:latest",
+						common.VaultImagePullPolicyAnnotation:          "IfNotPresent",
+						common.ServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
+						common.VaultAgentEnvVariablesAnnotation:        "[{\"Name\": \"SKIP_SETCAP\",\"Value\": \"1\"}]",
+					},
+				},
 				Spec: corev1.PodSpec{
 					InitContainers: []corev1.Container{},
 					Containers: []corev1.Container{
@@ -1233,6 +1290,21 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 			},
 			args: args{
 				pod: &corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							common.VaultConsulTemplateConfigmapAnnotation:            "config-map-test",
+							common.VaultConsulTemplateOnceAnnotation:                 "true",
+							common.VaultConsulTemplateInjectInitcontainersAnnotation: "true",
+							common.VaultConfigfilePathAnnotation:                     "/vault/secrets",
+							common.VaultAddrAnnotation:                               "test",
+							common.VaultSkipVerifyAnnotation:                         "false",
+							common.VaultConsulTemplateCPUAnnotation:                  "50m",
+							common.VaultConsulTemplateMemoryAnnotation:               "128Mi",
+							common.VaultImageAnnotation:                              "hashicorp/vault:latest",
+							common.VaultImagePullPolicyAnnotation:                    "IfNotPresent",
+							common.ServiceAccountTokenVolumeNameAnnotation:           "/var/run/secrets/kubernetes.io/serviceaccount",
+						},
+					},
 					Spec: corev1.PodSpec{
 						InitContainers: []corev1.Container{
 							{
@@ -1273,21 +1345,23 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 					CPULimit:      resource.MustParse("250m"),
 					MemoryLimit:   resource.MustParse("64Mi"),
 				},
-				vaultConfig: vault.Config{
-					CtConfigMap:                   "config-map-test",
-					CtOnce:                        true,
-					CtInjectInInitcontainers:      true,
-					ConfigfilePath:                "/vault/secrets",
-					Addr:                          "test",
-					SkipVerify:                    false,
-					CtCPU:                         resource.MustParse("50m"),
-					CtMemory:                      resource.MustParse("128Mi"),
-					AgentImage:                    "hashicorp/vault:latest",
-					AgentImagePullPolicy:          "IfNotPresent",
-					ServiceAccountTokenVolumeName: "/var/run/secrets/kubernetes.io/serviceaccount",
-				},
 			},
 			wantedPod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						common.VaultConsulTemplateConfigmapAnnotation:            "config-map-test",
+						common.VaultConsulTemplateOnceAnnotation:                 "true",
+						common.VaultConsulTemplateInjectInitcontainersAnnotation: "true",
+						common.VaultConfigfilePathAnnotation:                     "/vault/secrets",
+						common.VaultAddrAnnotation:                               "test",
+						common.VaultSkipVerifyAnnotation:                         "false",
+						common.VaultConsulTemplateCPUAnnotation:                  "50m",
+						common.VaultConsulTemplateMemoryAnnotation:               "128Mi",
+						common.VaultImageAnnotation:                              "hashicorp/vault:latest",
+						common.VaultImagePullPolicyAnnotation:                    "IfNotPresent",
+						common.ServiceAccountTokenVolumeNameAnnotation:           "/var/run/secrets/kubernetes.io/serviceaccount",
+					},
+				},
 				Spec: corev1.PodSpec{
 					InitContainers: []corev1.Container{
 						{
@@ -1331,8 +1405,9 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "consul-template",
-							Args: []string{"-config", "/vault/ct-config/config.hcl", "-once"},
+							Name:  "consul-template",
+							Image: "hashicorp/consul-template:0.32.0",
+							Args:  []string{"-config", "/vault/ct-config/config.hcl", "-once"},
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
 									corev1.ResourceCPU:    resource.MustParse("50m"),
@@ -1349,6 +1424,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									Value: "false",
 								},
 							},
+							ImagePullPolicy: "IfNotPresent",
 							SecurityContext: baseSecurityContext,
 							VolumeMounts: []corev1.VolumeMount{
 								{
@@ -1471,7 +1547,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							common.VaultConsulTemplateMemoryAnnotation:               "128Mi",
 							common.VaultImageAnnotation:                              "hashicorp/vault:latest",
 							common.VaultImagePullPolicyAnnotation:                    "IfNotPresent",
-							common.ServiceAccountTokenVolumeNameAnnotation:           "/var/run/secrets/kubernetes.io/serviceaccount",
+							common.ServiceAccountTokenVolumeNameAnnotation:           "/var/run/secrets/vault",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -1527,7 +1603,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 						common.VaultConsulTemplateMemoryAnnotation:               "128Mi",
 						common.VaultImageAnnotation:                              "hashicorp/vault:latest",
 						common.VaultImagePullPolicyAnnotation:                    "IfNotPresent",
-						common.ServiceAccountTokenVolumeNameAnnotation:           "/var/run/secrets/kubernetes.io/serviceaccount",
+						common.ServiceAccountTokenVolumeNameAnnotation:           "/var/run/secrets/vault",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -1586,8 +1662,9 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 					},
 					Containers: []corev1.Container{
 						{
-							Name: "consul-template",
-							Args: []string{"-config", "/vault/ct-config/config.hcl"},
+							Name:  "consul-template",
+							Image: "hashicorp/consul-template:0.32.0",
+							Args:  []string{"-config", "/vault/ct-config/config.hcl"},
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
 									corev1.ResourceCPU:    resource.MustParse("50m"),
@@ -1604,6 +1681,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									Value: "false",
 								},
 							},
+							ImagePullPolicy: "IfNotPresent",
 							SecurityContext: baseSecurityContext,
 							VolumeMounts: []corev1.VolumeMount{
 								{
@@ -1696,8 +1774,6 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 	for _, tt := range tests {
 		ttp := tt
 		t.Run(ttp.name, func(t *testing.T) {
-			t.Parallel()
-
 			mw := &MutatingWebhook{
 				k8sClient: ttp.fields.k8sClient,
 				registry:  ttp.fields.registry,
@@ -1706,7 +1782,13 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 
 			admissionReview = &model.AdmissionReview{}
 
-			err := mw.MutatePod(context.Background(), ttp.args.pod, ttp.args.webhookConfig, ttp.args.secretInitConfig, false, []string{"vault"})
+			providerConfigs, err := parseProviderConfigs(ttp.args.pod, []string{"vault"})
+			if (err != nil) != ttp.wantErr {
+				t.Errorf("parseProviderConfigs() error = %v, wantErr %v", err, ttp.wantErr)
+				return
+			}
+
+			err = mw.MutatePod(context.Background(), ttp.args.pod, ttp.args.webhookConfig, ttp.args.secretInitConfig, false, providerConfigs)
 			if (err != nil) != ttp.wantErr {
 				t.Errorf("MutatingWebhook.MutatePod() error = %v, wantErr %v", err, ttp.wantErr)
 				return

@@ -144,7 +144,7 @@ func TestPodMutation(t *testing.T) {
 			err := r.List(ctx, pods, resources.WithLabelSelector("app.kubernetes.io/name=test-deployment"))
 			require.NoError(t, err)
 
-			if pods == nil || len(pods.Items) == 0 {
+			if len(pods.Items) == 0 {
 				t.Fatal("no pods found")
 			}
 
@@ -194,7 +194,7 @@ func TestPodMutation(t *testing.T) {
 			err := r.List(ctx, pods, resources.WithLabelSelector("app.kubernetes.io/name=test-deployment-template"))
 			require.NoError(t, err)
 
-			if pods == nil || len(pods.Items) == 0 {
+			if len(pods.Items) == 0 {
 				t.Fatal("no pods found")
 			}
 
@@ -237,7 +237,7 @@ func TestPodMutation(t *testing.T) {
 			err := r.List(ctx, pods, resources.WithLabelSelector("app.kubernetes.io/name=test-deployment-init-seccontext"))
 			require.NoError(t, err)
 
-			if pods == nil || len(pods.Items) == 0 {
+			if len(pods.Items) == 0 {
 				t.Fatal("no pods found")
 			}
 

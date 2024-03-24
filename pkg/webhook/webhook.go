@@ -59,18 +59,23 @@ func (mw *MutatingWebhook) SecretsMutator(ctx context.Context, ar *model.Admissi
 		return &mutating.MutatorResult{}, nil
 	}
 
+	configs, err := parseProviderConfigs(obj, webhookConfig.Providers)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse provider configs: %w", err)
+	}
+
 	switch v := obj.(type) {
 	case *corev1.Pod:
-		return &mutating.MutatorResult{MutatedObject: v}, mw.MutatePod(ctx, v, webhookConfig, secretInitConfig, ar.DryRun, webhookConfig.Providers)
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutatePod(ctx, v, webhookConfig, secretInitConfig, ar.DryRun, configs)
 
 	case *corev1.Secret:
-		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateSecret(v, webhookConfig.Providers)
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateSecret(v, configs)
 
 	case *corev1.ConfigMap:
-		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateConfigMap(v, webhookConfig.Providers)
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateConfigMap(v, configs)
 
 	case *unstructured.Unstructured:
-		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateObject(v, webhookConfig.Providers)
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateObject(v, configs)
 
 	default:
 		return &mutating.MutatorResult{}, nil
@@ -311,4 +316,23 @@ func ErrorLoggerMutator(mutator mutating.MutatorFunc, logger log.Logger) mutatin
 		}
 		return r, err
 	}
+}
+
+func parseProviderConfigs(obj metav1.Object, providers []string) ([]interface{}, error) {
+	configs := make([]interface{}, 0, len(providers))
+	for _, providerName := range providers {
+		switch providerName {
+		case "vault":
+			vaultConfig, err := vaultprov.ParseConfig(obj, admissionReview)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to parse vault config")
+			}
+
+			configs = append(configs, vaultConfig)
+		default:
+			return nil, errors.Errorf("unknown provider: %s", providerName)
+		}
+	}
+
+	return configs, nil
 }

@@ -12,14 +12,15 @@ spec:
       labels:
         app.kubernetes.io/name: test-deployment-init-seccontext
       annotations:
+        secrets-webhook.security.banzaicloud.io/providers: "vault"
+        secrets-webhook.security.banzaicloud.io/run-as-non-root: "true"
+        secrets-webhook.security.banzaicloud.io/run-as-user: "1000"
+        secrets-webhook.security.banzaicloud.io/run-as-group: "1000"
         vault.security.banzaicloud.io/vault-addr: "https://vault.default.svc.cluster.local:8200"
         vault.security.banzaicloud.io/vault-role: "default"
         vault.security.banzaicloud.io/vault-tls-secret: vault-tls
         # vault.security.banzaicloud.io/vault-skip-verify: "true"
         vault.security.banzaicloud.io/vault-path: "kubernetes"
-        vault.security.banzaicloud.io/run-as-non-root: "true"
-        vault.security.banzaicloud.io/run-as-user: "1000"
-        vault.security.banzaicloud.io/run-as-group: "1000"
     spec:
       containers:
         - name: alpine
