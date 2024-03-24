@@ -22,7 +22,6 @@ import (
 	injector "github.com/bank-vaults/internal/pkg/vaultinjector"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/bank-vaults/secrets-webhook/pkg/common"
 	"github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 )
 
@@ -83,6 +82,8 @@ func (mw *MutatingWebhook) MutateObject(object *unstructured.Unstructured, confi
 	for _, config := range configs {
 		switch providerConfig := config.(type) {
 		case vault.Config:
+			currentlyUsedProvider = vault.ProviderName
+
 			err := mw.mutateObjectForVault(object, providerConfig)
 			if err != nil {
 				return errors.Wrap(err, "failed to mutate secret")
@@ -129,14 +130,14 @@ func traverseObject_Vault(o interface{}, secretInjector *injector.SecretInjector
 	for e := range iterator {
 		switch s := e.Get().(type) {
 		case string:
-			if common.HasVaultPrefix(s) {
+			if hasProviderPrefix(currentlyUsedProvider, s, false) {
 				dataFromVault, err := secretInjector.GetDataFromVault(map[string]string{"data": s})
 				if err != nil {
 					return err
 				}
 
 				e.Set(dataFromVault["data"])
-			} else if injector.HasInlineVaultDelimiters(s) {
+			} else if hasInlineProviderDelimiters(currentlyUsedProvider, s) {
 				dataFromVault := s
 				for _, vaultSecretReference := range injector.FindInlineVaultDelimiters(s) {
 					mapData, err := secretInjector.GetDataFromVault(map[string]string{"data": vaultSecretReference[1]})

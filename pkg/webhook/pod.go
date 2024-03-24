@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"emperror.dev/errors"
-	injector "github.com/bank-vaults/internal/pkg/vaultinjector"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -61,6 +60,8 @@ func (mw *MutatingWebhook) MutatePod(ctx context.Context, pod *corev1.Pod, webho
 	for _, config := range configs {
 		switch providerConfig := config.(type) {
 		case vault.Config:
+			currentlyUsedProvider = vault.ProviderName
+
 			err := mw.mutatePodForVault(ctx, pod, webhookConfig, secretInitConfig, providerConfig, dryRun)
 			if err != nil {
 				return errors.Wrap(err, "failed to mutate secret")
@@ -248,7 +249,7 @@ func (mw *MutatingWebhook) mutateContainers_Vault(ctx context.Context, container
 	for i, container := range containers {
 		var envVars []corev1.EnvVar
 		if len(container.EnvFrom) > 0 {
-			envFrom, err := mw.lookForEnvFrom_Vault(container.EnvFrom, vaultConfig.ObjectNamespace)
+			envFrom, err := mw.lookForEnvFrom(container.EnvFrom, vaultConfig.ObjectNamespace)
 			if err != nil {
 				return false, err
 			}
@@ -256,11 +257,11 @@ func (mw *MutatingWebhook) mutateContainers_Vault(ctx context.Context, container
 		}
 
 		for _, env := range container.Env {
-			if common.HasVaultPrefix(env.Value) || injector.HasInlineVaultDelimiters(env.Value) {
+			if hasProviderPrefix(currentlyUsedProvider, env.Value, true) {
 				envVars = append(envVars, env)
 			}
 			if env.ValueFrom != nil {
-				valueFrom, err := mw.lookForValueFrom_Vault(env, vaultConfig.ObjectNamespace)
+				valueFrom, err := mw.lookForValueFrom(env, vaultConfig.ObjectNamespace)
 				if err != nil {
 					return false, err
 				}

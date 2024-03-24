@@ -1,4 +1,4 @@
-// Copyright © 2021 Banzai Cloud
+// Copyright © 2023 Cisco
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ import (
 
 	"github.com/bank-vaults/secrets-webhook/pkg/common"
 )
+
+const ProviderName = "vault"
 
 type Config struct {
 	ObjectNamespace               string

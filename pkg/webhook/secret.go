@@ -24,7 +24,6 @@ import (
 	injector "github.com/bank-vaults/internal/pkg/vaultinjector"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/bank-vaults/secrets-webhook/pkg/common"
 	"github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 )
 
@@ -57,6 +56,8 @@ func (mw *MutatingWebhook) MutateSecret(secret *corev1.Secret, configs []interfa
 	for _, config := range configs {
 		switch providerConfig := config.(type) {
 		case vault.Config:
+			currentlyUsedProvider = vault.ProviderName
+
 			err := mw.mutateSecretForVault(secret, providerConfig)
 			if err != nil {
 				return errors.Wrap(err, "failed to mutate secret")
@@ -131,13 +132,13 @@ func secretNeedsMutation_Vault(secret *corev1.Secret) (bool, error) {
 				}
 
 				auth := string(authBytes)
-				if common.HasVaultPrefix(auth) {
+				if hasProviderPrefix(currentlyUsedProvider, auth, false) {
 					return true, nil
 				}
 			}
-		} else if common.HasVaultPrefix(string(value)) {
+		} else if hasProviderPrefix(currentlyUsedProvider, string(value), false) {
 			return true, nil
-		} else if injector.HasInlineVaultDelimiters(string(value)) {
+		} else if hasInlineProviderDelimiters(currentlyUsedProvider, string(value)) {
 			return true, nil
 		}
 	}
@@ -154,7 +155,7 @@ func (mw *MutatingWebhook) mutateDockerCreds_Vault(secret *corev1.Secret, dc *do
 		}
 
 		auth := string(authBytes)
-		if common.HasVaultPrefix(auth) {
+		if hasProviderPrefix(currentlyUsedProvider, auth, false) {
 			split := strings.Split(auth, ":")
 			if len(split) != 4 {
 				return errors.New("splitting auth credentials failed")

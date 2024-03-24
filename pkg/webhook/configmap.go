@@ -21,18 +21,17 @@ import (
 	injector "github.com/bank-vaults/internal/pkg/vaultinjector"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/bank-vaults/secrets-webhook/pkg/common"
 	"github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 )
 
 func configMapNeedsMutation(configMap *corev1.ConfigMap) bool {
 	for _, value := range configMap.Data {
-		if common.HasVaultPrefix(value) || injector.HasInlineVaultDelimiters(value) {
+		if hasProviderPrefix(currentlyUsedProvider, value, true) {
 			return true
 		}
 	}
 	for _, value := range configMap.BinaryData {
-		if common.HasVaultPrefix(string(value)) {
+		if hasProviderPrefix(currentlyUsedProvider, string(value), false) {
 			return true
 		}
 	}
@@ -44,6 +43,8 @@ func (mw *MutatingWebhook) MutateConfigMap(configMap *corev1.ConfigMap, configs 
 	for _, config := range configs {
 		switch providerConfig := config.(type) {
 		case vault.Config:
+			currentlyUsedProvider = vault.ProviderName
+
 			err := mw.mutateConfigMapForVault(configMap, providerConfig)
 			if err != nil {
 				return errors.Wrap(err, "failed to mutate secret")
@@ -83,7 +84,7 @@ func (mw *MutatingWebhook) mutateConfigMapForVault(configMap *corev1.ConfigMap, 
 	}
 
 	for key, value := range configMap.BinaryData {
-		if common.HasVaultPrefix(string(value)) {
+		if hasProviderPrefix(currentlyUsedProvider, string(value), false) {
 			binaryData := map[string]string{
 				key: string(value),
 			}

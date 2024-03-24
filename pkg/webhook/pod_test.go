@@ -45,7 +45,7 @@ var (
 	}
 
 	providerConfigs = map[string]interface{}{
-		"vault": vault.Config{
+		vault.ProviderName: vault.Config{
 			Addr:                 "addr",
 			SkipVerify:           false,
 			Path:                 "path",
@@ -67,9 +67,7 @@ func (r *MockRegistry) GetImageConfig(_ context.Context, _ kubernetes.Interface,
 }
 
 func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
-	t.Parallel()
-
-	vaultConfigEnvFrom := providerConfigs["vault"].(vault.Config)
+	vaultConfigEnvFrom := providerConfigs[vault.ProviderName].(vault.Config)
 	vaultConfigEnvFrom.FromPath = "secrets/application"
 
 	type fields struct {
@@ -116,7 +114,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				vaultConfig:      providerConfigs["vault"].(vault.Config),
+				vaultConfig:      providerConfigs[vault.ProviderName].(vault.Config),
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -167,7 +165,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				vaultConfig:      providerConfigs["vault"].(vault.Config),
+				vaultConfig:      providerConfigs[vault.ProviderName].(vault.Config),
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -220,7 +218,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				vaultConfig:      providerConfigs["vault"].(vault.Config),
+				vaultConfig:      providerConfigs[vault.ProviderName].(vault.Config),
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -340,7 +338,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				vaultConfig:      providerConfigs["vault"].(vault.Config),
+				vaultConfig:      providerConfigs[vault.ProviderName].(vault.Config),
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -384,7 +382,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				vaultConfig:      providerConfigs["vault"].(vault.Config),
+				vaultConfig:      providerConfigs[vault.ProviderName].(vault.Config),
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -473,7 +471,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				vaultConfig:      providerConfigs["vault"].(vault.Config),
+				vaultConfig:      providerConfigs[vault.ProviderName].(vault.Config),
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -572,21 +570,24 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 	for _, tt := range tests {
 		ttp := tt
 		t.Run(ttp.name, func(t *testing.T) {
-			t.Parallel()
-
 			mw := &MutatingWebhook{
 				k8sClient: ttp.fields.k8sClient,
 				registry:  ttp.fields.registry,
 				logger:    slog.Default(),
 			}
+
+			currentlyUsedProvider = vault.ProviderName
+
 			got, err := mw.mutateContainers_Vault(context.Background(), ttp.args.containers, ttp.args.podSpec, ttp.args.webhookConfig, ttp.args.SecretInitConfig, ttp.args.vaultConfig)
 			if (err != nil) != ttp.wantErr {
 				t.Errorf("MutatingWebhook.mutateContainers() error = %v, wantErr %v", err, ttp.wantErr)
 				return
 			}
+
 			if got != ttp.mutated {
 				t.Errorf("MutatingWebhook.mutateContainers() = %v, want %v", got, ttp.mutated)
 			}
+
 			if !cmp.Equal(ttp.args.containers, ttp.wantedContainers) {
 				t.Errorf("MutatingWebhook.mutateContainers() = diff %v", cmp.Diff(ttp.args.containers, ttp.wantedContainers))
 			}
@@ -595,8 +596,6 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 }
 
 func Test_mutatingWebhook_mutatePod(t *testing.T) {
-	t.Parallel()
-
 	type fields struct {
 		k8sClient kubernetes.Interface
 		registry  ImageRegistry
@@ -1780,9 +1779,9 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 				logger:    slog.Default(),
 			}
 
-			admissionReview = &model.AdmissionReview{}
+			admissionReview := &model.AdmissionReview{}
 
-			providerConfigs, err := parseProviderConfigs(ttp.args.pod, []string{"vault"})
+			providerConfigs, err := parseProviderConfigs(ttp.args.pod, admissionReview, []string{vault.ProviderName})
 			if (err != nil) != ttp.wantErr {
 				t.Errorf("parseProviderConfigs() error = %v, wantErr %v", err, ttp.wantErr)
 				return

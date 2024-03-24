@@ -37,10 +37,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/common"
+	"github.com/bank-vaults/secrets-webhook/pkg/provider/bao"
 	vaultprov "github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 )
 
-var admissionReview *model.AdmissionReview
+// currentlyUsedProvider is the name of the provider
+// that is used to mutate the object at the moment.
+// This global was introduced to genericize the code.
+// It is used by the hasProviderPrefix and hasInlineProviderDelimiters functions.
+var currentlyUsedProvider string
 
 type MutatingWebhook struct {
 	k8sClient kubernetes.Interface
@@ -50,8 +55,6 @@ type MutatingWebhook struct {
 }
 
 func (mw *MutatingWebhook) SecretsMutator(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
-	admissionReview = ar
-
 	webhookConfig := common.ParseWebhookConfig(obj)
 	secretInitConfig := common.ParseSecretInitConfig(obj)
 
@@ -59,7 +62,7 @@ func (mw *MutatingWebhook) SecretsMutator(ctx context.Context, ar *model.Admissi
 		return &mutating.MutatorResult{}, nil
 	}
 
-	configs, err := parseProviderConfigs(obj, webhookConfig.Providers)
+	configs, err := parseProviderConfigs(obj, ar, webhookConfig.Providers)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse provider configs: %w", err)
 	}
@@ -82,6 +85,18 @@ func (mw *MutatingWebhook) SecretsMutator(ctx context.Context, ar *model.Admissi
 	}
 }
 
+func (mw *MutatingWebhook) ServeMetrics(addr string, handler http.Handler) {
+	mw.logger.Info(fmt.Sprintf("Telemetry on http://%s", addr))
+
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", handler)
+	err := http.ListenAndServe(addr, mux)
+	if err != nil {
+		mw.logger.Error(fmt.Errorf("error serving telemetry: %w", err).Error())
+		os.Exit(1)
+	}
+}
+
 func (mw *MutatingWebhook) getDataFromConfigmap(cmName string, ns string) (map[string]string, error) {
 	configMap, err := mw.k8sClient.CoreV1().ConfigMaps(ns).Get(context.Background(), cmName, metav1.GetOptions{})
 	if err != nil {
@@ -98,7 +113,7 @@ func (mw *MutatingWebhook) getDataFromSecret(secretName string, ns string) (map[
 	return secret.Data, nil
 }
 
-func (mw *MutatingWebhook) lookForEnvFrom_Vault(envFrom []corev1.EnvFromSource, ns string) ([]corev1.EnvVar, error) {
+func (mw *MutatingWebhook) lookForEnvFrom(envFrom []corev1.EnvFromSource, ns string) ([]corev1.EnvVar, error) {
 	var envVars []corev1.EnvVar
 
 	for _, ef := range envFrom {
@@ -112,7 +127,7 @@ func (mw *MutatingWebhook) lookForEnvFrom_Vault(envFrom []corev1.EnvFromSource, 
 				return envVars, err
 			}
 			for key, value := range data {
-				if common.HasVaultPrefix(value) || injector.HasInlineVaultDelimiters(value) {
+				if hasProviderPrefix(currentlyUsedProvider, value, true) {
 					envFromCM := corev1.EnvVar{
 						Name:  key,
 						Value: value,
@@ -132,7 +147,7 @@ func (mw *MutatingWebhook) lookForEnvFrom_Vault(envFrom []corev1.EnvFromSource, 
 			}
 			for name, v := range data {
 				value := string(v)
-				if common.HasVaultPrefix(value) || injector.HasInlineVaultDelimiters(value) {
+				if hasProviderPrefix(currentlyUsedProvider, value, true) {
 					envFromSec := corev1.EnvVar{
 						Name:  name,
 						Value: value,
@@ -145,7 +160,7 @@ func (mw *MutatingWebhook) lookForEnvFrom_Vault(envFrom []corev1.EnvFromSource, 
 	return envVars, nil
 }
 
-func (mw *MutatingWebhook) lookForValueFrom_Vault(env corev1.EnvVar, ns string) (*corev1.EnvVar, error) {
+func (mw *MutatingWebhook) lookForValueFrom(env corev1.EnvVar, ns string) (*corev1.EnvVar, error) {
 	if env.ValueFrom.ConfigMapKeyRef != nil {
 		data, err := mw.getDataFromConfigmap(env.ValueFrom.ConfigMapKeyRef.Name, ns)
 		if err != nil {
@@ -155,7 +170,7 @@ func (mw *MutatingWebhook) lookForValueFrom_Vault(env corev1.EnvVar, ns string) 
 			return nil, err
 		}
 		value := data[env.ValueFrom.ConfigMapKeyRef.Key]
-		if common.HasVaultPrefix(value) || injector.HasInlineVaultDelimiters(value) {
+		if hasProviderPrefix(currentlyUsedProvider, value, true) {
 			fromCM := corev1.EnvVar{
 				Name:  env.Name,
 				Value: value,
@@ -172,7 +187,7 @@ func (mw *MutatingWebhook) lookForValueFrom_Vault(env corev1.EnvVar, ns string) 
 			return nil, err
 		}
 		value := string(data[env.ValueFrom.SecretKeyRef.Key])
-		if common.HasVaultPrefix(value) || injector.HasInlineVaultDelimiters(value) {
+		if hasProviderPrefix(currentlyUsedProvider, value, true) {
 			fromSecret := corev1.EnvVar{
 				Name:  env.Name,
 				Value: value,
@@ -182,6 +197,90 @@ func (mw *MutatingWebhook) lookForValueFrom_Vault(env corev1.EnvVar, ns string) 
 	}
 	return nil, nil
 }
+
+func NewMutatingWebhook(logger *slog.Logger, k8sClient kubernetes.Interface) (*MutatingWebhook, error) {
+	namespace := os.Getenv("KUBERNETES_NAMESPACE") // only for kurun
+	if namespace == "" {
+		namespaceBytes, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+		if err != nil {
+			return nil, errors.Wrap(err, "error reading k8s namespace")
+		}
+		namespace = string(namespaceBytes)
+	}
+
+	return &MutatingWebhook{
+		k8sClient: k8sClient,
+		namespace: namespace,
+		registry:  NewRegistry(),
+		logger:    logger,
+	}, nil
+}
+
+func ErrorLoggerMutator(mutator mutating.MutatorFunc, logger log.Logger) mutating.MutatorFunc {
+	return func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (result *mutating.MutatorResult, err error) {
+		r, err := mutator(ctx, ar, obj)
+		if err != nil {
+			logger.WithCtxValues(ctx).WithValues(log.Kv{
+				"error": err,
+			}).Errorf("Admission review request failed")
+		}
+		return r, err
+	}
+}
+
+// parseProviderConfigs parses all provider configs that was declared in the webhook annotation
+func parseProviderConfigs(obj metav1.Object, ar *model.AdmissionReview, providers []string) ([]interface{}, error) {
+	configs := make([]interface{}, 0, len(providers))
+	for _, providerName := range providers {
+		switch providerName {
+		case vaultprov.ProviderName:
+			vaultConfig, err := vaultprov.ParseConfig(obj, ar)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to parse vault config")
+			}
+
+			configs = append(configs, vaultConfig)
+		default:
+			return nil, errors.Errorf("unknown provider: %s", providerName)
+		}
+	}
+
+	return configs, nil
+}
+
+func hasProviderPrefix(providerName string, value string, withInlineDelimiters bool) bool {
+	switch providerName {
+	case vaultprov.ProviderName:
+		if withInlineDelimiters {
+			return common.HasVaultPrefix(value) || injector.HasInlineVaultDelimiters(value)
+		}
+		return common.HasVaultPrefix(value)
+
+	case bao.ProviderName:
+		// if withInlineDelimiters {
+		// 	return common.HasBaoPrefix(value) || injector.HasInlineBaoDelimiters(value)
+		// }
+		return common.HasBaoPrefix(value)
+
+	default:
+		return false
+	}
+}
+
+func hasInlineProviderDelimiters(providerName, value string) bool {
+	switch providerName {
+	case vaultprov.ProviderName:
+		return injector.HasInlineVaultDelimiters(value)
+
+	// case bao.ProviderName:
+	// 	return injector.HasInlineBaoDelimiters(value)
+
+	default:
+		return false
+	}
+}
+
+// ======== VAULT ========
 
 func (mw *MutatingWebhook) newVaultClient(vaultConfig vaultprov.Config) (*vault.Client, error) {
 	clientConfig := vaultapi.DefaultConfig()
@@ -274,65 +373,4 @@ func (mw *MutatingWebhook) newVaultClient(vaultConfig vaultprov.Config) (*vault.
 		vault.ClientLogger(&clientLogger{logger: mw.logger}),
 		vault.VaultNamespace(vaultConfig.VaultNamespace),
 	)
-}
-
-func (mw *MutatingWebhook) ServeMetrics(addr string, handler http.Handler) {
-	mw.logger.Info(fmt.Sprintf("Telemetry on http://%s", addr))
-
-	mux := http.NewServeMux()
-	mux.Handle("/metrics", handler)
-	err := http.ListenAndServe(addr, mux)
-	if err != nil {
-		mw.logger.Error(fmt.Errorf("error serving telemetry: %w", err).Error())
-		os.Exit(1)
-	}
-}
-
-func NewMutatingWebhook(logger *slog.Logger, k8sClient kubernetes.Interface) (*MutatingWebhook, error) {
-	namespace := os.Getenv("KUBERNETES_NAMESPACE") // only for kurun
-	if namespace == "" {
-		namespaceBytes, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
-		if err != nil {
-			return nil, errors.Wrap(err, "error reading k8s namespace")
-		}
-		namespace = string(namespaceBytes)
-	}
-
-	return &MutatingWebhook{
-		k8sClient: k8sClient,
-		namespace: namespace,
-		registry:  NewRegistry(),
-		logger:    logger,
-	}, nil
-}
-
-func ErrorLoggerMutator(mutator mutating.MutatorFunc, logger log.Logger) mutating.MutatorFunc {
-	return func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (result *mutating.MutatorResult, err error) {
-		r, err := mutator(ctx, ar, obj)
-		if err != nil {
-			logger.WithCtxValues(ctx).WithValues(log.Kv{
-				"error": err,
-			}).Errorf("Admission review request failed")
-		}
-		return r, err
-	}
-}
-
-func parseProviderConfigs(obj metav1.Object, providers []string) ([]interface{}, error) {
-	configs := make([]interface{}, 0, len(providers))
-	for _, providerName := range providers {
-		switch providerName {
-		case "vault":
-			vaultConfig, err := vaultprov.ParseConfig(obj, admissionReview)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to parse vault config")
-			}
-
-			configs = append(configs, vaultConfig)
-		default:
-			return nil, errors.Errorf("unknown provider: %s", providerName)
-		}
-	}
-
-	return configs, nil
 }
