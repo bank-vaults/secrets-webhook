@@ -55,24 +55,19 @@ auto_auth {
 	SecretInitVolumeName = "secret-init"
 )
 
-func (mw *MutatingWebhook) MutatePod(ctx context.Context, pod *corev1.Pod, webhookConfig common.Config, secretInitConfig common.SecretInitConfig, dryRun bool, providers []string) error {
+func (mw *MutatingWebhook) MutatePod(ctx context.Context, pod *corev1.Pod, webhookConfig common.Config, secretInitConfig common.SecretInitConfig, dryRun bool, configs []interface{}) error {
 	mw.logger.Debug("Successfully connected to the API")
 
-	for _, providerName := range providers {
-		switch providerName {
-		case "vault":
-			vaultConfig, err := vault.ParseConfig(pod, admissionReview)
-			if err != nil {
-				return errors.Wrap(err, "failed to parse vault config")
-			}
-
-			err = mw.mutatePodForVault(ctx, pod, webhookConfig, secretInitConfig, vaultConfig, dryRun)
+	for _, config := range configs {
+		switch providerConfig := config.(type) {
+		case vault.Config:
+			err := mw.mutatePodForVault(ctx, pod, webhookConfig, secretInitConfig, providerConfig, dryRun)
 			if err != nil {
 				return errors.Wrap(err, "failed to mutate secret")
 			}
 
 		default:
-			return errors.Errorf("unknown provider: %s", providerName)
+			return errors.Errorf("unknown provider config type: %T", config)
 		}
 	}
 

@@ -26,7 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func TestMutateConfigMap(t *testing.T) {
+func TestMutateConfigMap_Vault(t *testing.T) {
 	config := vaultapi.DefaultConfig()
 	if config.Error != nil {
 		assert.NoError(t, config.Error)
@@ -58,7 +58,10 @@ func TestMutateConfigMap(t *testing.T) {
 		},
 	}
 
-	err = mw.MutateConfigMap(&configMap, []string{"vault"})
+	providerConfigs, err := parseProviderConfigs(&configMap, []string{"vault"})
+	assert.NoError(t, err)
+
+	err = mw.MutateConfigMap(&configMap, providerConfigs)
 	assert.NoError(t, err)
 
 	assert.Equal(t, map[string]string{

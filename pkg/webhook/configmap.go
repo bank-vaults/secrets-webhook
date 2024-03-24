@@ -40,22 +40,17 @@ func configMapNeedsMutation(configMap *corev1.ConfigMap) bool {
 	return false
 }
 
-func (mw *MutatingWebhook) MutateConfigMap(configMap *corev1.ConfigMap, providers []string) error {
-	for _, providerName := range providers {
-		switch providerName {
-		case "vault":
-			vaultConfig, err := vault.ParseConfig(configMap, admissionReview)
-			if err != nil {
-				return errors.Wrap(err, "failed to parse vault config")
-			}
-
-			err = mw.mutateConfigMapForVault(configMap, vaultConfig)
+func (mw *MutatingWebhook) MutateConfigMap(configMap *corev1.ConfigMap, configs []interface{}) error {
+	for _, config := range configs {
+		switch providerConfig := config.(type) {
+		case vault.Config:
+			err := mw.mutateConfigMapForVault(configMap, providerConfig)
 			if err != nil {
 				return errors.Wrap(err, "failed to mutate secret")
 			}
 
 		default:
-			return errors.Errorf("unknown provider: %s", providerName)
+			return errors.Errorf("unknown provider config type: %T", config)
 		}
 	}
 
