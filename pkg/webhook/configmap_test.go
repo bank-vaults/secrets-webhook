@@ -58,7 +58,7 @@ func TestMutateConfigMap_Vault(t *testing.T) {
 		},
 	}
 
-	providerConfigs, err := parseProviderConfigs(&configMap, []string{"vault"})
+	providerConfigs, err := parseProviderConfigs(&configMap, []string{vault.providerName})
 	assert.NoError(t, err)
 
 	err = mw.MutateConfigMap(&configMap, providerConfigs)
