@@ -120,9 +120,9 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				{
 					Name:         "MyContainer",
 					Image:        "myimage",
-					Command:      []string{"/vault/secret-init"},
+					Command:      []string{"/bank-vaults/secret-init"},
 					Args:         []string{"/bin/bash"},
-					VolumeMounts: []corev1.VolumeMount{{Name: "secret-init", MountPath: "/vault/"}},
+					VolumeMounts: []corev1.VolumeMount{{Name: "secret-init", MountPath: "/bank-vaults/"}},
 					Env: []corev1.EnvVar{
 						{Name: "myvar", Value: "vault:secrets"},
 						{Name: "VAULT_ADDR", Value: "addr"},
@@ -171,9 +171,9 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				{
 					Name:         "MyContainer",
 					Image:        "myimage",
-					Command:      []string{"/vault/secret-init"},
+					Command:      []string{"/bank-vaults/secret-init"},
 					Args:         []string{"/bin/bash"},
-					VolumeMounts: []corev1.VolumeMount{{Name: "secret-init", MountPath: "/vault/"}},
+					VolumeMounts: []corev1.VolumeMount{{Name: "secret-init", MountPath: "/bank-vaults/"}},
 					Env: []corev1.EnvVar{
 						{Name: "myvar", Value: ">>vault:secrets"},
 						{Name: "VAULT_ADDR", Value: "addr"},
@@ -224,9 +224,9 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				{
 					Name:         "MyContainer",
 					Image:        "myimage",
-					Command:      []string{"/vault/secret-init"},
+					Command:      []string{"/bank-vaults/secret-init"},
 					Args:         []string{"myEntryPoint"},
-					VolumeMounts: []corev1.VolumeMount{{Name: "secret-init", MountPath: "/vault/"}},
+					VolumeMounts: []corev1.VolumeMount{{Name: "secret-init", MountPath: "/bank-vaults/"}},
 					Env: []corev1.EnvVar{
 						{Name: "myvar", Value: ">>vault:secrets"},
 						{Name: "VAULT_ADDR", Value: "addr"},
@@ -284,13 +284,13 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				{
 					Name:         "MyContainer",
 					Image:        "myimage",
-					Command:      []string{"/vault/secret-init"},
+					Command:      []string{"/bank-vaults/secret-init"},
 					Args:         []string{"/bin/bash"},
-					VolumeMounts: []corev1.VolumeMount{{Name: "secret-init", MountPath: "/vault/"}},
+					VolumeMounts: []corev1.VolumeMount{{Name: "secret-init", MountPath: "/bank-vaults/"}},
 					LivenessProbe: &corev1.Probe{
 						ProbeHandler: corev1.ProbeHandler{
 							Exec: &corev1.ExecAction{
-								Command: []string{"/vault/secret-init", "/bin/bash"},
+								Command: []string{"/bank-vaults/secret-init", "/bin/bash"},
 							},
 						},
 					},
@@ -344,9 +344,9 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				{
 					Name:         "MyContainer",
 					Image:        "myimage",
-					Command:      []string{"/vault/secret-init"},
+					Command:      []string{"/bank-vaults/secret-init"},
 					Args:         []string{"myCmd"},
-					VolumeMounts: []corev1.VolumeMount{{Name: "secret-init", MountPath: "/vault/"}},
+					VolumeMounts: []corev1.VolumeMount{{Name: "secret-init", MountPath: "/bank-vaults/"}},
 					Env: []corev1.EnvVar{
 						{Name: "myvar", Value: ">>vault:secrets"},
 						{Name: "VAULT_ADDR", Value: "addr"},
@@ -425,9 +425,9 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				{
 					Name:         "MyContainer",
 					Image:        "myimage",
-					Command:      []string{"/vault/secret-init"},
+					Command:      []string{"/bank-vaults/secret-init"},
 					Args:         []string{"/bin/bash"},
-					VolumeMounts: []corev1.VolumeMount{{Name: "secret-init", MountPath: "/vault/"}},
+					VolumeMounts: []corev1.VolumeMount{{Name: "secret-init", MountPath: "/bank-vaults/"}},
 					Env: []corev1.EnvVar{
 						{Name: "myvar", Value: "vault:secrets"},
 						{Name: "VAULT_ADDR", Value: "addr"},
@@ -477,9 +477,9 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				{
 					Name:         "MyContainer",
 					Image:        "myimage",
-					Command:      []string{"/vault/secret-init"},
+					Command:      []string{"/bank-vaults/secret-init"},
 					Args:         []string{"/bin/bash"},
-					VolumeMounts: []corev1.VolumeMount{{Name: "secret-init", MountPath: "/vault/"}},
+					VolumeMounts: []corev1.VolumeMount{{Name: "secret-init", MountPath: "/bank-vaults/"}},
 					Env: []corev1.EnvVar{
 						{Name: "myvar", Value: "scheme://${vault:secret/data/account#username}:${vault:secret/data/account#password}@127.0.0.1:8080"},
 						{Name: "VAULT_ADDR", Value: "addr"},
@@ -544,9 +544,9 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				{
 					Name:         "MyContainer",
 					Image:        "myimage",
-					Command:      []string{"/vault/secret-init"},
+					Command:      []string{"/bank-vaults/secret-init"},
 					Args:         []string{"/bin/bash"},
-					VolumeMounts: []corev1.VolumeMount{{Name: "secret-init", MountPath: "/vault/"}},
+					VolumeMounts: []corev1.VolumeMount{{Name: "secret-init", MountPath: "/bank-vaults/"}},
 					Env: []corev1.EnvVar{
 						{Name: "myvar", Value: "vault:secrets"},
 						{Name: "SECRET_INIT_LOG_LEVEL", Value: "info"},
@@ -578,7 +578,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 
 			currentlyUsedProvider = vault.ProviderName
 
-			got, err := mw.mutateContainers_Vault(context.Background(), ttp.args.containers, ttp.args.podSpec, ttp.args.webhookConfig, ttp.args.SecretInitConfig, ttp.args.vaultConfig)
+			got, err := mw.mutateContainers(context.Background(), ttp.args.containers, ttp.args.podSpec, ttp.args.webhookConfig, ttp.args.SecretInitConfig, ttp.args.vaultConfig)
 			if (err != nil) != ttp.wantErr {
 				t.Errorf("MutatingWebhook.mutateContainers() error = %v, wantErr %v", err, ttp.wantErr)
 				return
@@ -766,7 +766,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "secret-init",
-									MountPath: "/vault/",
+									MountPath: "/bank-vaults/",
 								},
 								{
 									MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
@@ -804,7 +804,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "secret-init",
-									MountPath: "/vault/",
+									MountPath: "/bank-vaults/",
 								},
 								{
 									Name:      "ct-secrets",
@@ -985,7 +985,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "secret-init",
-									MountPath: "/vault/",
+									MountPath: "/bank-vaults/",
 								},
 								{
 									MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
@@ -1021,7 +1021,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "secret-init",
-									MountPath: "/vault/",
+									MountPath: "/bank-vaults/",
 								},
 								{
 									Name:      "ct-secrets",
@@ -1207,7 +1207,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "secret-init",
-									MountPath: "/vault/",
+									MountPath: "/bank-vaults/",
 								},
 								{
 									MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
@@ -1392,7 +1392,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "secret-init",
-									MountPath: "/vault/",
+									MountPath: "/bank-vaults/",
 								},
 								{
 									MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
@@ -1428,7 +1428,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "secret-init",
-									MountPath: "/vault/",
+									MountPath: "/bank-vaults/",
 								},
 								{
 									Name:      "ct-secrets",
@@ -1636,7 +1636,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "secret-init",
-									MountPath: "/vault/",
+									MountPath: "/bank-vaults/",
 								},
 								{
 									MountPath: "/var/run/secrets/vault",
@@ -1685,7 +1685,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "secret-init",
-									MountPath: "/vault/",
+									MountPath: "/bank-vaults/",
 								},
 								{
 									Name:      "ct-secrets",

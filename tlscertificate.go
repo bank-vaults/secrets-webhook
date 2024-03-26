@@ -37,6 +37,7 @@ func NewCertificateReloader(certPath string, keyPath string) (*CertificateReload
 		certPath: certPath,
 		keyPath:  keyPath,
 	}
+
 	cert, err := tls.LoadX509KeyPair(certPath, keyPath)
 	if err != nil {
 		return nil, err
@@ -74,6 +75,7 @@ func (kpr *CertificateReloader) watchCertificate() {
 					slog.Info(fmt.Sprintf("Certificate has change, reloading: %s", kpr.certPath))
 				}
 			}
+
 		case err := <-watcher.Errors:
 			slog.Error(fmt.Errorf("watcher event error: %w", err).Error())
 		}
@@ -85,8 +87,10 @@ func (kpr *CertificateReloader) Reload() error {
 	if err != nil {
 		return err
 	}
+
 	kpr.certMu.Lock()
 	defer kpr.certMu.Unlock()
+
 	kpr.cert = &newCert
 	return nil
 }
@@ -95,6 +99,7 @@ func (kpr *CertificateReloader) GetCertificateFunc() func(*tls.ClientHelloInfo) 
 	return func(_ *tls.ClientHelloInfo) (*tls.Certificate, error) {
 		kpr.certMu.RLock()
 		defer kpr.certMu.RUnlock()
+
 		return kpr.cert, nil
 	}
 }
