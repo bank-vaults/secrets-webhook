@@ -260,7 +260,7 @@ jobs:
         # run: nix develop --impure .#ci -c make test-e2e
         run: nix develop --impure .#ci -c make test-e2e-local
         env:
-          KIND_K8S_VERSION: ${{ matrix.k8s_version }
+          KIND_K8S_VERSION: ${{ matrix.k8s_version }}
           LOAD_IMAGE_ARCHIVE: ${{ github.workspace }}/docker.tar
           # VAULT_VERSION: ${{ matrix.vault_version }}
           WEBHOOK_VERSION: ${{ needs.artifacts.outputs.container-image-tag }}
