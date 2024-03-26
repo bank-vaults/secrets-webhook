@@ -22,8 +22,11 @@ import (
 
 	"github.com/bank-vaults/vault-sdk/vault"
 	vaultapi "github.com/hashicorp/vault/api"
+	"github.com/slok/kubewebhook/v2/pkg/model"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
+
+	vaultprov "github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 )
 
 func TestMutateConfigMap_Vault(t *testing.T) {
@@ -58,7 +61,9 @@ func TestMutateConfigMap_Vault(t *testing.T) {
 		},
 	}
 
-	providerConfigs, err := parseProviderConfigs(&configMap, []string{vault.providerName})
+	admissionReview := &model.AdmissionReview{}
+
+	providerConfigs, err := parseProviderConfigs(&configMap, admissionReview, []string{vaultprov.ProviderName})
 	assert.NoError(t, err)
 
 	err = mw.MutateConfigMap(&configMap, providerConfigs)

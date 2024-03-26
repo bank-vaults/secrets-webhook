@@ -74,6 +74,7 @@ func newHTTPServer(tlsCertFile string, tlsPrivateKeyFile string, listenAddress s
 	if err != nil {
 		panic("error loading tls certificate: " + err.Error())
 	}
+
 	srv := &http.Server{
 		Addr:    listenAddress,
 		Handler: mux,
@@ -81,6 +82,7 @@ func newHTTPServer(tlsCertFile string, tlsPrivateKeyFile string, listenAddress s
 			GetCertificate: reloader.GetCertificateFunc(),
 		},
 	}
+
 	return srv
 }
 

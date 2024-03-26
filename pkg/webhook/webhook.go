@@ -23,8 +23,11 @@ import (
 	"os"
 
 	"emperror.dev/errors"
-	injector "github.com/bank-vaults/internal/pkg/vaultinjector"
+	"github.com/bank-vaults/internal/pkg/baoinjector"
+	"github.com/bank-vaults/internal/pkg/vaultinjector"
 	"github.com/bank-vaults/vault-sdk/vault"
+	bao "github.com/bank-vaults/vault-sdk/vault"
+	baoapi "github.com/hashicorp/vault/api"
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/slok/kubewebhook/v2/pkg/log"
 	"github.com/slok/kubewebhook/v2/pkg/model"
@@ -37,14 +40,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/common"
-	"github.com/bank-vaults/secrets-webhook/pkg/provider/bao"
+	baoprov "github.com/bank-vaults/secrets-webhook/pkg/provider/bao"
 	vaultprov "github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 )
 
 // currentlyUsedProvider is the name of the provider
 // that is used to mutate the object at the moment.
 // This global was introduced to genericize the code.
-// It is used by the hasProviderPrefix and hasInlineProviderDelimiters functions.
+// It is mainly used by the hasProviderPrefix and hasInlineProviderDelimiters functions among others.
 var currentlyUsedProvider string
 
 type MutatingWebhook struct {
@@ -252,14 +255,14 @@ func hasProviderPrefix(providerName string, value string, withInlineDelimiters b
 	switch providerName {
 	case vaultprov.ProviderName:
 		if withInlineDelimiters {
-			return common.HasVaultPrefix(value) || injector.HasInlineVaultDelimiters(value)
+			return common.HasVaultPrefix(value) || vaultinjector.HasInlineVaultDelimiters(value)
 		}
 		return common.HasVaultPrefix(value)
 
-	case bao.ProviderName:
-		// if withInlineDelimiters {
-		// 	return common.HasBaoPrefix(value) || injector.HasInlineBaoDelimiters(value)
-		// }
+	case baoprov.ProviderName:
+		if withInlineDelimiters {
+			return common.HasBaoPrefix(value) || baoinjector.HasInlineBaoDelimiters(value)
+		}
 		return common.HasBaoPrefix(value)
 
 	default:
@@ -270,10 +273,10 @@ func hasProviderPrefix(providerName string, value string, withInlineDelimiters b
 func hasInlineProviderDelimiters(providerName, value string) bool {
 	switch providerName {
 	case vaultprov.ProviderName:
-		return injector.HasInlineVaultDelimiters(value)
+		return vaultinjector.HasInlineVaultDelimiters(value)
 
-	// case bao.ProviderName:
-	// 	return injector.HasInlineBaoDelimiters(value)
+	case baoprov.ProviderName:
+		return baoinjector.HasInlineBaoDelimiters(value)
 
 	default:
 		return false
@@ -372,5 +375,100 @@ func (mw *MutatingWebhook) newVaultClient(vaultConfig vaultprov.Config) (*vault.
 		vault.ClientAuthMethod(vaultConfig.AuthMethod),
 		vault.ClientLogger(&clientLogger{logger: mw.logger}),
 		vault.VaultNamespace(vaultConfig.VaultNamespace),
+	)
+}
+
+// ======== BAO ========
+
+func (mw *MutatingWebhook) newBaoClient(baoConfig baoprov.Config) (*bao.Client, error) {
+	clientConfig := baoapi.DefaultConfig()
+	if clientConfig.Error != nil {
+		return nil, clientConfig.Error
+	}
+
+	clientConfig.Address = baoConfig.Addr
+
+	tlsConfig := baoapi.TLSConfig{Insecure: baoConfig.SkipVerify}
+	err := clientConfig.ConfigureTLS(&tlsConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	if baoConfig.TLSSecret != "" {
+		tlsSecret, err := mw.k8sClient.CoreV1().Secrets(mw.namespace).Get(
+			context.Background(),
+			baoConfig.TLSSecret,
+			metav1.GetOptions{},
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to read Bao TLS Secret")
+		}
+
+		clientTLSConfig := clientConfig.HttpClient.Transport.(*http.Transport).TLSClientConfig
+
+		pool := x509.NewCertPool()
+
+		ok := pool.AppendCertsFromPEM(tlsSecret.Data["ca.crt"])
+		if !ok {
+			return nil, errors.Errorf("error loading Bao CA PEM from TLS Secret: %s", tlsSecret.Name)
+		}
+
+		clientTLSConfig.RootCAs = pool
+	}
+
+	if baoConfig.BaoServiceAccount != "" {
+		sa, err := mw.k8sClient.CoreV1().ServiceAccounts(baoConfig.ObjectNamespace).Get(context.Background(), baoConfig.BaoServiceAccount, metav1.GetOptions{})
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to retrieve specified service account on namespace "+baoConfig.ObjectNamespace)
+		}
+
+		saToken := ""
+		if len(sa.Secrets) > 0 {
+			secret, err := mw.k8sClient.CoreV1().Secrets(baoConfig.ObjectNamespace).Get(context.Background(), sa.Secrets[0].Name, metav1.GetOptions{})
+			if err != nil {
+				return nil, errors.Wrap(err, "Failed to retrieve secret for service account "+sa.Secrets[0].Name+" in namespace "+baoConfig.ObjectNamespace)
+			}
+			saToken = string(secret.Data["token"])
+		}
+
+		if saToken == "" {
+			tokenTTL := int64(600) // min allowed duration is 10 mins
+			tokenRequest := &authenticationv1.TokenRequest{
+				Spec: authenticationv1.TokenRequestSpec{
+					Audiences:         []string{"https://kubernetes.default.svc"},
+					ExpirationSeconds: &tokenTTL,
+				},
+			}
+
+			token, err := mw.k8sClient.CoreV1().ServiceAccounts(baoConfig.ObjectNamespace).CreateToken(
+				context.Background(),
+				baoConfig.BaoServiceAccount,
+				tokenRequest,
+				metav1.CreateOptions{},
+			)
+			if err != nil {
+				return nil, errors.Wrap(err, "Failed to create a token for the specified service account "+baoConfig.BaoServiceAccount+" on namespace "+baoConfig.ObjectNamespace)
+			}
+			saToken = token.Status.Token
+		}
+
+		return bao.NewClientFromConfig(
+			clientConfig,
+			bao.ClientRole(baoConfig.Role),
+			bao.ClientAuthPath(baoConfig.Path),
+			bao.NamespacedSecretAuthMethod,
+			bao.ClientLogger(&clientLogger{logger: mw.logger}),
+			bao.ExistingSecret(saToken),
+			bao.VaultNamespace(baoConfig.BaoNamespace),
+		)
+	}
+
+	return bao.NewClientFromConfig(
+		clientConfig,
+		bao.ClientRole(baoConfig.Role),
+		bao.ClientAuthPath(baoConfig.Path),
+		bao.ClientAuthMethod(baoConfig.AuthMethod),
+		bao.ClientLogger(&clientLogger{logger: mw.logger}),
+		bao.VaultNamespace(baoConfig.BaoNamespace),
 	)
 }
