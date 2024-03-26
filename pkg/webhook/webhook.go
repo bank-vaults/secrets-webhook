@@ -132,6 +132,7 @@ func (mw *MutatingWebhook) lookForEnvFrom(envFrom []corev1.EnvFromSource, ns str
 
 				return envVars, err
 			}
+
 			for key, value := range data {
 				if hasProviderPrefix(currentlyUsedProvider, value, true) {
 					envFromCM := corev1.EnvVar{
@@ -142,6 +143,7 @@ func (mw *MutatingWebhook) lookForEnvFrom(envFrom []corev1.EnvFromSource, ns str
 				}
 			}
 		}
+
 		if ef.SecretRef != nil {
 			data, err := mw.getDataFromSecret(ef.SecretRef.Name, ns)
 			if err != nil {
@@ -151,6 +153,7 @@ func (mw *MutatingWebhook) lookForEnvFrom(envFrom []corev1.EnvFromSource, ns str
 
 				return envVars, err
 			}
+
 			for name, v := range data {
 				value := string(v)
 				if hasProviderPrefix(currentlyUsedProvider, value, true) {
@@ -163,6 +166,7 @@ func (mw *MutatingWebhook) lookForEnvFrom(envFrom []corev1.EnvFromSource, ns str
 			}
 		}
 	}
+
 	return envVars, nil
 }
 
@@ -175,6 +179,7 @@ func (mw *MutatingWebhook) lookForValueFrom(env corev1.EnvVar, ns string) (*core
 			}
 			return nil, err
 		}
+
 		value := data[env.ValueFrom.ConfigMapKeyRef.Key]
 		if hasProviderPrefix(currentlyUsedProvider, value, true) {
 			fromCM := corev1.EnvVar{
@@ -184,6 +189,7 @@ func (mw *MutatingWebhook) lookForValueFrom(env corev1.EnvVar, ns string) (*core
 			return &fromCM, nil
 		}
 	}
+
 	if env.ValueFrom.SecretKeyRef != nil {
 		data, err := mw.getDataFromSecret(env.ValueFrom.SecretKeyRef.Name, ns)
 		if err != nil {
@@ -192,6 +198,7 @@ func (mw *MutatingWebhook) lookForValueFrom(env corev1.EnvVar, ns string) (*core
 			}
 			return nil, err
 		}
+
 		value := string(data[env.ValueFrom.SecretKeyRef.Key])
 		if hasProviderPrefix(currentlyUsedProvider, value, true) {
 			fromSecret := corev1.EnvVar{
@@ -201,6 +208,7 @@ func (mw *MutatingWebhook) lookForValueFrom(env corev1.EnvVar, ns string) (*core
 			return &fromSecret, nil
 		}
 	}
+
 	return nil, nil
 }
 
