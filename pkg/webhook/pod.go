@@ -67,6 +67,13 @@ func (mw *MutatingWebhook) MutatePod(ctx context.Context, pod *corev1.Pod, webho
 			if err != nil {
 				return errors.Wrap(err, "failed to mutate secret")
 			}
+		case bao.Config:
+			currentlyUsedProvider = bao.ProviderName
+
+			// err := mw.mutatePodForBao(ctx, pod, webhookConfig, secretInitConfig, providerConfig, dryRun)
+			// if err != nil {
+			// 	return errors.Wrap(err, "failed to mutate secret")
+			// }
 
 		default:
 			return errors.Errorf("unknown provider config type: %T", config)
