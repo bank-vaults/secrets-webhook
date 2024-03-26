@@ -15,9 +15,15 @@
 package bao
 
 import (
+	"fmt"
+	"html/template"
+	"log/slog"
 	"strconv"
+
+	"strings"
 	"time"
 
+	"emperror.dev/errors"
 	"github.com/slok/kubewebhook/v2/pkg/model"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
@@ -74,7 +80,7 @@ type Config struct {
 	FromPath                      string
 }
 
-func ParseConfig(obj metav1.Object, ar *model.AdmissionReview) Config {
+func ParseConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 	SetDefaults()
 
 	config := Config{
@@ -116,6 +122,7 @@ func ParseConfig(obj metav1.Object, ar *model.AdmissionReview) Config {
 		config.Path = viper.GetString("bao_path")
 	}
 
+	// TODO: Check for flag to verify we want to use namespace-local SAs instead of the webhook namespaces SA
 	if val, ok := annotations[common.BaoServiceaccountAnnotation]; ok {
 		config.BaoServiceAccount = val
 	} else {
@@ -180,7 +187,7 @@ func ParseConfig(obj metav1.Object, ar *model.AdmissionReview) Config {
 
 	if val, ok := annotations[common.BaoConfigfilePathAnnotation]; ok {
 		config.ConfigfilePath = val
-	} else if val, ok := annotations[common.BaoConsuleTemplateSecretsMountPathAnnotation]; ok {
+	} else if val, ok := annotations[common.BaoConsulTemplateSecretsMountPathAnnotation]; ok {
 		config.ConfigfilePath = val
 	} else {
 		config.ConfigfilePath = "/bao/secrets"
@@ -288,7 +295,7 @@ func ParseConfig(obj metav1.Object, ar *model.AdmissionReview) Config {
 		config.FromPath = val
 	}
 
-	if val, ok := annotations[common.TokenAuthMountAnnotation]; ok {
+	if val, ok := annotations[common.BaoTokenAuthMountAnnotation]; ok {
 		config.TokenAuthMount = val
 	}
 
@@ -314,26 +321,46 @@ func ParseConfig(obj metav1.Object, ar *model.AdmissionReview) Config {
 		config.BaoNamespace = viper.GetString("BAO_NAMESPACE")
 	}
 
-	if val, ok := annotations[common.BaoConsuleTemplateInjectInInitcontainersAnnotation]; ok {
+	if val, ok := annotations[common.BaoConsulTemplateInjectInInitcontainersAnnotation]; ok {
 		config.CtInjectInInitcontainers, _ = strconv.ParseBool(val)
 	} else {
 		config.CtInjectInInitcontainers = false
 	}
 
-	if val, ok := annotations[common.TransitBatchSizeAnnotation]; ok {
+	if val, ok := annotations[common.BaoTransitBatchSizeAnnotation]; ok {
 		batchSize, _ := strconv.ParseInt(val, 10, 32)
 		config.TransitBatchSize = int(batchSize)
 	} else {
-		config.TransitBatchSize = viper.GetInt("transit_batch_size")
+		config.TransitBatchSize = viper.GetInt("bao_transit_batch_size")
 	}
 
 	config.Token = viper.GetString("bao_token")
 
-	return config
+	// parse resulting config.Role as potential template with fields of Config
+	tmpl, err := template.New("baoRole").Option("missingkey=error").Parse(config.Role)
+	if err != nil {
+		return Config{}, errors.Wrap(err, "error parsing bao_role")
+	}
+
+	var vRoleBuf strings.Builder
+	if err = tmpl.Execute(&vRoleBuf, map[string]string{
+		"authmethod":     config.AuthMethod,
+		"name":           obj.GetName(),
+		"namespace":      config.ObjectNamespace,
+		"path":           config.Path,
+		"serviceaccount": config.BaoServiceAccount,
+	}); err != nil {
+		return Config{}, errors.Wrap(err, "error templating bao_role")
+	}
+
+	config.Role = vRoleBuf.String()
+	slog.Debug(fmt.Sprintf("config.Role = '%s'", config.Role))
+
+	return config, nil
 }
 
 func SetDefaults() {
-	viper.SetDefault("bao_image", "openbao/bao:latest")
+	viper.SetDefault("bao_image", "csatib02/opanbao:dev")
 	viper.SetDefault("bao_image_pull_policy", string(corev1.PullIfNotPresent))
 	viper.SetDefault("bao_ct_image", "hashicorp/consul-template:0.32.0")
 	viper.SetDefault("bao_ct_pull_policy", string(corev1.PullIfNotPresent))
@@ -351,8 +378,8 @@ func SetDefaults() {
 	viper.SetDefault("bao_agent_share_process_namespace", "")
 	viper.SetDefault("bao_log_level", "info")
 	viper.SetDefault("BAO_NAMESPACE", "")
-	viper.SetDefault("transit_key_id", "")
-	viper.SetDefault("transit_path", "")
-	viper.SetDefault("transit_batch_size", 25)
+	viper.SetDefault("bao_transit_key_id", "")
+	viper.SetDefault("bao_transit_path", "")
+	viper.SetDefault("bao_transit_batch_size", 25)
 	viper.AutomaticEnv()
 }

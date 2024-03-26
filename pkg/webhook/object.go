@@ -67,6 +67,7 @@ func mapIterator(m map[string]interface{}) iterator {
 		c <- &mapElement{k: k, m: m}
 	}
 	close(c)
+
 	return c
 }
 
@@ -76,6 +77,7 @@ func sliceIterator(s []interface{}) iterator {
 		c <- &sliceElement{i: i, s: s}
 	}
 	close(c)
+
 	return c
 }
 

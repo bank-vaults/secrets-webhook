@@ -128,16 +128,16 @@ const (
 	BaoAgentEnvVariablesAnnotation          = "bao.security.banzaicloud.io/bao-agent-env-variables"
 
 	// Consul template annotations
-	// ref: https://bank-vaults.dev/docs/mutating-webhook/consul-template/
-	BaoConsulTemplateConfigmapAnnotation               = "bao.security.banzaicloud.io/bao-ct-configmap"
-	BaoConsulTemplateImageAnnotation                   = "bao.security.banzaicloud.io/bao-ct-image"
-	BaoConsulTemplateOnceAnnotation                    = "bao.security.banzaicloud.io/bao-ct-once"
-	BaoConsulTemplatePullPolicyAnnotation              = "bao.security.banzaicloud.io/bao-ct-pull-policy"
-	BaoConsulTemplateShareProcessNamespaceAnnotation   = "bao.security.banzaicloud.io/bao-ct-share-process-namespace"
-	BaoConsulTemplateCPUAnnotation                     = "bao.security.banzaicloud.io/bao-ct-cpu"
-	BaoConsulTemplateMemoryAnnotation                  = "bao.security.banzaicloud.io/bao-ct-memory"
-	BaoConsuleTemplateSecretsMountPathAnnotation       = "bao.security.banzaicloud.io/bao-ct-secrets-mount-path"
-	BaoConsuleTemplateInjectInInitcontainersAnnotation = "bao.security.banzaicloud.io/bao-ct-inject-in-initcontainers"
+	// ref: https://bank-vaults.dev/docs/mutating-webhook/bao-consul-template/
+	BaoConsulTemplateConfigmapAnnotation              = "bao.security.banzaicloud.io/bao-ct-configmap"
+	BaoConsulTemplateImageAnnotation                  = "bao.security.banzaicloud.io/bao-ct-image"
+	BaoConsulTemplateOnceAnnotation                   = "bao.security.banzaicloud.io/bao-ct-once"
+	BaoConsulTemplatePullPolicyAnnotation             = "bao.security.banzaicloud.io/bao-ct-pull-policy"
+	BaoConsulTemplateShareProcessNamespaceAnnotation  = "bao.security.banzaicloud.io/bao-ct-share-process-namespace"
+	BaoConsulTemplateCPUAnnotation                    = "bao.security.banzaicloud.io/bao-ct-cpu"
+	BaoConsulTemplateMemoryAnnotation                 = "bao.security.banzaicloud.io/bao-ct-memory"
+	BaoConsulTemplateSecretsMountPathAnnotation       = "bao.security.banzaicloud.io/bao-ct-secrets-mount-path"
+	BaoConsulTemplateInjectInInitcontainersAnnotation = "bao.security.banzaicloud.io/bao-ct-inject-in-initcontainers"
 )
 
 func HasVaultPrefix(value string) bool {
