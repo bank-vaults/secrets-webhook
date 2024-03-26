@@ -19,7 +19,6 @@ import (
 	"html/template"
 	"log/slog"
 	"strconv"
-
 	"strings"
 	"time"
 
@@ -33,7 +32,27 @@ import (
 	"github.com/bank-vaults/secrets-webhook/pkg/common"
 )
 
-const ProviderName = "bao"
+const (
+	AgentConfig = `
+pid_file = "/tmp/pidfile"
+
+auto_auth {
+        method "kubernetes" {
+                namespace = "%s"
+                mount_path = "auth/%s"
+                config = {
+                        role = "%s"
+                }
+        }
+
+        sink "file" {
+                config = {
+                        path = "/bao/.bao-token"
+                }
+        }
+}`
+	ProviderName = "bao"
+)
 
 type Config struct {
 	ObjectNamespace               string

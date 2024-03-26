@@ -32,7 +32,27 @@ import (
 	"github.com/bank-vaults/secrets-webhook/pkg/common"
 )
 
-const ProviderName = "vault"
+const (
+	AgentConfig = `
+pid_file = "/tmp/pidfile"
+
+auto_auth {
+        method "kubernetes" {
+                namespace = "%s"
+                mount_path = "auth/%s"
+                config = {
+                        role = "%s"
+                }
+        }
+
+        sink "file" {
+                config = {
+                        path = "/vault/.vault-token"
+                }
+        }
+}`
+	ProviderName = "vault"
+)
 
 type Config struct {
 	ObjectNamespace               string

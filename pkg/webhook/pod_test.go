@@ -30,6 +30,7 @@ import (
 	fake "k8s.io/client-go/kubernetes/fake"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/common"
+	"github.com/bank-vaults/secrets-webhook/pkg/provider/bao"
 	"github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 )
 
@@ -46,6 +47,16 @@ var (
 
 	providerConfigs = map[string]interface{}{
 		vault.ProviderName: vault.Config{
+			Addr:                 "addr",
+			SkipVerify:           false,
+			Path:                 "path",
+			Role:                 "role",
+			AuthMethod:           "jwt",
+			IgnoreMissingSecrets: "ignoreMissingSecrets",
+			Passthrough:          "vaultPassthrough",
+			ClientTimeout:        10 * time.Second,
+		},
+		bao.ProviderName: bao.Config{
 			Addr:                 "addr",
 			SkipVerify:           false,
 			Path:                 "path",
@@ -74,6 +85,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 		k8sClient kubernetes.Interface
 		registry  ImageRegistry
 	}
+
 	type args struct {
 		containers       []corev1.Container
 		podSpec          *corev1.PodSpec
@@ -81,6 +93,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 		SecretInitConfig common.SecretInitConfig
 		vaultConfig      vault.Config
 	}
+
 	tests := []struct {
 		name             string
 		fields           fields
@@ -578,7 +591,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 
 			currentlyUsedProvider = vault.ProviderName
 
-			got, err := mw.mutateContainers(context.Background(), ttp.args.containers, ttp.args.podSpec, ttp.args.webhookConfig, ttp.args.SecretInitConfig, ttp.args.vaultConfig)
+			got, err := mw.mutateContainers(context.Background(), ttp.args.containers, ttp.args.podSpec, ttp.args.webhookConfig, ttp.args.SecretInitConfig, ttp.args.vaultConfig, ttp.args.vaultConfig.ObjectNamespace, ttp.args.vaultConfig.FromPath)
 			if (err != nil) != ttp.wantErr {
 				t.Errorf("MutatingWebhook.mutateContainers() error = %v, wantErr %v", err, ttp.wantErr)
 				return
@@ -600,6 +613,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 		k8sClient kubernetes.Interface
 		registry  ImageRegistry
 	}
+
 	type args struct {
 		pod              *corev1.Pod
 		webhookConfig    common.Config
