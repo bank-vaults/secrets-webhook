@@ -373,7 +373,7 @@ func (mw *MutatingWebhook) newVaultClient(vaultConfig vaultprov.Config) (*vault.
 			vault.ClientRole(vaultConfig.Role),
 			vault.ClientAuthPath(vaultConfig.Path),
 			vault.NamespacedSecretAuthMethod,
-			vault.ClientLogger(&clientLogger{logger: mw.logger}),
+			vault.ClientLogger(&vaultprov.ClientLogger{Logger: mw.logger}),
 			vault.ExistingSecret(saToken),
 			vault.VaultNamespace(vaultConfig.VaultNamespace),
 		)
@@ -384,7 +384,7 @@ func (mw *MutatingWebhook) newVaultClient(vaultConfig vaultprov.Config) (*vault.
 		vault.ClientRole(vaultConfig.Role),
 		vault.ClientAuthPath(vaultConfig.Path),
 		vault.ClientAuthMethod(vaultConfig.AuthMethod),
-		vault.ClientLogger(&clientLogger{logger: mw.logger}),
+		vault.ClientLogger(&vaultprov.ClientLogger{Logger: mw.logger}),
 		vault.VaultNamespace(vaultConfig.VaultNamespace),
 	)
 }
@@ -468,7 +468,7 @@ func (mw *MutatingWebhook) newBaoClient(baoConfig baoprov.Config) (*bao.Client, 
 			bao.ClientRole(baoConfig.Role),
 			bao.ClientAuthPath(baoConfig.Path),
 			bao.NamespacedSecretAuthMethod,
-			bao.ClientLogger(&clientLogger{logger: mw.logger}),
+			bao.ClientLogger(&baoprov.ClientLogger{Logger: mw.logger}),
 			bao.ExistingSecret(saToken),
 			bao.VaultNamespace(baoConfig.BaoNamespace),
 		)
@@ -479,7 +479,7 @@ func (mw *MutatingWebhook) newBaoClient(baoConfig baoprov.Config) (*bao.Client, 
 		bao.ClientRole(baoConfig.Role),
 		bao.ClientAuthPath(baoConfig.Path),
 		bao.ClientAuthMethod(baoConfig.AuthMethod),
-		bao.ClientLogger(&clientLogger{logger: mw.logger}),
+		bao.ClientLogger(&baoprov.ClientLogger{Logger: mw.logger}),
 		bao.VaultNamespace(baoConfig.BaoNamespace),
 	)
 }
