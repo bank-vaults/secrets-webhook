@@ -121,7 +121,7 @@ func ParseConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 		config.Path = viper.GetString("vault_path")
 	}
 
-	// TODO: Check for flag to verify we want to use namespace-local SAs instead of the vault webhook namespaces SA
+	// TODO: Check for flag to verify we want to use namespace-local SAs instead of the webhook namespaces SA
 	if val, ok := annotations[common.VaultServiceaccountAnnotation]; ok {
 		config.VaultServiceAccount = val
 	} else {
@@ -334,11 +334,14 @@ func ParseConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 		config.TransitBatchSize = viper.GetInt("transit_batch_size")
 	}
 
-	// parse resulting vaultConfig.Role as potential template with fields of vaultConfig
+	config.Token = viper.GetString("vault_token")
+
+	// parse resulting config.Role as potential template with fields of config
 	tmpl, err := template.New("vaultRole").Option("missingkey=error").Parse(config.Role)
 	if err != nil {
 		return Config{}, errors.Wrap(err, "error parsing vault_role")
 	}
+
 	var vRoleBuf strings.Builder
 	if err = tmpl.Execute(&vRoleBuf, map[string]string{
 		"authmethod":     config.AuthMethod,
@@ -349,8 +352,9 @@ func ParseConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 	}); err != nil {
 		return Config{}, errors.Wrap(err, "error templating vault_role")
 	}
+
 	config.Role = vRoleBuf.String()
-	slog.Debug(fmt.Sprintf("vaultConfig.Role = '%s'", config.Role))
+	slog.Debug(fmt.Sprintf("config.Role = '%s'", config.Role))
 
 	return config, nil
 }

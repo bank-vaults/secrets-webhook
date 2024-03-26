@@ -65,6 +65,7 @@ func configMapNeedsMutation(configMap *corev1.ConfigMap) bool {
 			return true
 		}
 	}
+
 	for _, value := range configMap.BinaryData {
 		if hasProviderPrefix(currentlyUsedProvider, string(value), false) {
 			return true

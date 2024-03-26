@@ -46,7 +46,7 @@ import (
 
 // currentlyUsedProvider is the name of the provider
 // that is used to mutate the object at the moment.
-// This global was introduced to genericize the code.
+// This global was introduced to make the code more generic.
 // It is mainly used by the hasProviderPrefix and hasInlineProviderDelimiters functions among others.
 var currentlyUsedProvider string
 
@@ -93,6 +93,7 @@ func (mw *MutatingWebhook) ServeMetrics(addr string, handler http.Handler) {
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", handler)
+
 	err := http.ListenAndServe(addr, mux)
 	if err != nil {
 		mw.logger.Error(fmt.Errorf("error serving telemetry: %w", err).Error())
@@ -105,6 +106,7 @@ func (mw *MutatingWebhook) getDataFromConfigmap(cmName string, ns string) (map[s
 	if err != nil {
 		return nil, err
 	}
+
 	return configMap.Data, nil
 }
 
@@ -113,6 +115,7 @@ func (mw *MutatingWebhook) getDataFromSecret(secretName string, ns string) (map[
 	if err != nil {
 		return nil, err
 	}
+
 	return secret.Data, nil
 }
 
@@ -241,8 +244,8 @@ func parseProviderConfigs(obj metav1.Object, ar *model.AdmissionReview, provider
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse vault config")
 			}
-
 			configs = append(configs, vaultConfig)
+
 		default:
 			return nil, errors.Errorf("unknown provider: %s", providerName)
 		}
