@@ -84,27 +84,25 @@ func sliceIterator(s []interface{}) iterator {
 func (mw *MutatingWebhook) MutateObject(object *unstructured.Unstructured) error {
 	mw.logger.Debug(fmt.Sprintf("mutating object: %s.%s", object.GetNamespace(), object.GetName()))
 
-	for _, config := range mw.providerConfigs {
-		switch providerConfig := config.(type) {
-		case vault.Config:
-			currentlyUsedProvider = vault.ProviderName
+	switch providerConfig := mw.providerConfig.(type) {
+	case vault.Config:
+		currentlyUsedProvider = vault.ProviderName
 
-			err := mw.mutateObjectForVault(object, providerConfig)
-			if err != nil {
-				return errors.Wrap(err, "failed to mutate secret")
-			}
-
-		case bao.Config:
-			currentlyUsedProvider = bao.ProviderName
-
-			err := mw.mutateObjectForBao(object, providerConfig)
-			if err != nil {
-				return errors.Wrap(err, "failed to mutate secret")
-			}
-
-		default:
-			return errors.Errorf("unknown provider config type: %T", config)
+		err := mw.mutateObjectForVault(object, providerConfig)
+		if err != nil {
+			return errors.Wrap(err, "failed to mutate secret")
 		}
+
+	case bao.Config:
+		currentlyUsedProvider = bao.ProviderName
+
+		err := mw.mutateObjectForBao(object, providerConfig)
+		if err != nil {
+			return errors.Wrap(err, "failed to mutate secret")
+		}
+
+	default:
+		return errors.Errorf("unknown provider config type: %T", mw.providerConfig)
 	}
 
 	return nil

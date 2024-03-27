@@ -16,7 +16,6 @@ package common
 
 import (
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -35,7 +34,7 @@ type Config struct {
 	RegistrySkipVerify          bool
 	Mutate                      bool
 	MutateProbes                bool
-	Providers                   []string
+	Provider                    string
 }
 
 // SecretInitConfig represents the configuration for the secret-init container
@@ -90,8 +89,8 @@ func ParseWebhookConfig(obj metav1.Object) Config {
 		Config.MutateProbes, _ = strconv.ParseBool(val)
 	}
 
-	if val, ok := annotations[ProvidersAnnotation]; ok {
-		Config.Providers = strings.Split(val, ",")
+	if val, ok := annotations[ProviderAnnotation]; ok {
+		Config.Provider = val
 	}
 
 	return Config

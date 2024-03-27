@@ -31,7 +31,7 @@ const (
 	RegistrySkipVerifyAnnotation          = "secrets-webhook.security.banzaicloud.io/registry-skip-verify"
 	MutateAnnotation                      = "secrets-webhook.security.banzaicloud.io/mutate"
 	MutateProbesAnnotation                = "secrets-webhook.security.banzaicloud.io/mutate-probes"
-	ProvidersAnnotation                   = "secrets-webhook.security.banzaicloud.io/providers"
+	ProviderAnnotation                    = "secrets-webhook.security.banzaicloud.io/provider"
 
 	// Secret-init annotations
 	SecretInitDaemonAnnotation          = "secrets-webhook.security.banzaicloud.io/secret-init-daemon"
