@@ -55,8 +55,8 @@ type dockerAuthConfig struct {
 	RegistryToken string `json:"registrytoken,omitempty"`
 }
 
-func (mw *MutatingWebhook) MutateSecret(secret *corev1.Secret, configs []interface{}) error {
-	for _, config := range configs {
+func (mw *MutatingWebhook) MutateSecret(secret *corev1.Secret) error {
+	for _, config := range mw.providerConfigs {
 		switch providerConfig := config.(type) {
 		case vault.Config:
 			currentlyUsedProvider = vault.ProviderName

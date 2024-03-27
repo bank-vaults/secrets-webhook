@@ -1800,8 +1800,9 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 				t.Errorf("parseProviderConfigs() error = %v, wantErr %v", err, ttp.wantErr)
 				return
 			}
+			mw.providerConfigs = providerConfigs
 
-			err = mw.MutatePod(context.Background(), ttp.args.pod, ttp.args.webhookConfig, ttp.args.secretInitConfig, false, providerConfigs)
+			err = mw.MutatePod(context.Background(), ttp.args.pod, ttp.args.webhookConfig, ttp.args.secretInitConfig, false)
 			if (err != nil) != ttp.wantErr {
 				t.Errorf("MutatingWebhook.MutatePod() error = %v, wantErr %v", err, ttp.wantErr)
 				return

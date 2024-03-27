@@ -81,10 +81,10 @@ func sliceIterator(s []interface{}) iterator {
 	return c
 }
 
-func (mw *MutatingWebhook) MutateObject(object *unstructured.Unstructured, configs []interface{}) error {
+func (mw *MutatingWebhook) MutateObject(object *unstructured.Unstructured) error {
 	mw.logger.Debug(fmt.Sprintf("mutating object: %s.%s", object.GetNamespace(), object.GetName()))
 
-	for _, config := range configs {
+	for _, config := range mw.providerConfigs {
 		switch providerConfig := config.(type) {
 		case vault.Config:
 			currentlyUsedProvider = vault.ProviderName
