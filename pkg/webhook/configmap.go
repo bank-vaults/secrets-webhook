@@ -27,13 +27,13 @@ import (
 	"github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 )
 
-func (mw *MutatingWebhook) MutateConfigMap(configMap *corev1.ConfigMap, configs []interface{}) error {
+func (mw *MutatingWebhook) MutateConfigMap(configMap *corev1.ConfigMap) error {
 	// do an early exit if no mutation is needed
 	if !configMapNeedsMutation(configMap) {
 		return nil
 	}
 
-	for _, config := range configs {
+	for _, config := range mw.providerConfigs {
 		switch providerConfig := config.(type) {
 		case vault.Config:
 			currentlyUsedProvider = vault.ProviderName

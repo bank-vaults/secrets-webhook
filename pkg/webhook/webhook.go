@@ -51,10 +51,11 @@ import (
 var currentlyUsedProvider string
 
 type MutatingWebhook struct {
-	k8sClient kubernetes.Interface
-	namespace string
-	registry  ImageRegistry
-	logger    *slog.Logger
+	k8sClient       kubernetes.Interface
+	namespace       string
+	registry        ImageRegistry
+	logger          *slog.Logger
+	providerConfigs []interface{}
 }
 
 func (mw *MutatingWebhook) SecretsMutator(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
@@ -69,19 +70,20 @@ func (mw *MutatingWebhook) SecretsMutator(ctx context.Context, ar *model.Admissi
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse provider configs: %w", err)
 	}
+	mw.providerConfigs = configs
 
 	switch v := obj.(type) {
 	case *corev1.Pod:
-		return &mutating.MutatorResult{MutatedObject: v}, mw.MutatePod(ctx, v, webhookConfig, secretInitConfig, ar.DryRun, configs)
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutatePod(ctx, v, webhookConfig, secretInitConfig, ar.DryRun)
 
 	case *corev1.Secret:
-		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateSecret(v, configs)
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateSecret(v)
 
 	case *corev1.ConfigMap:
-		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateConfigMap(v, configs)
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateConfigMap(v)
 
 	case *unstructured.Unstructured:
-		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateObject(v, configs)
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateObject(v)
 
 	default:
 		return &mutating.MutatorResult{}, nil
@@ -248,11 +250,18 @@ func parseProviderConfigs(obj metav1.Object, ar *model.AdmissionReview, provider
 	for _, providerName := range providers {
 		switch providerName {
 		case vaultprov.ProviderName:
-			vaultConfig, err := vaultprov.ParseConfig(obj, ar)
+			config, err := vaultprov.ParseConfig(obj, ar)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse vault config")
 			}
-			configs = append(configs, vaultConfig)
+			configs = append(configs, config)
+
+		case baoprov.ProviderName:
+			config, err := baoprov.ParseConfig(obj, ar)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to parse bao config")
+			}
+			configs = append(configs, config)
 
 		default:
 			return nil, errors.Errorf("unknown provider: %s", providerName)

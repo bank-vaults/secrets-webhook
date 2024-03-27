@@ -35,10 +35,10 @@ import (
 
 const SecretInitVolumeName = "secret-init"
 
-func (mw *MutatingWebhook) MutatePod(ctx context.Context, pod *corev1.Pod, webhookConfig common.Config, secretInitConfig common.SecretInitConfig, dryRun bool, configs []interface{}) error {
+func (mw *MutatingWebhook) MutatePod(ctx context.Context, pod *corev1.Pod, webhookConfig common.Config, secretInitConfig common.SecretInitConfig, dryRun bool) error {
 	mw.logger.Debug("Successfully connected to the API")
 
-	for _, config := range configs {
+	for _, config := range mw.providerConfigs {
 		switch providerConfig := config.(type) {
 		case vault.Config:
 			currentlyUsedProvider = vault.ProviderName
