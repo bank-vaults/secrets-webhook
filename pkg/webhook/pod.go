@@ -38,27 +38,25 @@ const SecretInitVolumeName = "secret-init"
 func (mw *MutatingWebhook) MutatePod(ctx context.Context, pod *corev1.Pod, webhookConfig common.Config, secretInitConfig common.SecretInitConfig, dryRun bool) error {
 	mw.logger.Debug("Successfully connected to the API")
 
-	for _, config := range mw.providerConfigs {
-		switch providerConfig := config.(type) {
-		case vault.Config:
-			currentlyUsedProvider = vault.ProviderName
+	switch providerConfig := mw.providerConfig.(type) {
+	case vault.Config:
+		currentlyUsedProvider = vault.ProviderName
 
-			err := mw.mutatePodForVault(ctx, pod, webhookConfig, secretInitConfig, providerConfig, dryRun)
-			if err != nil {
-				return errors.Wrap(err, "failed to mutate secret")
-			}
-
-		case bao.Config:
-			currentlyUsedProvider = bao.ProviderName
-
-			err := mw.mutatePodForBao(ctx, pod, webhookConfig, secretInitConfig, providerConfig, dryRun)
-			if err != nil {
-				return errors.Wrap(err, "failed to mutate secret")
-			}
-
-		default:
-			return errors.Errorf("unknown provider config type: %T", config)
+		err := mw.mutatePodForVault(ctx, pod, webhookConfig, secretInitConfig, providerConfig, dryRun)
+		if err != nil {
+			return errors.Wrap(err, "failed to mutate secret")
 		}
+
+	case bao.Config:
+		currentlyUsedProvider = bao.ProviderName
+
+		err := mw.mutatePodForBao(ctx, pod, webhookConfig, secretInitConfig, providerConfig, dryRun)
+		if err != nil {
+			return errors.Wrap(err, "failed to mutate secret")
+		}
+
+	default:
+		return errors.Errorf("unknown provider config type: %T", mw.providerConfig)
 	}
 
 	return nil
@@ -67,6 +65,45 @@ func (mw *MutatingWebhook) MutatePod(ctx context.Context, pod *corev1.Pod, webho
 func isPodAlreadyMutated(pod *corev1.Pod) bool {
 	for _, volume := range pod.Spec.Volumes {
 		if volume.Name == SecretInitVolumeName {
+			return true
+		}
+	}
+
+	return false
+}
+
+func isSecretInitAlreadyMounted(podSpec *corev1.PodSpec) bool {
+	if podSpec == nil {
+		return false
+	}
+
+	for _, volume := range podSpec.Volumes {
+		if volume.Name == SecretInitVolumeName {
+			return true
+		}
+	}
+
+	return false
+}
+
+func isSecretInitContainerExists(containers []corev1.Container) bool {
+	for _, container := range containers {
+		if container.Name == "copy-secret-init" {
+			return true
+		}
+	}
+	return false
+}
+
+func areProbesAlreadyMutated(container *corev1.Container) bool {
+	if container.LivenessProbe != nil && container.LivenessProbe.Exec != nil {
+		if len(container.LivenessProbe.Exec.Command) > 0 && container.LivenessProbe.Exec.Command[0] == "/bank-vaults/secret-init" {
+			return true
+		}
+	}
+
+	if container.ReadinessProbe != nil && container.ReadinessProbe.Exec != nil {
+		if len(container.ReadinessProbe.Exec.Command) > 0 && container.ReadinessProbe.Exec.Command[0] == "/bank-vaults/secret-init" {
 			return true
 		}
 	}
@@ -131,61 +168,66 @@ func (mw *MutatingWebhook) mutateContainers(ctx context.Context, containers []co
 
 		args = append(args, container.Args...)
 
-		container.Command = []string{"/bank-vaults/secret-init"}
-		container.Args = args
-
 		// mutate probes if needed
-		if webhookConfig.MutateProbes {
-			// mutate LivenessProbe
-			if container.LivenessProbe != nil && container.LivenessProbe.Exec != nil {
-				lProbeCmd := container.LivenessProbe.Exec.Command
-				container.LivenessProbe.Exec.Command = []string{"/bank-vaults/secret-init"}
-				container.LivenessProbe.Exec.Command = append(container.LivenessProbe.Exec.Command, lProbeCmd...)
+		if !areProbesAlreadyMutated(&container) {
+			if webhookConfig.MutateProbes {
+				// mutate LivenessProbe
+				if container.LivenessProbe != nil && container.LivenessProbe.Exec != nil {
+					lProbeCmd := container.LivenessProbe.Exec.Command
+					container.LivenessProbe.Exec.Command = []string{"/bank-vaults/secret-init"}
+					container.LivenessProbe.Exec.Command = append(container.LivenessProbe.Exec.Command, lProbeCmd...)
+				}
+
+				// mutate LivenessProbe
+				if container.ReadinessProbe != nil && container.ReadinessProbe.Exec != nil {
+					rProbeCmd := container.ReadinessProbe.Exec.Command
+					container.ReadinessProbe.Exec.Command = []string{"/bank-vaults/secret-init"}
+					container.ReadinessProbe.Exec.Command = append(container.ReadinessProbe.Exec.Command, rProbeCmd...)
+				}
 			}
 
-			// mutate LivenessProbe
-			if container.ReadinessProbe != nil && container.ReadinessProbe.Exec != nil {
-				rProbeCmd := container.ReadinessProbe.Exec.Command
-				container.ReadinessProbe.Exec.Command = []string{"/bank-vaults/secret-init"}
-				container.ReadinessProbe.Exec.Command = append(container.ReadinessProbe.Exec.Command, rProbeCmd...)
-			}
 		}
 
-		container.VolumeMounts = append(container.VolumeMounts, []corev1.VolumeMount{
-			{
-				Name:      SecretInitVolumeName,
-				MountPath: "/bank-vaults/",
-			},
-		}...)
+		if !isSecretInitAlreadyMounted(podSpec) {
+			container.Command = []string{"/bank-vaults/secret-init"}
+			container.Args = args
 
-		if secretInitConfig.Daemon {
-			container.Env = append(container.Env, corev1.EnvVar{
-				Name:  "SECRET_INIT_DAEMON",
-				Value: "true",
-			})
-		}
-
-		if secretInitConfig.Delay > 0 {
-			container.Env = append(container.Env, corev1.EnvVar{
-				Name:  "SECRET_INIT_DELAY",
-				Value: secretInitConfig.Delay.String(),
-			})
-		}
-
-		if secretInitConfig.LogServer != "" {
-			container.Env = append(container.Env, corev1.EnvVar{
-				Name:  "SECRET_INIT_LOG_SERVER",
-				Value: secretInitConfig.LogServer,
-			})
-		}
-
-		if !isLogLevelSet(container.Env) && secretInitConfig.LogLevel != "" {
-			container.Env = append(container.Env, []corev1.EnvVar{
+			container.VolumeMounts = append(container.VolumeMounts, []corev1.VolumeMount{
 				{
-					Name:  "SECRET_INIT_LOG_LEVEL",
-					Value: secretInitConfig.LogLevel,
+					Name:      SecretInitVolumeName,
+					MountPath: "/bank-vaults/",
 				},
 			}...)
+
+			if secretInitConfig.Daemon {
+				container.Env = append(container.Env, corev1.EnvVar{
+					Name:  "SECRET_INIT_DAEMON",
+					Value: "true",
+				})
+			}
+
+			if secretInitConfig.Delay > 0 {
+				container.Env = append(container.Env, corev1.EnvVar{
+					Name:  "SECRET_INIT_DELAY",
+					Value: secretInitConfig.Delay.String(),
+				})
+			}
+
+			if secretInitConfig.LogServer != "" {
+				container.Env = append(container.Env, corev1.EnvVar{
+					Name:  "SECRET_INIT_LOG_SERVER",
+					Value: secretInitConfig.LogServer,
+				})
+			}
+
+			if !isLogLevelSet(container.Env) && secretInitConfig.LogLevel != "" {
+				container.Env = append(container.Env, []corev1.EnvVar{
+					{
+						Name:  "SECRET_INIT_LOG_LEVEL",
+						Value: secretInitConfig.LogLevel,
+					},
+				}...)
+			}
 		}
 
 		mw.setEnvVarsForProvider(&container, podSpec, secretInitConfig, config)
@@ -463,12 +505,38 @@ func (mw *MutatingWebhook) addSecretsVolToContainers(containers []corev1.Contain
 
 		container.VolumeMounts = append(container.VolumeMounts, []corev1.VolumeMount{
 			{
-				Name:      "ct-secrets",
+				Name:      "ct-secrets-" + currentlyUsedProvider,
 				MountPath: configFilePath,
 			},
 		}...)
 
 		containers[i] = container
+	}
+}
+
+func createCopySecretInitContainer(secretInitConfig common.SecretInitConfig, podSecurityContext *corev1.PodSecurityContext, webhookConfig common.Config) corev1.Container {
+	return corev1.Container{
+		Name:            "copy-secret-init",
+		Image:           secretInitConfig.Image,
+		ImagePullPolicy: secretInitConfig.ImagePullPolicy,
+		Command:         []string{"sh", "-c", "cp /usr/local/bin/secret-init /bank-vaults/"},
+		VolumeMounts: []corev1.VolumeMount{
+			{
+				Name:      SecretInitVolumeName,
+				MountPath: "/bank-vaults/",
+			},
+		},
+		SecurityContext: getBaseSecurityContext(podSecurityContext, webhookConfig),
+		Resources: corev1.ResourceRequirements{
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    secretInitConfig.CPULimit,
+				corev1.ResourceMemory: secretInitConfig.MemoryLimit,
+			},
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    secretInitConfig.CPURequest,
+				corev1.ResourceMemory: secretInitConfig.MemoryRequest,
+			},
+		},
 	}
 }
 
@@ -478,7 +546,7 @@ func (mw *MutatingWebhook) addAgentSecretsVolToContainers(containers []corev1.Co
 
 		container.VolumeMounts = append(container.VolumeMounts, []corev1.VolumeMount{
 			{
-				Name:      "agent-secrets",
+				Name:      "agent-secrets-" + currentlyUsedProvider,
 				MountPath: configFilePath,
 			},
 		}...)
@@ -583,12 +651,16 @@ func (mw *MutatingWebhook) mutatePodForVault(ctx context.Context, pod *corev1.Po
 		})
 	}
 
-	containerVolMounts := []corev1.VolumeMount{
-		{
-			Name:      SecretInitVolumeName,
-			MountPath: "/bank-vaults/",
-		},
+	containerVolMounts := []corev1.VolumeMount{}
+	if !isSecretInitAlreadyMounted(&pod.Spec) {
+		containerVolMounts = []corev1.VolumeMount{
+			{
+				Name:      SecretInitVolumeName,
+				MountPath: "/bank-vaults/",
+			},
+		}
 	}
+
 	if vaultConfig.TLSSecret != "" {
 		mountPath := "/vault/tls/"
 		volumeName := "vault-tls"
@@ -716,13 +788,13 @@ func getContainersForVault(podSecurityContext *corev1.PodSecurityContext, webhoo
 	}
 
 	containerVolMounts = append(containerVolMounts, corev1.VolumeMount{
-		Name:      "ct-secrets",
+		Name:      "ct-secrets-vault",
 		MountPath: vaultConfig.ConfigfilePath,
 	}, corev1.VolumeMount{
 		Name:      SecretInitVolumeName,
-		MountPath: "/home/consul-template",
+		MountPath: "/home/consul-template-vault",
 	}, corev1.VolumeMount{
-		Name:      "ct-configmap",
+		Name:      "ct-configmap-vault",
 		MountPath: "/vault/ct-config/config.hcl",
 		ReadOnly:  true,
 		SubPath:   "config.hcl",
@@ -736,7 +808,7 @@ func getContainersForVault(podSecurityContext *corev1.PodSecurityContext, webhoo
 	}
 
 	containers = append(containers, corev1.Container{
-		Name:            "consul-template",
+		Name:            "consul-template-vault",
 		Image:           vaultConfig.CtImage,
 		Args:            ctCommandString,
 		ImagePullPolicy: vaultConfig.CtImagePullPolicy,
@@ -853,31 +925,8 @@ func getInitContainersForVault(originalContainers []corev1.Container, podSecurit
 		})
 	}
 
-	if initContainersMutated || containersMutated {
-		containers = append(containers, corev1.Container{
-			Name:            "copy-secret-init",
-			Image:           secretInitConfig.Image,
-			ImagePullPolicy: secretInitConfig.ImagePullPolicy,
-			Command:         []string{"sh", "-c", "cp /usr/local/bin/secret-init /bank-vaults/"},
-			VolumeMounts: []corev1.VolumeMount{
-				{
-					Name:      SecretInitVolumeName,
-					MountPath: "/bank-vaults/",
-				},
-			},
-
-			SecurityContext: getBaseSecurityContext(podSecurityContext, webhookConfig),
-			Resources: corev1.ResourceRequirements{
-				Limits: corev1.ResourceList{
-					corev1.ResourceCPU:    secretInitConfig.CPULimit,
-					corev1.ResourceMemory: secretInitConfig.MemoryLimit,
-				},
-				Requests: corev1.ResourceList{
-					corev1.ResourceCPU:    secretInitConfig.CPURequest,
-					corev1.ResourceMemory: secretInitConfig.MemoryRequest,
-				},
-			},
-		})
+	if initContainersMutated || containersMutated && !isSecretInitContainerExists(originalContainers) {
+		containers = append(containers, createCopySecretInitContainer(secretInitConfig, podSecurityContext, webhookConfig))
 	}
 
 	return containers
@@ -944,7 +993,7 @@ func (mw *MutatingWebhook) getVolumesForVault(existingVolumes []corev1.Volume, a
 		defaultMode := int32(420)
 		volumes = append(volumes,
 			corev1.Volume{
-				Name: "ct-secrets",
+				Name: "ct-secrets-vault",
 				VolumeSource: corev1.VolumeSource{
 					EmptyDir: &corev1.EmptyDirVolumeSource{
 						Medium: corev1.StorageMediumMemory,
@@ -952,7 +1001,7 @@ func (mw *MutatingWebhook) getVolumesForVault(existingVolumes []corev1.Volume, a
 				},
 			},
 			corev1.Volume{
-				Name: "ct-configmap",
+				Name: "ct-configmap-vault",
 				VolumeSource: corev1.VolumeSource{
 					ConfigMap: &corev1.ConfigMapVolumeSource{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -976,7 +1025,7 @@ func (mw *MutatingWebhook) getVolumesForVault(existingVolumes []corev1.Volume, a
 		defaultMode := int32(420)
 		volumes = append(volumes,
 			corev1.Volume{
-				Name: "agent-secrets",
+				Name: "agent-secrets-vault",
 				VolumeSource: corev1.VolumeSource{
 					EmptyDir: &corev1.EmptyDirVolumeSource{
 						Medium: corev1.StorageMediumMemory,
@@ -984,7 +1033,7 @@ func (mw *MutatingWebhook) getVolumesForVault(existingVolumes []corev1.Volume, a
 				},
 			},
 			corev1.Volume{
-				Name: "agent-configmap",
+				Name: "agent-configmap-vault",
 				VolumeSource: corev1.VolumeSource{
 					ConfigMap: &corev1.ConfigMapVolumeSource{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -1025,10 +1074,10 @@ func getAgentContainersForVault(originalContainers []corev1.Container, podSecuri
 	serviceAccountMount := getServiceAccountMount(originalContainers, vaultConfig.ServiceAccountTokenVolumeName)
 
 	containerVolMounts = append(containerVolMounts, serviceAccountMount, corev1.VolumeMount{
-		Name:      "agent-secrets",
+		Name:      "agent-secrets-vault",
 		MountPath: vaultConfig.ConfigfilePath,
 	}, corev1.VolumeMount{
-		Name:      "agent-configmap",
+		Name:      "agent-configmap-vault",
 		MountPath: "/vault/config/config.hcl",
 		ReadOnly:  true,
 		SubPath:   "config.hcl",
@@ -1121,12 +1170,16 @@ func (mw *MutatingWebhook) mutatePodForBao(ctx context.Context, pod *corev1.Pod,
 		})
 	}
 
-	containerVolMounts := []corev1.VolumeMount{
-		{
-			Name:      SecretInitVolumeName,
-			MountPath: "/bank-vaults/",
-		},
+	containerVolMounts := []corev1.VolumeMount{}
+	if !isSecretInitAlreadyMounted(&pod.Spec) {
+		containerVolMounts = []corev1.VolumeMount{
+			{
+				Name:      SecretInitVolumeName,
+				MountPath: "/bank-vaults/",
+			},
+		}
 	}
+
 	if baoConfig.TLSSecret != "" {
 		mountPath := "/bao/tls/"
 		volumeName := "bao-tls"
@@ -1254,13 +1307,13 @@ func getContainersForBao(podSecurityContext *corev1.PodSecurityContext, webhookC
 	}
 
 	containerVolMounts = append(containerVolMounts, corev1.VolumeMount{
-		Name:      "ct-secrets",
+		Name:      "ct-secrets-bao",
 		MountPath: baoConfig.ConfigfilePath,
 	}, corev1.VolumeMount{
 		Name:      SecretInitVolumeName,
-		MountPath: "/home/consul-template",
+		MountPath: "/home/consul-template-bao",
 	}, corev1.VolumeMount{
-		Name:      "ct-configmap",
+		Name:      "ct-configmap-bao",
 		MountPath: "/bao/ct-config/config.hcl",
 		ReadOnly:  true,
 		SubPath:   "config.hcl",
@@ -1274,7 +1327,7 @@ func getContainersForBao(podSecurityContext *corev1.PodSecurityContext, webhookC
 	}
 
 	containers = append(containers, corev1.Container{
-		Name:            "consul-template",
+		Name:            "consul-template-bao",
 		Image:           baoConfig.CtImage,
 		Args:            ctCommandString,
 		ImagePullPolicy: baoConfig.CtImagePullPolicy,
@@ -1391,31 +1444,8 @@ func getInitContainersForBao(originalContainers []corev1.Container, podSecurityC
 		})
 	}
 
-	if initContainersMutated || containersMutated {
-		containers = append(containers, corev1.Container{
-			Name:            "copy-secret-init",
-			Image:           secretInitConfig.Image,
-			ImagePullPolicy: secretInitConfig.ImagePullPolicy,
-			Command:         []string{"sh", "-c", "cp /usr/local/bin/secret-init /bank-vaults/"},
-			VolumeMounts: []corev1.VolumeMount{
-				{
-					Name:      SecretInitVolumeName,
-					MountPath: "/bank-vaults/",
-				},
-			},
-
-			SecurityContext: getBaseSecurityContext(podSecurityContext, webhookConfig),
-			Resources: corev1.ResourceRequirements{
-				Limits: corev1.ResourceList{
-					corev1.ResourceCPU:    secretInitConfig.CPULimit,
-					corev1.ResourceMemory: secretInitConfig.MemoryLimit,
-				},
-				Requests: corev1.ResourceList{
-					corev1.ResourceCPU:    secretInitConfig.CPURequest,
-					corev1.ResourceMemory: secretInitConfig.MemoryRequest,
-				},
-			},
-		})
+	if initContainersMutated || containersMutated && !isSecretInitContainerExists(originalContainers) {
+		containers = append(containers, createCopySecretInitContainer(secretInitConfig, podSecurityContext, webhookConfig))
 	}
 
 	return containers
@@ -1482,7 +1512,7 @@ func (mw *MutatingWebhook) getVolumesForBao(existingVolumes []corev1.Volume, age
 		defaultMode := int32(420)
 		volumes = append(volumes,
 			corev1.Volume{
-				Name: "ct-secrets",
+				Name: "ct-secrets-bao",
 				VolumeSource: corev1.VolumeSource{
 					EmptyDir: &corev1.EmptyDirVolumeSource{
 						Medium: corev1.StorageMediumMemory,
@@ -1490,7 +1520,7 @@ func (mw *MutatingWebhook) getVolumesForBao(existingVolumes []corev1.Volume, age
 				},
 			},
 			corev1.Volume{
-				Name: "ct-configmap",
+				Name: "ct-configmap-bao",
 				VolumeSource: corev1.VolumeSource{
 					ConfigMap: &corev1.ConfigMapVolumeSource{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -1514,7 +1544,7 @@ func (mw *MutatingWebhook) getVolumesForBao(existingVolumes []corev1.Volume, age
 		defaultMode := int32(420)
 		volumes = append(volumes,
 			corev1.Volume{
-				Name: "agent-secrets",
+				Name: "agent-secrets-bao",
 				VolumeSource: corev1.VolumeSource{
 					EmptyDir: &corev1.EmptyDirVolumeSource{
 						Medium: corev1.StorageMediumMemory,
@@ -1522,7 +1552,7 @@ func (mw *MutatingWebhook) getVolumesForBao(existingVolumes []corev1.Volume, age
 				},
 			},
 			corev1.Volume{
-				Name: "agent-configmap",
+				Name: "agent-configmap-bao",
 				VolumeSource: corev1.VolumeSource{
 					ConfigMap: &corev1.ConfigMapVolumeSource{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -1563,10 +1593,10 @@ func getAgentContainersForBao(originalContainers []corev1.Container, podSecurity
 	serviceAccountMount := getServiceAccountMount(originalContainers, baoConfig.ServiceAccountTokenVolumeName)
 
 	containerVolMounts = append(containerVolMounts, serviceAccountMount, corev1.VolumeMount{
-		Name:      "agent-secrets",
+		Name:      "agent-secrets-bao",
 		MountPath: baoConfig.ConfigfilePath,
 	}, corev1.VolumeMount{
-		Name:      "agent-configmap",
+		Name:      "agent-configmap-bao",
 		MountPath: "/bao/config/config.hcl",
 		ReadOnly:  true,
 		SubPath:   "config.hcl",

@@ -53,7 +53,7 @@ spec:
       labels:
         app.kubernetes.io/name: test-deployment-template
       annotations:
-        secrets-webhook.security.banzaicloud.io/providers: "vault"
+        secrets-webhook.security.banzaicloud.io/provider: "vault"
         vault.security.banzaicloud.io/vault-addr: "https://vault:8200" # optional, the address of the Vault service, default values is https://vault:8200
         vault.security.banzaicloud.io/vault-role: "default" # optional, the default value is the name of the ServiceAccount the Pod runs in, in case of Secrets and ConfigMaps it is "default"
         vault.security.banzaicloud.io/vault-skip-verify: "false" # optional, skip TLS verification of the Vault server certificate

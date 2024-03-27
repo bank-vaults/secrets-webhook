@@ -51,26 +51,26 @@ import (
 var currentlyUsedProvider string
 
 type MutatingWebhook struct {
-	k8sClient       kubernetes.Interface
-	namespace       string
-	registry        ImageRegistry
-	logger          *slog.Logger
-	providerConfigs []interface{}
+	k8sClient      kubernetes.Interface
+	namespace      string
+	registry       ImageRegistry
+	logger         *slog.Logger
+	providerConfig interface{}
 }
 
 func (mw *MutatingWebhook) SecretsMutator(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
 	webhookConfig := common.ParseWebhookConfig(obj)
 	secretInitConfig := common.ParseSecretInitConfig(obj)
 
-	if webhookConfig.Mutate || len(webhookConfig.Providers) == 0 {
+	if webhookConfig.Mutate || webhookConfig.Provider == "" {
 		return &mutating.MutatorResult{}, nil
 	}
 
-	configs, err := parseProviderConfigs(obj, ar, webhookConfig.Providers)
+	config, err := parseProviderConfig(obj, ar, webhookConfig.Provider)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse provider configs: %w", err)
 	}
-	mw.providerConfigs = configs
+	mw.providerConfig = config
 
 	switch v := obj.(type) {
 	case *corev1.Pod:
@@ -244,31 +244,28 @@ func ErrorLoggerMutator(mutator mutating.MutatorFunc, logger log.Logger) mutatin
 	}
 }
 
-// parseProviderConfigs parses all provider configs that was declared in the webhook annotation
-func parseProviderConfigs(obj metav1.Object, ar *model.AdmissionReview, providers []string) ([]interface{}, error) {
-	configs := make([]interface{}, 0, len(providers))
-	for _, providerName := range providers {
-		switch providerName {
-		case vaultprov.ProviderName:
-			config, err := vaultprov.ParseConfig(obj, ar)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to parse vault config")
-			}
-			configs = append(configs, config)
-
-		case baoprov.ProviderName:
-			config, err := baoprov.ParseConfig(obj, ar)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to parse bao config")
-			}
-			configs = append(configs, config)
-
-		default:
-			return nil, errors.Errorf("unknown provider: %s", providerName)
+// parseProviderConfig parses all provider configs that was declared in the webhook annotation
+func parseProviderConfig(obj metav1.Object, ar *model.AdmissionReview, providerName string) (interface{}, error) {
+	var config interface{}
+	var err error
+	switch providerName {
+	case vaultprov.ProviderName:
+		config, err = vaultprov.ParseConfig(obj, ar)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse vault config")
 		}
+
+	case baoprov.ProviderName:
+		config, err = baoprov.ParseConfig(obj, ar)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse bao config")
+		}
+
+	default:
+		return nil, errors.Errorf("unknown provider: %s", providerName)
 	}
 
-	return configs, nil
+	return config, nil
 }
 
 func hasProviderPrefix(providerName string, value string, withInlineDelimiters bool) bool {

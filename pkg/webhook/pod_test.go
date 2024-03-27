@@ -77,7 +77,7 @@ func (r *MockRegistry) GetImageConfig(_ context.Context, _ kubernetes.Interface,
 	return &r.Image, nil
 }
 
-func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
+func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 	vaultConfigEnvFrom := providerConfigs[vault.ProviderName].(vault.Config)
 	vaultConfigEnvFrom.FromPath = "secrets/application"
 	baoConfigEnvFrom := providerConfigs[bao.ProviderName].(bao.Config)
@@ -93,7 +93,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 		podSpec          *corev1.PodSpec
 		webhookConfig    common.Config
 		SecretInitConfig common.SecretInitConfig
-		useConfig        []interface{}
+		useConfig        interface{}
 	}
 
 	tests := []struct {
@@ -129,7 +129,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				useConfig:        []interface{}{providerConfigs[vault.ProviderName]},
+				useConfig:        providerConfigs[vault.ProviderName],
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -180,7 +180,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				useConfig:        []interface{}{providerConfigs[vault.ProviderName]},
+				useConfig:        providerConfigs[vault.ProviderName],
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -233,7 +233,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				useConfig:        []interface{}{providerConfigs[vault.ProviderName]},
+				useConfig:        providerConfigs[vault.ProviderName],
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -293,7 +293,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 					MutateProbes: true,
 				},
 				SecretInitConfig: common.SecretInitConfig{},
-				useConfig:        []interface{}{vault.Config{}},
+				useConfig:        vault.Config{},
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -353,7 +353,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				useConfig:        []interface{}{providerConfigs[vault.ProviderName]},
+				useConfig:        providerConfigs[vault.ProviderName],
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -397,7 +397,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				useConfig:        []interface{}{providerConfigs[vault.ProviderName]},
+				useConfig:        providerConfigs[vault.ProviderName],
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -434,7 +434,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				useConfig:        []interface{}{vaultConfigEnvFrom},
+				useConfig:        vaultConfigEnvFrom,
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -486,7 +486,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				useConfig:        []interface{}{providerConfigs[vault.ProviderName]},
+				useConfig:        providerConfigs[vault.ProviderName],
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -544,17 +544,16 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 					JSONLog:  "enableJSONLog",
 					LogLevel: "debug",
 				},
-				useConfig: []interface{}{
-					vault.Config{
-						Addr:                 "addr",
-						SkipVerify:           false,
-						Path:                 "path",
-						Role:                 "role",
-						AuthMethod:           "jwt",
-						IgnoreMissingSecrets: "ignoreMissingSecrets",
-						Passthrough:          "vaultPassthrough",
-						ClientTimeout:        10 * time.Second,
-					}},
+				useConfig: vault.Config{
+					Addr:                 "addr",
+					SkipVerify:           false,
+					Path:                 "path",
+					Role:                 "role",
+					AuthMethod:           "jwt",
+					IgnoreMissingSecrets: "ignoreMissingSecrets",
+					Passthrough:          "vaultPassthrough",
+					ClientTimeout:        10 * time.Second,
+				},
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -606,7 +605,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				useConfig:        []interface{}{providerConfigs[bao.ProviderName]},
+				useConfig:        providerConfigs[bao.ProviderName],
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -657,7 +656,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				useConfig:        []interface{}{providerConfigs[bao.ProviderName]},
+				useConfig:        providerConfigs[bao.ProviderName],
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -710,7 +709,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				useConfig:        []interface{}{providerConfigs[bao.ProviderName]},
+				useConfig:        providerConfigs[bao.ProviderName],
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -770,7 +769,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 					MutateProbes: true,
 				},
 				SecretInitConfig: common.SecretInitConfig{},
-				useConfig:        []interface{}{bao.Config{}},
+				useConfig:        bao.Config{},
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -830,7 +829,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				useConfig:        []interface{}{providerConfigs[bao.ProviderName]},
+				useConfig:        providerConfigs[bao.ProviderName],
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -874,7 +873,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				useConfig:        []interface{}{providerConfigs[bao.ProviderName]},
+				useConfig:        providerConfigs[bao.ProviderName],
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -911,7 +910,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				useConfig:        []interface{}{baoConfigEnvFrom},
+				useConfig:        baoConfigEnvFrom,
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -963,7 +962,7 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				},
 				webhookConfig:    webhookConfig,
 				SecretInitConfig: secretInitConfig,
-				useConfig:        []interface{}{providerConfigs[bao.ProviderName]},
+				useConfig:        providerConfigs[bao.ProviderName],
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -1021,17 +1020,16 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 					JSONLog:  "enableJSONLog",
 					LogLevel: "debug",
 				},
-				useConfig: []interface{}{
-					bao.Config{
-						Addr:                 "addr",
-						SkipVerify:           false,
-						Path:                 "path",
-						Role:                 "role",
-						AuthMethod:           "jwt",
-						IgnoreMissingSecrets: "ignoreMissingSecrets",
-						Passthrough:          "baoPassthrough",
-						ClientTimeout:        10 * time.Second,
-					}},
+				useConfig: bao.Config{
+					Addr:                 "addr",
+					SkipVerify:           false,
+					Path:                 "path",
+					Role:                 "role",
+					AuthMethod:           "jwt",
+					IgnoreMissingSecrets: "ignoreMissingSecrets",
+					Passthrough:          "baoPassthrough",
+					ClientTimeout:        10 * time.Second,
+				},
 			},
 			wantedContainers: []corev1.Container{
 				{
@@ -1069,33 +1067,31 @@ func Test_mutatingWebhook_mutateContainers_Vault(t *testing.T) {
 				logger:    slog.Default(),
 			}
 
-			for _, config := range ttp.args.useConfig {
-				switch providerConfig := config.(type) {
-				case vault.Config:
-					currentlyUsedProvider = vault.ProviderName
+			switch providerConfig := ttp.args.useConfig.(type) {
+			case vault.Config:
+				currentlyUsedProvider = vault.ProviderName
 
-					got, err := mw.mutateContainers(context.Background(), ttp.args.containers, ttp.args.podSpec, ttp.args.webhookConfig, ttp.args.SecretInitConfig, providerConfig, providerConfig.ObjectNamespace, providerConfig.FromPath)
-					if (err != nil) != ttp.wantErr {
-						t.Errorf("MutatingWebhook.mutateContainers() error = %v, wantErr %v", err, ttp.wantErr)
-						return
-					}
+				got, err := mw.mutateContainers(context.Background(), ttp.args.containers, ttp.args.podSpec, ttp.args.webhookConfig, ttp.args.SecretInitConfig, providerConfig, providerConfig.ObjectNamespace, providerConfig.FromPath)
+				if (err != nil) != ttp.wantErr {
+					t.Errorf("MutatingWebhook.mutateContainers() error = %v, wantErr %v", err, ttp.wantErr)
+					return
+				}
 
-					if got != ttp.mutated {
-						t.Errorf("MutatingWebhook.mutateContainers() = %v, want %v", got, ttp.mutated)
-					}
+				if got != ttp.mutated {
+					t.Errorf("MutatingWebhook.mutateContainers() = %v, want %v", got, ttp.mutated)
+				}
 
-				case bao.Config:
-					currentlyUsedProvider = bao.ProviderName
+			case bao.Config:
+				currentlyUsedProvider = bao.ProviderName
 
-					got, err := mw.mutateContainers(context.Background(), ttp.args.containers, ttp.args.podSpec, ttp.args.webhookConfig, ttp.args.SecretInitConfig, providerConfig, providerConfig.ObjectNamespace, providerConfig.FromPath)
-					if (err != nil) != ttp.wantErr {
-						t.Errorf("MutatingWebhook.mutateContainers() error = %v, wantErr %v", err, ttp.wantErr)
-						return
-					}
+				got, err := mw.mutateContainers(context.Background(), ttp.args.containers, ttp.args.podSpec, ttp.args.webhookConfig, ttp.args.SecretInitConfig, providerConfig, providerConfig.ObjectNamespace, providerConfig.FromPath)
+				if (err != nil) != ttp.wantErr {
+					t.Errorf("MutatingWebhook.mutateContainers() error = %v, wantErr %v", err, ttp.wantErr)
+					return
+				}
 
-					if got != ttp.mutated {
-						t.Errorf("MutatingWebhook.mutateContainers() = %v, want %v", got, ttp.mutated)
-					}
+				if got != ttp.mutated {
+					t.Errorf("MutatingWebhook.mutateContainers() = %v, want %v", got, ttp.mutated)
 				}
 			}
 
@@ -1116,7 +1112,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 		pod              *corev1.Pod
 		webhookConfig    common.Config
 		secretInitConfig common.SecretInitConfig
-		useConfig        []string
+		useConfig        string
 	}
 
 	defaultMode := int32(420)
@@ -1233,7 +1229,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 					CPULimit:      resource.MustParse("250m"),
 					MemoryLimit:   resource.MustParse("64Mi"),
 				},
-				useConfig: []string{"vault"},
+				useConfig: vault.ProviderName,
 			},
 			wantedPod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1294,7 +1290,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 					},
 					Containers: []corev1.Container{
 						{
-							Name:  "consul-template",
+							Name:  "consul-template-vault",
 							Image: "hashicorp/consul-template:0.32.0",
 							Args:  []string{"-config", "/vault/ct-config/config.hcl"},
 							Resources: corev1.ResourceRequirements{
@@ -1321,15 +1317,15 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									MountPath: "/bank-vaults/",
 								},
 								{
-									Name:      "ct-secrets",
+									Name:      "ct-secrets-vault",
 									MountPath: "/vault/secrets",
 								},
 								{
 									Name:      "secret-init",
-									MountPath: "/home/consul-template",
+									MountPath: "/home/consul-template-vault",
 								},
 								{
-									Name:      "ct-configmap",
+									Name:      "ct-configmap-vault",
 									ReadOnly:  true,
 									MountPath: "/vault/ct-config/config.hcl",
 									SubPath:   "config.hcl",
@@ -1346,7 +1342,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
 								},
 								{
-									Name:      "ct-secrets",
+									Name:      "ct-secrets-vault",
 									MountPath: "/vault/secrets",
 								},
 							},
@@ -1372,7 +1368,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "ct-secrets",
+							Name: "ct-secrets-vault",
 							VolumeSource: corev1.VolumeSource{
 								EmptyDir: &corev1.EmptyDirVolumeSource{
 									Medium: corev1.StorageMediumMemory,
@@ -1380,7 +1376,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "ct-configmap",
+							Name: "ct-configmap-vault",
 							VolumeSource: corev1.VolumeSource{
 								ConfigMap: &corev1.ConfigMapVolumeSource{
 									LocalObjectReference: corev1.LocalObjectReference{
@@ -1452,7 +1448,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 					CPULimit:      resource.MustParse("250m"),
 					MemoryLimit:   resource.MustParse("64Mi"),
 				},
-				useConfig: []string{"vault"},
+				useConfig: vault.ProviderName,
 			},
 			wantedPod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1512,7 +1508,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name:  "consul-template",
+							Name:  "consul-template-vault",
 							Image: "hashicorp/consul-template:0.32.0",
 							Args:  []string{"-config", "/vault/ct-config/config.hcl", "-once"},
 							Resources: corev1.ResourceRequirements{
@@ -1539,15 +1535,15 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									MountPath: "/bank-vaults/",
 								},
 								{
-									Name:      "ct-secrets",
+									Name:      "ct-secrets-vault",
 									MountPath: "/vault/secrets",
 								},
 								{
 									Name:      "secret-init",
-									MountPath: "/home/consul-template",
+									MountPath: "/home/consul-template-vault",
 								},
 								{
-									Name:      "ct-configmap",
+									Name:      "ct-configmap-vault",
 									ReadOnly:  true,
 									MountPath: "/vault/ct-config/config.hcl",
 									SubPath:   "config.hcl",
@@ -1566,7 +1562,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
 								},
 								{
-									Name:      "ct-secrets",
+									Name:      "ct-secrets-vault",
 									MountPath: "/vault/secrets",
 								},
 							},
@@ -1592,7 +1588,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "ct-secrets",
+							Name: "ct-secrets-vault",
 							VolumeSource: corev1.VolumeSource{
 								EmptyDir: &corev1.EmptyDirVolumeSource{
 									Medium: corev1.StorageMediumMemory,
@@ -1600,7 +1596,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "ct-configmap",
+							Name: "ct-configmap-vault",
 							VolumeSource: corev1.VolumeSource{
 								ConfigMap: &corev1.ConfigMapVolumeSource{
 									LocalObjectReference: corev1.LocalObjectReference{
@@ -1668,7 +1664,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 					RunAsUser:    int64(1000),
 					RunAsGroup:   int64(1000),
 				},
-				useConfig: []string{"vault"},
+				useConfig: vault.ProviderName,
 			},
 			wantedPod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1729,11 +1725,11 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
 								},
 								{
-									Name:      "agent-secrets",
+									Name:      "agent-secrets-vault",
 									MountPath: "/vault/secrets",
 								},
 								{
-									Name:      "agent-configmap",
+									Name:      "agent-configmap-vault",
 									ReadOnly:  true,
 									MountPath: "/vault/config/config.hcl",
 									SubPath:   "config.hcl",
@@ -1750,7 +1746,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
 								},
 								{
-									Name:      "agent-secrets",
+									Name:      "agent-secrets-vault",
 									MountPath: "/vault/secrets",
 								},
 							},
@@ -1766,7 +1762,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "agent-secrets",
+							Name: "agent-secrets-vault",
 							VolumeSource: corev1.VolumeSource{
 								EmptyDir: &corev1.EmptyDirVolumeSource{
 									Medium: corev1.StorageMediumMemory,
@@ -1774,7 +1770,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "agent-configmap",
+							Name: "agent-configmap-vault",
 							VolumeSource: corev1.VolumeSource{
 								ConfigMap: &corev1.ConfigMapVolumeSource{
 									LocalObjectReference: corev1.LocalObjectReference{
@@ -1860,7 +1856,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 					CPULimit:      resource.MustParse("250m"),
 					MemoryLimit:   resource.MustParse("64Mi"),
 				},
-				useConfig: []string{"vault"},
+				useConfig: vault.ProviderName,
 			},
 			wantedPod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1921,7 +1917,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name:  "consul-template",
+							Name:  "consul-template-vault",
 							Image: "hashicorp/consul-template:0.32.0",
 							Args:  []string{"-config", "/vault/ct-config/config.hcl", "-once"},
 							Resources: corev1.ResourceRequirements{
@@ -1948,15 +1944,15 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									MountPath: "/bank-vaults/",
 								},
 								{
-									Name:      "ct-secrets",
+									Name:      "ct-secrets-vault",
 									MountPath: "/vault/secrets",
 								},
 								{
 									Name:      "secret-init",
-									MountPath: "/home/consul-template",
+									MountPath: "/home/consul-template-vault",
 								},
 								{
-									Name:      "ct-configmap",
+									Name:      "ct-configmap-vault",
 									ReadOnly:  true,
 									MountPath: "/vault/ct-config/config.hcl",
 									SubPath:   "config.hcl",
@@ -1972,7 +1968,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 								{
 									MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
 								},
-								{Name: "ct-secrets", MountPath: "/vault/secrets"},
+								{Name: "ct-secrets-vault", MountPath: "/vault/secrets"},
 							},
 						},
 					},
@@ -1987,7 +1983,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
 								},
 								{
-									Name:      "ct-secrets",
+									Name:      "ct-secrets-vault",
 									MountPath: "/vault/secrets",
 								},
 							},
@@ -2013,7 +2009,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "ct-secrets",
+							Name: "ct-secrets-vault",
 							VolumeSource: corev1.VolumeSource{
 								EmptyDir: &corev1.EmptyDirVolumeSource{
 									Medium: corev1.StorageMediumMemory,
@@ -2021,7 +2017,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "ct-configmap",
+							Name: "ct-configmap-vault",
 							VolumeSource: corev1.VolumeSource{
 								ConfigMap: &corev1.ConfigMapVolumeSource{
 									LocalObjectReference: corev1.LocalObjectReference{
@@ -2106,7 +2102,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 					CPULimit:      resource.MustParse("250m"),
 					MemoryLimit:   resource.MustParse("64Mi"),
 				},
-				useConfig: []string{"vault"},
+				useConfig: vault.ProviderName,
 			},
 			wantedPod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2179,7 +2175,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 					},
 					Containers: []corev1.Container{
 						{
-							Name:  "consul-template",
+							Name:  "consul-template-vault",
 							Image: "hashicorp/consul-template:0.32.0",
 							Args:  []string{"-config", "/vault/ct-config/config.hcl"},
 							Resources: corev1.ResourceRequirements{
@@ -2206,15 +2202,15 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									MountPath: "/bank-vaults/",
 								},
 								{
-									Name:      "ct-secrets",
+									Name:      "ct-secrets-vault",
 									MountPath: "/vault/secrets",
 								},
 								{
 									Name:      "secret-init",
-									MountPath: "/home/consul-template",
+									MountPath: "/home/consul-template-vault",
 								},
 								{
-									Name:      "ct-configmap",
+									Name:      "ct-configmap-vault",
 									ReadOnly:  true,
 									MountPath: "/vault/ct-config/config.hcl",
 									SubPath:   "config.hcl",
@@ -2231,7 +2227,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									MountPath: "/var/run/secrets/vault",
 								},
 								{
-									Name:      "ct-secrets",
+									Name:      "ct-secrets-vault",
 									MountPath: "/vault/secrets",
 								},
 							},
@@ -2257,7 +2253,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "ct-secrets",
+							Name: "ct-secrets-vault",
 							VolumeSource: corev1.VolumeSource{
 								EmptyDir: &corev1.EmptyDirVolumeSource{
 									Medium: corev1.StorageMediumMemory,
@@ -2265,7 +2261,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "ct-configmap",
+							Name: "ct-configmap-vault",
 							VolumeSource: corev1.VolumeSource{
 								ConfigMap: &corev1.ConfigMapVolumeSource{
 									LocalObjectReference: corev1.LocalObjectReference{
@@ -2336,7 +2332,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 					CPULimit:      resource.MustParse("250m"),
 					MemoryLimit:   resource.MustParse("64Mi"),
 				},
-				useConfig: []string{"bao"},
+				useConfig: bao.ProviderName,
 			},
 			wantedPod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2397,7 +2393,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 					},
 					Containers: []corev1.Container{
 						{
-							Name:  "consul-template",
+							Name:  "consul-template-bao",
 							Image: "hashicorp/consul-template:0.32.0",
 							Args:  []string{"-config", "/bao/ct-config/config.hcl"},
 							Resources: corev1.ResourceRequirements{
@@ -2424,15 +2420,15 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									MountPath: "/bank-vaults/",
 								},
 								{
-									Name:      "ct-secrets",
+									Name:      "ct-secrets-bao",
 									MountPath: "/bao/secrets",
 								},
 								{
 									Name:      "secret-init",
-									MountPath: "/home/consul-template",
+									MountPath: "/home/consul-template-bao",
 								},
 								{
-									Name:      "ct-configmap",
+									Name:      "ct-configmap-bao",
 									ReadOnly:  true,
 									MountPath: "/bao/ct-config/config.hcl",
 									SubPath:   "config.hcl",
@@ -2449,7 +2445,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
 								},
 								{
-									Name:      "ct-secrets",
+									Name:      "ct-secrets-bao",
 									MountPath: "/bao/secrets",
 								},
 							},
@@ -2475,7 +2471,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "ct-secrets",
+							Name: "ct-secrets-bao",
 							VolumeSource: corev1.VolumeSource{
 								EmptyDir: &corev1.EmptyDirVolumeSource{
 									Medium: corev1.StorageMediumMemory,
@@ -2483,7 +2479,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "ct-configmap",
+							Name: "ct-configmap-bao",
 							VolumeSource: corev1.VolumeSource{
 								ConfigMap: &corev1.ConfigMapVolumeSource{
 									LocalObjectReference: corev1.LocalObjectReference{
@@ -2555,7 +2551,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 					CPULimit:      resource.MustParse("250m"),
 					MemoryLimit:   resource.MustParse("64Mi"),
 				},
-				useConfig: []string{"bao"},
+				useConfig: bao.ProviderName,
 			},
 			wantedPod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2615,7 +2611,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name:  "consul-template",
+							Name:  "consul-template-bao",
 							Image: "hashicorp/consul-template:0.32.0",
 							Args:  []string{"-config", "/bao/ct-config/config.hcl", "-once"},
 							Resources: corev1.ResourceRequirements{
@@ -2642,15 +2638,15 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									MountPath: "/bank-vaults/",
 								},
 								{
-									Name:      "ct-secrets",
+									Name:      "ct-secrets-bao",
 									MountPath: "/bao/secrets",
 								},
 								{
 									Name:      "secret-init",
-									MountPath: "/home/consul-template",
+									MountPath: "/home/consul-template-bao",
 								},
 								{
-									Name:      "ct-configmap",
+									Name:      "ct-configmap-bao",
 									ReadOnly:  true,
 									MountPath: "/bao/ct-config/config.hcl",
 									SubPath:   "config.hcl",
@@ -2669,7 +2665,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
 								},
 								{
-									Name:      "ct-secrets",
+									Name:      "ct-secrets-bao",
 									MountPath: "/bao/secrets",
 								},
 							},
@@ -2695,7 +2691,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "ct-secrets",
+							Name: "ct-secrets-bao",
 							VolumeSource: corev1.VolumeSource{
 								EmptyDir: &corev1.EmptyDirVolumeSource{
 									Medium: corev1.StorageMediumMemory,
@@ -2703,7 +2699,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "ct-configmap",
+							Name: "ct-configmap-bao",
 							VolumeSource: corev1.VolumeSource{
 								ConfigMap: &corev1.ConfigMapVolumeSource{
 									LocalObjectReference: corev1.LocalObjectReference{
@@ -2771,7 +2767,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 					RunAsUser:    int64(1000),
 					RunAsGroup:   int64(1000),
 				},
-				useConfig: []string{"bao"},
+				useConfig: bao.ProviderName,
 			},
 			wantedPod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2832,11 +2828,11 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
 								},
 								{
-									Name:      "agent-secrets",
+									Name:      "agent-secrets-bao",
 									MountPath: "/bao/secrets",
 								},
 								{
-									Name:      "agent-configmap",
+									Name:      "agent-configmap-bao",
 									ReadOnly:  true,
 									MountPath: "/bao/config/config.hcl",
 									SubPath:   "config.hcl",
@@ -2853,7 +2849,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
 								},
 								{
-									Name:      "agent-secrets",
+									Name:      "agent-secrets-bao",
 									MountPath: "/bao/secrets",
 								},
 							},
@@ -2869,7 +2865,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "agent-secrets",
+							Name: "agent-secrets-bao",
 							VolumeSource: corev1.VolumeSource{
 								EmptyDir: &corev1.EmptyDirVolumeSource{
 									Medium: corev1.StorageMediumMemory,
@@ -2877,7 +2873,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "agent-configmap",
+							Name: "agent-configmap-bao",
 							VolumeSource: corev1.VolumeSource{
 								ConfigMap: &corev1.ConfigMapVolumeSource{
 									LocalObjectReference: corev1.LocalObjectReference{
@@ -2963,7 +2959,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 					CPULimit:      resource.MustParse("250m"),
 					MemoryLimit:   resource.MustParse("64Mi"),
 				},
-				useConfig: []string{"bao"},
+				useConfig: bao.ProviderName,
 			},
 			wantedPod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -3024,7 +3020,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name:  "consul-template",
+							Name:  "consul-template-bao",
 							Image: "hashicorp/consul-template:0.32.0",
 							Args:  []string{"-config", "/bao/ct-config/config.hcl", "-once"},
 							Resources: corev1.ResourceRequirements{
@@ -3051,15 +3047,15 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									MountPath: "/bank-vaults/",
 								},
 								{
-									Name:      "ct-secrets",
+									Name:      "ct-secrets-bao",
 									MountPath: "/bao/secrets",
 								},
 								{
 									Name:      "secret-init",
-									MountPath: "/home/consul-template",
+									MountPath: "/home/consul-template-bao",
 								},
 								{
-									Name:      "ct-configmap",
+									Name:      "ct-configmap-bao",
 									ReadOnly:  true,
 									MountPath: "/bao/ct-config/config.hcl",
 									SubPath:   "config.hcl",
@@ -3075,7 +3071,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 								{
 									MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
 								},
-								{Name: "ct-secrets", MountPath: "/bao/secrets"},
+								{Name: "ct-secrets-bao", MountPath: "/bao/secrets"},
 							},
 						},
 					},
@@ -3090,7 +3086,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
 								},
 								{
-									Name:      "ct-secrets",
+									Name:      "ct-secrets-bao",
 									MountPath: "/bao/secrets",
 								},
 							},
@@ -3116,7 +3112,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "ct-secrets",
+							Name: "ct-secrets-bao",
 							VolumeSource: corev1.VolumeSource{
 								EmptyDir: &corev1.EmptyDirVolumeSource{
 									Medium: corev1.StorageMediumMemory,
@@ -3124,7 +3120,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "ct-configmap",
+							Name: "ct-configmap-bao",
 							VolumeSource: corev1.VolumeSource{
 								ConfigMap: &corev1.ConfigMapVolumeSource{
 									LocalObjectReference: corev1.LocalObjectReference{
@@ -3209,7 +3205,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 					CPULimit:      resource.MustParse("250m"),
 					MemoryLimit:   resource.MustParse("64Mi"),
 				},
-				useConfig: []string{"bao"},
+				useConfig: bao.ProviderName,
 			},
 			wantedPod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -3282,7 +3278,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 					},
 					Containers: []corev1.Container{
 						{
-							Name:  "consul-template",
+							Name:  "consul-template-bao",
 							Image: "hashicorp/consul-template:0.32.0",
 							Args:  []string{"-config", "/bao/ct-config/config.hcl"},
 							Resources: corev1.ResourceRequirements{
@@ -3309,15 +3305,15 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									MountPath: "/bank-vaults/",
 								},
 								{
-									Name:      "ct-secrets",
+									Name:      "ct-secrets-bao",
 									MountPath: "/bao/secrets",
 								},
 								{
 									Name:      "secret-init",
-									MountPath: "/home/consul-template",
+									MountPath: "/home/consul-template-bao",
 								},
 								{
-									Name:      "ct-configmap",
+									Name:      "ct-configmap-bao",
 									ReadOnly:  true,
 									MountPath: "/bao/ct-config/config.hcl",
 									SubPath:   "config.hcl",
@@ -3334,7 +3330,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 									MountPath: "/var/run/secrets/bao",
 								},
 								{
-									Name:      "ct-secrets",
+									Name:      "ct-secrets-bao",
 									MountPath: "/bao/secrets",
 								},
 							},
@@ -3360,7 +3356,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "ct-secrets",
+							Name: "ct-secrets-bao",
 							VolumeSource: corev1.VolumeSource{
 								EmptyDir: &corev1.EmptyDirVolumeSource{
 									Medium: corev1.StorageMediumMemory,
@@ -3368,7 +3364,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							},
 						},
 						{
-							Name: "ct-configmap",
+							Name: "ct-configmap-bao",
 							VolumeSource: corev1.VolumeSource{
 								ConfigMap: &corev1.ConfigMapVolumeSource{
 									LocalObjectReference: corev1.LocalObjectReference{
@@ -3402,12 +3398,12 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 
 			admissionReview := &model.AdmissionReview{}
 
-			providerConfigs, err := parseProviderConfigs(ttp.args.pod, admissionReview, ttp.args.useConfig)
+			providerConfig, err := parseProviderConfig(ttp.args.pod, admissionReview, ttp.args.useConfig)
 			if (err != nil) != ttp.wantErr {
 				t.Errorf("parseProviderConfigs() error = %v, wantErr %v", err, ttp.wantErr)
 				return
 			}
-			mw.providerConfigs = providerConfigs
+			mw.providerConfig = providerConfig
 
 			err = mw.MutatePod(context.Background(), ttp.args.pod, ttp.args.webhookConfig, ttp.args.secretInitConfig, false)
 			if (err != nil) != ttp.wantErr {

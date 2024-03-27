@@ -102,8 +102,8 @@ func TestMain(m *testing.M) {
 		testenv.Setup(installVaultOperator)
 		testenv.Finish(uninstallVaultOperator, envfuncs.DeleteNamespace("vault-operator"))
 
-		testenv.Setup(envfuncs.CreateNamespace("secrets-webhook"), installVaultSecretsWebhook)
-		testenv.Finish(uninstallVaultSecretsWebhook, envfuncs.DeleteNamespace("secrets-webhook"))
+		testenv.Setup(envfuncs.CreateNamespace("secrets-webhook"), installSecretsWebhook)
+		testenv.Finish(uninstallSecretsWebhook, envfuncs.DeleteNamespace("secrets-webhook"))
 
 		// Set up test namespace
 		// ns := envconf.RandomName("webhook-test", 16)
@@ -158,7 +158,7 @@ func uninstallVaultOperator(ctx context.Context, cfg *envconf.Config) (context.C
 	return ctx, nil
 }
 
-func installVaultSecretsWebhook(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+func installSecretsWebhook(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
 	manager := helm.New(cfg.KubeconfigFile())
 
 	version := "latest"
@@ -186,7 +186,7 @@ func installVaultSecretsWebhook(ctx context.Context, cfg *envconf.Config) (conte
 	return ctx, nil
 }
 
-func uninstallVaultSecretsWebhook(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+func uninstallSecretsWebhook(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
 	manager := helm.New(cfg.KubeconfigFile())
 
 	err := manager.RunUninstall(

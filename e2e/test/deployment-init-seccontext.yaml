@@ -12,7 +12,7 @@ spec:
       labels:
         app.kubernetes.io/name: test-deployment-init-seccontext
       annotations:
-        secrets-webhook.security.banzaicloud.io/providers: "vault"
+        secrets-webhook.security.banzaicloud.io/provider: "vault"
         secrets-webhook.security.banzaicloud.io/run-as-non-root: "true"
         secrets-webhook.security.banzaicloud.io/run-as-user: "1000"
         secrets-webhook.security.banzaicloud.io/run-as-group: "1000"

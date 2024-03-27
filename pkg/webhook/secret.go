@@ -56,27 +56,25 @@ type dockerAuthConfig struct {
 }
 
 func (mw *MutatingWebhook) MutateSecret(secret *corev1.Secret) error {
-	for _, config := range mw.providerConfigs {
-		switch providerConfig := config.(type) {
-		case vault.Config:
-			currentlyUsedProvider = vault.ProviderName
+	switch providerConfig := mw.providerConfig.(type) {
+	case vault.Config:
+		currentlyUsedProvider = vault.ProviderName
 
-			err := mw.mutateSecretForVault(secret, providerConfig)
-			if err != nil {
-				return errors.Wrap(err, "failed to mutate secret")
-			}
-
-		case bao.Config:
-			currentlyUsedProvider = bao.ProviderName
-
-			err := mw.mutateSecretForBao(secret, providerConfig)
-			if err != nil {
-				return errors.Wrap(err, "failed to mutate secret")
-			}
-
-		default:
-			return errors.Errorf("unknown provider config type: %T", config)
+		err := mw.mutateSecretForVault(secret, providerConfig)
+		if err != nil {
+			return errors.Wrap(err, "failed to mutate secret")
 		}
+
+	case bao.Config:
+		currentlyUsedProvider = bao.ProviderName
+
+		err := mw.mutateSecretForBao(secret, providerConfig)
+		if err != nil {
+			return errors.Wrap(err, "failed to mutate secret")
+		}
+
+	default:
+		return errors.Errorf("unknown provider config type: %T", mw.providerConfig)
 	}
 
 	return nil
