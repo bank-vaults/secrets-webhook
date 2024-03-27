@@ -21,10 +21,13 @@ import (
 	"strings"
 
 	"emperror.dev/errors"
-	"github.com/bank-vaults/internal/injector"
+	"github.com/bank-vaults/internal/pkg/baoinjector"
+	"github.com/bank-vaults/internal/pkg/vaultinjector"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/common"
+	"github.com/bank-vaults/secrets-webhook/pkg/provider/bao"
+	"github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 )
 
 type dockerCredentials struct {
@@ -52,6 +55,31 @@ type dockerAuthConfig struct {
 	RegistryToken string `json:"registrytoken,omitempty"`
 }
 
+func (mw *MutatingWebhook) MutateSecret(secret *corev1.Secret) error {
+	switch providerConfig := mw.providerConfig.(type) {
+	case vault.Config:
+		currentlyUsedProvider = vault.ProviderName
+
+		err := mw.mutateSecretForVault(secret, providerConfig)
+		if err != nil {
+			return errors.Wrap(err, "failed to mutate secret")
+		}
+
+	case bao.Config:
+		currentlyUsedProvider = bao.ProviderName
+
+		err := mw.mutateSecretForBao(secret, providerConfig)
+		if err != nil {
+			return errors.Wrap(err, "failed to mutate secret")
+		}
+
+	default:
+		return errors.Errorf("unknown provider config type: %T", mw.providerConfig)
+	}
+
+	return nil
+}
+
 func secretNeedsMutation(secret *corev1.Secret) (bool, error) {
 	for key, value := range secret.Data {
 		if key == corev1.DockerConfigJsonKey {
@@ -68,21 +96,25 @@ func secretNeedsMutation(secret *corev1.Secret) (bool, error) {
 				}
 
 				auth := string(authBytes)
-				if common.HasVaultPrefix(auth) {
+				if hasProviderPrefix(currentlyUsedProvider, auth, false) {
 					return true, nil
 				}
 			}
-		} else if common.HasVaultPrefix(string(value)) {
+
+		} else if hasProviderPrefix(currentlyUsedProvider, string(value), false) {
 			return true, nil
-		} else if injector.HasInlineVaultDelimiters(string(value)) {
+		} else if hasInlineProviderDelimiters(currentlyUsedProvider, string(value)) {
 			return true, nil
 		}
 	}
+
 	return false, nil
 }
 
-func (mw *MutatingWebhook) MutateSecret(secret *corev1.Secret, vaultConfig VaultConfig) error {
-	// do an early exit and don't construct the Vault client if not needed
+// ======== VAULT ========
+
+func (mw *MutatingWebhook) mutateSecretForVault(secret *corev1.Secret, vaultConfig vault.Config) error {
+	// do an early exit if no mutation is needed
 	requiredToMutate, err := secretNeedsMutation(secret)
 	if err != nil {
 		return errors.Wrap(err, "failed to check if secret needs to be mutated")
@@ -96,15 +128,14 @@ func (mw *MutatingWebhook) MutateSecret(secret *corev1.Secret, vaultConfig Vault
 	if err != nil {
 		return errors.Wrap(err, "failed to create vault client")
 	}
-
 	defer vaultClient.Close()
 
-	config := injector.Config{
+	injectorConfig := vaultinjector.Config{
 		TransitKeyID:     vaultConfig.TransitKeyID,
 		TransitPath:      vaultConfig.TransitPath,
 		TransitBatchSize: vaultConfig.TransitBatchSize,
 	}
-	secretInjector := injector.NewSecretInjector(config, vaultClient, nil, logger)
+	injector := vaultinjector.NewSecretInjector(injectorConfig, vaultClient, nil, logger)
 
 	if value, ok := secret.Data[corev1.DockerConfigJsonKey]; ok {
 		var dc dockerCredentials
@@ -112,13 +143,14 @@ func (mw *MutatingWebhook) MutateSecret(secret *corev1.Secret, vaultConfig Vault
 		if err != nil {
 			return errors.Wrap(err, "unmarshal dockerconfig json failed")
 		}
-		err = mw.mutateDockerCreds(secret, &dc, &secretInjector)
+
+		err = mw.mutateDockerCredsForVault(secret, &dc, &injector)
 		if err != nil {
 			return errors.Wrap(err, "mutate dockerconfig json failed")
 		}
 	}
 
-	err = mw.mutateSecretData(secret, &secretInjector)
+	err = mw.mutateSecretDataForVault(secret, &injector)
 	if err != nil {
 		return errors.Wrap(err, "mutate generic secret failed")
 	}
@@ -126,7 +158,7 @@ func (mw *MutatingWebhook) MutateSecret(secret *corev1.Secret, vaultConfig Vault
 	return nil
 }
 
-func (mw *MutatingWebhook) mutateDockerCreds(secret *corev1.Secret, dc *dockerCredentials, secretInjector *injector.SecretInjector) error {
+func (mw *MutatingWebhook) mutateDockerCredsForVault(secret *corev1.Secret, dc *dockerCredentials, injector *vaultinjector.SecretInjector) error {
 	assembled := dockerCredentials{Auths: map[string]dockerAuthConfig{}}
 
 	for key, creds := range dc.Auths {
@@ -141,26 +173,29 @@ func (mw *MutatingWebhook) mutateDockerCreds(secret *corev1.Secret, dc *dockerCr
 			if len(split) != 4 {
 				return errors.New("splitting auth credentials failed")
 			}
+
 			username := fmt.Sprintf("%s:%s", split[0], split[1])
 			password := fmt.Sprintf("%s:%s", split[2], split[3])
-
 			credentialData := map[string]string{
 				"username": username,
 				"password": password,
 			}
 
-			dcCreds, err := secretInjector.GetDataFromVault(credentialData)
+			dcCreds, err := injector.GetDataFromVault(credentialData)
 			if err != nil {
 				return err
 			}
+
 			auth = fmt.Sprintf("%s:%s", dcCreds["username"], dcCreds["password"])
 			dockerAuth := dockerAuthConfig{
 				Auth: base64.StdEncoding.EncodeToString([]byte(auth)),
 			}
+
 			if creds.Username != "" && creds.Password != "" {
 				dockerAuth.Username = dcCreds["username"]
 				dockerAuth.Password = dcCreds["password"]
 			}
+
 			assembled.Auths[key] = dockerAuth
 		}
 	}
@@ -175,14 +210,130 @@ func (mw *MutatingWebhook) mutateDockerCreds(secret *corev1.Secret, dc *dockerCr
 	return nil
 }
 
-func (mw *MutatingWebhook) mutateSecretData(secret *corev1.Secret, secretInjector *injector.SecretInjector) error {
+func (mw *MutatingWebhook) mutateSecretDataForVault(secret *corev1.Secret, injector *vaultinjector.SecretInjector) error {
 	convertedData := make(map[string]string, len(secret.Data))
-
 	for k := range secret.Data {
 		convertedData[k] = string(secret.Data[k])
 	}
 
-	convertedData, err := secretInjector.GetDataFromVault(convertedData)
+	convertedData, err := injector.GetDataFromVault(convertedData)
+	if err != nil {
+		return err
+	}
+
+	for k := range secret.Data {
+		secret.Data[k] = []byte(convertedData[k])
+	}
+
+	return nil
+}
+
+// ======== BAO ========
+
+func (mw *MutatingWebhook) mutateSecretForBao(secret *corev1.Secret, baoConfig bao.Config) error {
+	// do an early exit if no mutation is needed
+	requiredToMutate, err := secretNeedsMutation(secret)
+	if err != nil {
+		return errors.Wrap(err, "failed to check if secret needs to be mutated")
+	}
+
+	if !requiredToMutate {
+		return nil
+	}
+
+	baoClient, err := mw.newBaoClient(baoConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create bao client")
+	}
+	defer baoClient.Close()
+
+	injectorConfig := baoinjector.Config{
+		TransitKeyID:     baoConfig.TransitKeyID,
+		TransitPath:      baoConfig.TransitPath,
+		TransitBatchSize: baoConfig.TransitBatchSize,
+	}
+	injector := baoinjector.NewSecretInjector(injectorConfig, baoClient, nil, logger)
+
+	if value, ok := secret.Data[corev1.DockerConfigJsonKey]; ok {
+		var dc dockerCredentials
+		err := json.Unmarshal(value, &dc)
+		if err != nil {
+			return errors.Wrap(err, "unmarshal dockerconfig json failed")
+		}
+
+		err = mw.mutateDockerCredsForBao(secret, &dc, &injector)
+		if err != nil {
+			return errors.Wrap(err, "mutate dockerconfig json failed")
+		}
+	}
+
+	err = mw.mutateSecretDataForBao(secret, &injector)
+	if err != nil {
+		return errors.Wrap(err, "mutate generic secret failed")
+	}
+
+	return nil
+}
+
+func (mw *MutatingWebhook) mutateDockerCredsForBao(secret *corev1.Secret, dc *dockerCredentials, injector *baoinjector.SecretInjector) error {
+	assembled := dockerCredentials{Auths: map[string]dockerAuthConfig{}}
+
+	for key, creds := range dc.Auths {
+		authBytes, err := base64.StdEncoding.DecodeString(creds.Auth)
+		if err != nil {
+			return errors.Wrap(err, "auth base64 decoding failed")
+		}
+
+		auth := string(authBytes)
+		if common.HasBaoPrefix(auth) {
+			split := strings.Split(auth, ":")
+			if len(split) != 4 {
+				return errors.New("splitting auth credentials failed")
+			}
+
+			username := fmt.Sprintf("%s:%s", split[0], split[1])
+			password := fmt.Sprintf("%s:%s", split[2], split[3])
+			credentialData := map[string]string{
+				"username": username,
+				"password": password,
+			}
+
+			dcCreds, err := injector.GetDataFromBao(credentialData)
+			if err != nil {
+				return err
+			}
+
+			auth = fmt.Sprintf("%s:%s", dcCreds["username"], dcCreds["password"])
+			dockerAuth := dockerAuthConfig{
+				Auth: base64.StdEncoding.EncodeToString([]byte(auth)),
+			}
+
+			if creds.Username != "" && creds.Password != "" {
+				dockerAuth.Username = dcCreds["username"]
+				dockerAuth.Password = dcCreds["password"]
+			}
+
+			assembled.Auths[key] = dockerAuth
+		}
+	}
+
+	marshaled, err := json.Marshal(assembled)
+	if err != nil {
+		return errors.Wrap(err, "marshaling dockerconfig failed")
+	}
+
+	secret.Data[corev1.DockerConfigJsonKey] = marshaled
+
+	return nil
+}
+
+func (mw *MutatingWebhook) mutateSecretDataForBao(secret *corev1.Secret, injector *baoinjector.SecretInjector) error {
+	convertedData := make(map[string]string, len(secret.Data))
+	for k := range secret.Data {
+		convertedData[k] = string(secret.Data[k])
+	}
+
+	convertedData, err := injector.GetDataFromBao(convertedData)
 	if err != nil {
 		return err
 	}

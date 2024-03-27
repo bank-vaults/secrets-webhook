@@ -63,6 +63,7 @@ func (l whLogger) WithCtxValues(ctx context.Context) log.Logger {
 	for k, v := range ctxValues {
 		attributes = append(attributes, slog.Any(k, v))
 	}
+
 	return NewWhLogger(l.With(attributes...))
 }
 

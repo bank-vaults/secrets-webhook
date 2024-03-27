@@ -19,10 +19,13 @@ import (
 	"strings"
 
 	"emperror.dev/errors"
-	"github.com/bank-vaults/internal/injector"
+	"github.com/bank-vaults/internal/pkg/baoinjector"
+	"github.com/bank-vaults/internal/pkg/vaultinjector"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/common"
+	"github.com/bank-vaults/secrets-webhook/pkg/provider/bao"
+	"github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 )
 
 type element interface {
@@ -64,6 +67,7 @@ func mapIterator(m map[string]interface{}) iterator {
 		c <- &mapElement{k: k, m: m}
 	}
 	close(c)
+
 	return c
 }
 
@@ -73,10 +77,57 @@ func sliceIterator(s []interface{}) iterator {
 		c <- &sliceElement{i: i, s: s}
 	}
 	close(c)
+
 	return c
 }
 
-func traverseObject(o interface{}, secretInjector *injector.SecretInjector) error {
+func (mw *MutatingWebhook) MutateObject(object *unstructured.Unstructured) error {
+	mw.logger.Debug(fmt.Sprintf("mutating object: %s.%s", object.GetNamespace(), object.GetName()))
+
+	switch providerConfig := mw.providerConfig.(type) {
+	case vault.Config:
+		currentlyUsedProvider = vault.ProviderName
+
+		err := mw.mutateObjectForVault(object, providerConfig)
+		if err != nil {
+			return errors.Wrap(err, "failed to mutate secret")
+		}
+
+	case bao.Config:
+		currentlyUsedProvider = bao.ProviderName
+
+		err := mw.mutateObjectForBao(object, providerConfig)
+		if err != nil {
+			return errors.Wrap(err, "failed to mutate secret")
+		}
+
+	default:
+		return errors.Errorf("unknown provider config type: %T", mw.providerConfig)
+	}
+
+	return nil
+}
+
+// ======== VAULT ========
+
+func (mw *MutatingWebhook) mutateObjectForVault(object *unstructured.Unstructured, vaultConfig vault.Config) error {
+	vaultClient, err := mw.newVaultClient(vaultConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create vault client")
+	}
+	defer vaultClient.Close()
+
+	injectorConfig := vaultinjector.Config{
+		TransitKeyID:     vaultConfig.TransitKeyID,
+		TransitPath:      vaultConfig.TransitPath,
+		TransitBatchSize: vaultConfig.TransitBatchSize,
+	}
+	injector := vaultinjector.NewSecretInjector(injectorConfig, vaultClient, nil, logger)
+
+	return traverseObjectForVault(object.Object, &injector)
+}
+
+func traverseObjectForVault(o interface{}, injector *vaultinjector.SecretInjector) error {
 	var iterator iterator
 
 	switch value := o.(type) {
@@ -92,25 +143,27 @@ func traverseObject(o interface{}, secretInjector *injector.SecretInjector) erro
 		switch s := e.Get().(type) {
 		case string:
 			if common.HasVaultPrefix(s) {
-				dataFromVault, err := secretInjector.GetDataFromVault(map[string]string{"data": s})
+				dataFromVault, err := injector.GetDataFromVault(map[string]string{"data": s})
 				if err != nil {
 					return err
 				}
 
 				e.Set(dataFromVault["data"])
-			} else if injector.HasInlineVaultDelimiters(s) {
+			} else if vaultinjector.HasInlineVaultDelimiters(s) {
 				dataFromVault := s
-				for _, vaultSecretReference := range injector.FindInlineVaultDelimiters(s) {
-					mapData, err := secretInjector.GetDataFromVault(map[string]string{"data": vaultSecretReference[1]})
+				for _, vaultSecretReference := range vaultinjector.FindInlineVaultDelimiters(s) {
+					mapData, err := injector.GetDataFromVault(map[string]string{"data": vaultSecretReference[1]})
 					if err != nil {
 						return err
 					}
 					dataFromVault = strings.Replace(dataFromVault, vaultSecretReference[0], mapData["data"], -1)
 				}
+
 				e.Set(dataFromVault)
 			}
+
 		case map[string]interface{}, []interface{}:
-			err := traverseObject(e.Get(), secretInjector)
+			err := traverseObjectForVault(e.Get(), injector)
 			if err != nil {
 				return err
 			}
@@ -120,22 +173,67 @@ func traverseObject(o interface{}, secretInjector *injector.SecretInjector) erro
 	return nil
 }
 
-func (mw *MutatingWebhook) MutateObject(object *unstructured.Unstructured, vaultConfig VaultConfig) error {
-	mw.logger.Debug(fmt.Sprintf("mutating object: %s.%s", object.GetNamespace(), object.GetName()))
+// ======== BAO ========
 
-	vaultClient, err := mw.newVaultClient(vaultConfig)
+func (mw *MutatingWebhook) mutateObjectForBao(object *unstructured.Unstructured, baoConfig bao.Config) error {
+	baoClient, err := mw.newBaoClient(baoConfig)
 	if err != nil {
-		return errors.Wrap(err, "failed to create vault client")
+		return errors.Wrap(err, "failed to create bao client")
+	}
+	defer baoClient.Close()
+
+	injectorConfig := baoinjector.Config{
+		TransitKeyID:     baoConfig.TransitKeyID,
+		TransitPath:      baoConfig.TransitPath,
+		TransitBatchSize: baoConfig.TransitBatchSize,
+	}
+	injector := baoinjector.NewSecretInjector(injectorConfig, baoClient, nil, logger)
+
+	return traverseObjectForBao(object.Object, &injector)
+}
+
+func traverseObjectForBao(o interface{}, injector *baoinjector.SecretInjector) error {
+	var iterator iterator
+
+	switch value := o.(type) {
+	case map[string]interface{}:
+		iterator = mapIterator(value)
+	case []interface{}:
+		iterator = sliceIterator(value)
+	default:
+		return nil
 	}
 
-	defer vaultClient.Close()
+	for e := range iterator {
+		switch s := e.Get().(type) {
+		case string:
+			if common.HasBaoPrefix(s) {
+				dataFromBao, err := injector.GetDataFromBao(map[string]string{"data": s})
+				if err != nil {
+					return err
+				}
 
-	config := injector.Config{
-		TransitKeyID:     vaultConfig.TransitKeyID,
-		TransitPath:      vaultConfig.TransitPath,
-		TransitBatchSize: vaultConfig.TransitBatchSize,
+				e.Set(dataFromBao["data"])
+			} else if baoinjector.HasInlineBaoDelimiters(s) {
+				dataFromBao := s
+				for _, baoSecretReference := range baoinjector.FindInlineBaoDelimiters(s) {
+					mapData, err := injector.GetDataFromBao(map[string]string{"data": baoSecretReference[1]})
+					if err != nil {
+						return err
+					}
+					dataFromBao = strings.Replace(dataFromBao, baoSecretReference[0], mapData["data"], -1)
+				}
+
+				e.Set(dataFromBao)
+			}
+
+		case map[string]interface{}, []interface{}:
+			err := traverseObjectForBao(e.Get(), injector)
+			if err != nil {
+				return err
+			}
+		}
 	}
-	secretInjector := injector.NewSecretInjector(config, vaultClient, nil, logger)
 
-	return traverseObject(object.Object, &secretInjector)
+	return nil
 }

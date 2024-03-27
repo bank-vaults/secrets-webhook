@@ -21,12 +21,13 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"strings"
-	"text/template"
 
 	"emperror.dev/errors"
-	"github.com/bank-vaults/internal/injector"
+	"github.com/bank-vaults/internal/pkg/baoinjector"
+	"github.com/bank-vaults/internal/pkg/vaultinjector"
 	"github.com/bank-vaults/vault-sdk/vault"
+	bao "github.com/bank-vaults/vault-sdk/vault"
+	baoapi "github.com/hashicorp/vault/api"
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/slok/kubewebhook/v2/pkg/log"
 	"github.com/slok/kubewebhook/v2/pkg/model"
@@ -39,57 +40,66 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/common"
+	baoprov "github.com/bank-vaults/secrets-webhook/pkg/provider/bao"
+	vaultprov "github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 )
 
+// currentlyUsedProvider is the name of the provider
+// that is used to mutate the object at the moment.
+// This global was introduced to make the code more generic.
+// It is mainly used by the hasProviderPrefix and hasInlineProviderDelimiters functions among others.
+var currentlyUsedProvider string
+
 type MutatingWebhook struct {
-	k8sClient kubernetes.Interface
-	namespace string
-	registry  ImageRegistry
-	logger    *slog.Logger
+	k8sClient      kubernetes.Interface
+	namespace      string
+	registry       ImageRegistry
+	logger         *slog.Logger
+	providerConfig interface{}
 }
 
-func (mw *MutatingWebhook) VaultSecretsMutator(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
-	webhookConfig := parseConfig(obj)
-	secretInitConfig := parseSecretInitConfig(obj)
-	vaultConfig := parseVaultConfig(obj, ar)
+func (mw *MutatingWebhook) SecretsMutator(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
+	webhookConfig := common.ParseWebhookConfig(obj)
+	secretInitConfig := common.ParseSecretInitConfig(obj)
 
-	if webhookConfig.Mutate {
+	if webhookConfig.Mutate || webhookConfig.Provider == "" {
 		return &mutating.MutatorResult{}, nil
 	}
 
-	// parse resulting vaultConfig.Role as potential template with fields of vaultConfig
-	tmpl, err := template.New("vaultRole").Option("missingkey=error").Parse(vaultConfig.Role)
+	config, err := parseProviderConfig(obj, ar, webhookConfig.Provider)
 	if err != nil {
-		return &mutating.MutatorResult{}, errors.Wrap(err, "error parsing vault_role")
+		return nil, fmt.Errorf("failed to parse provider configs: %w", err)
 	}
-	var vRoleBuf strings.Builder
-	if err = tmpl.Execute(&vRoleBuf, map[string]string{
-		"authmethod":     vaultConfig.AuthMethod,
-		"name":           obj.GetName(),
-		"namespace":      vaultConfig.ObjectNamespace,
-		"path":           vaultConfig.Path,
-		"serviceaccount": vaultConfig.VaultServiceAccount,
-	}); err != nil {
-		return &mutating.MutatorResult{}, errors.Wrap(err, "error templating vault_role")
-	}
-	vaultConfig.Role = vRoleBuf.String()
-	mw.logger.Debug(fmt.Sprintf("vaultConfig.Role = '%s'", vaultConfig.Role))
+	mw.providerConfig = config
 
 	switch v := obj.(type) {
 	case *corev1.Pod:
-		return &mutating.MutatorResult{MutatedObject: v}, mw.MutatePod(ctx, v, webhookConfig, secretInitConfig, vaultConfig, ar.DryRun)
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutatePod(ctx, v, webhookConfig, secretInitConfig, ar.DryRun)
 
 	case *corev1.Secret:
-		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateSecret(v, vaultConfig)
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateSecret(v)
 
 	case *corev1.ConfigMap:
-		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateConfigMap(v, vaultConfig)
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateConfigMap(v)
 
 	case *unstructured.Unstructured:
-		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateObject(v, vaultConfig)
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateObject(v)
 
 	default:
 		return &mutating.MutatorResult{}, nil
+	}
+}
+
+func (mw *MutatingWebhook) ServeMetrics(addr string, handler http.Handler) {
+	mw.logger.Info(fmt.Sprintf("Telemetry on http://%s", addr))
+
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", handler)
+
+	err := http.ListenAndServe(addr, mux)
+	if err != nil {
+		mw.logger.Error(fmt.Errorf("error serving telemetry: %w", err).Error())
+		os.Exit(1)
 	}
 }
 
@@ -98,6 +108,7 @@ func (mw *MutatingWebhook) getDataFromConfigmap(cmName string, ns string) (map[s
 	if err != nil {
 		return nil, err
 	}
+
 	return configMap.Data, nil
 }
 
@@ -106,6 +117,7 @@ func (mw *MutatingWebhook) getDataFromSecret(secretName string, ns string) (map[
 	if err != nil {
 		return nil, err
 	}
+
 	return secret.Data, nil
 }
 
@@ -122,8 +134,9 @@ func (mw *MutatingWebhook) lookForEnvFrom(envFrom []corev1.EnvFromSource, ns str
 
 				return envVars, err
 			}
+
 			for key, value := range data {
-				if common.HasVaultPrefix(value) || injector.HasInlineVaultDelimiters(value) {
+				if hasProviderPrefix(currentlyUsedProvider, value, true) {
 					envFromCM := corev1.EnvVar{
 						Name:  key,
 						Value: value,
@@ -132,6 +145,7 @@ func (mw *MutatingWebhook) lookForEnvFrom(envFrom []corev1.EnvFromSource, ns str
 				}
 			}
 		}
+
 		if ef.SecretRef != nil {
 			data, err := mw.getDataFromSecret(ef.SecretRef.Name, ns)
 			if err != nil {
@@ -141,9 +155,10 @@ func (mw *MutatingWebhook) lookForEnvFrom(envFrom []corev1.EnvFromSource, ns str
 
 				return envVars, err
 			}
+
 			for name, v := range data {
 				value := string(v)
-				if common.HasVaultPrefix(value) || injector.HasInlineVaultDelimiters(value) {
+				if hasProviderPrefix(currentlyUsedProvider, value, true) {
 					envFromSec := corev1.EnvVar{
 						Name:  name,
 						Value: value,
@@ -153,6 +168,7 @@ func (mw *MutatingWebhook) lookForEnvFrom(envFrom []corev1.EnvFromSource, ns str
 			}
 		}
 	}
+
 	return envVars, nil
 }
 
@@ -165,8 +181,9 @@ func (mw *MutatingWebhook) lookForValueFrom(env corev1.EnvVar, ns string) (*core
 			}
 			return nil, err
 		}
+
 		value := data[env.ValueFrom.ConfigMapKeyRef.Key]
-		if common.HasVaultPrefix(value) || injector.HasInlineVaultDelimiters(value) {
+		if hasProviderPrefix(currentlyUsedProvider, value, true) {
 			fromCM := corev1.EnvVar{
 				Name:  env.Name,
 				Value: value,
@@ -174,6 +191,7 @@ func (mw *MutatingWebhook) lookForValueFrom(env corev1.EnvVar, ns string) (*core
 			return &fromCM, nil
 		}
 	}
+
 	if env.ValueFrom.SecretKeyRef != nil {
 		data, err := mw.getDataFromSecret(env.ValueFrom.SecretKeyRef.Name, ns)
 		if err != nil {
@@ -182,8 +200,9 @@ func (mw *MutatingWebhook) lookForValueFrom(env corev1.EnvVar, ns string) (*core
 			}
 			return nil, err
 		}
+
 		value := string(data[env.ValueFrom.SecretKeyRef.Key])
-		if common.HasVaultPrefix(value) || injector.HasInlineVaultDelimiters(value) {
+		if hasProviderPrefix(currentlyUsedProvider, value, true) {
 			fromSecret := corev1.EnvVar{
 				Name:  env.Name,
 				Value: value,
@@ -191,10 +210,99 @@ func (mw *MutatingWebhook) lookForValueFrom(env corev1.EnvVar, ns string) (*core
 			return &fromSecret, nil
 		}
 	}
+
 	return nil, nil
 }
 
-func (mw *MutatingWebhook) newVaultClient(vaultConfig VaultConfig) (*vault.Client, error) {
+func NewMutatingWebhook(logger *slog.Logger, k8sClient kubernetes.Interface) (*MutatingWebhook, error) {
+	namespace := os.Getenv("KUBERNETES_NAMESPACE") // only for kurun
+	if namespace == "" {
+		namespaceBytes, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+		if err != nil {
+			return nil, errors.Wrap(err, "error reading k8s namespace")
+		}
+		namespace = string(namespaceBytes)
+	}
+
+	return &MutatingWebhook{
+		k8sClient: k8sClient,
+		namespace: namespace,
+		registry:  NewRegistry(),
+		logger:    logger,
+	}, nil
+}
+
+func ErrorLoggerMutator(mutator mutating.MutatorFunc, logger log.Logger) mutating.MutatorFunc {
+	return func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (result *mutating.MutatorResult, err error) {
+		r, err := mutator(ctx, ar, obj)
+		if err != nil {
+			logger.WithCtxValues(ctx).WithValues(log.Kv{
+				"error": err,
+			}).Errorf("Admission review request failed")
+		}
+		return r, err
+	}
+}
+
+// parseProviderConfig parses all provider configs that was declared in the webhook annotation
+func parseProviderConfig(obj metav1.Object, ar *model.AdmissionReview, providerName string) (interface{}, error) {
+	var config interface{}
+	var err error
+	switch providerName {
+	case vaultprov.ProviderName:
+		config, err = vaultprov.ParseConfig(obj, ar)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse vault config")
+		}
+
+	case baoprov.ProviderName:
+		config, err = baoprov.ParseConfig(obj, ar)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse bao config")
+		}
+
+	default:
+		return nil, errors.Errorf("unknown provider: %s", providerName)
+	}
+
+	return config, nil
+}
+
+func hasProviderPrefix(providerName string, value string, withInlineDelimiters bool) bool {
+	switch providerName {
+	case vaultprov.ProviderName:
+		if withInlineDelimiters {
+			return common.HasVaultPrefix(value) || vaultinjector.HasInlineVaultDelimiters(value)
+		}
+		return common.HasVaultPrefix(value)
+
+	case baoprov.ProviderName:
+		if withInlineDelimiters {
+			return common.HasBaoPrefix(value) || baoinjector.HasInlineBaoDelimiters(value)
+		}
+		return common.HasBaoPrefix(value)
+
+	default:
+		return false
+	}
+}
+
+func hasInlineProviderDelimiters(providerName, value string) bool {
+	switch providerName {
+	case vaultprov.ProviderName:
+		return vaultinjector.HasInlineVaultDelimiters(value)
+
+	case baoprov.ProviderName:
+		return baoinjector.HasInlineBaoDelimiters(value)
+
+	default:
+		return false
+	}
+}
+
+// ======== VAULT ========
+
+func (mw *MutatingWebhook) newVaultClient(vaultConfig vaultprov.Config) (*vault.Client, error) {
 	clientConfig := vaultapi.DefaultConfig()
 	if clientConfig.Error != nil {
 		return nil, clientConfig.Error
@@ -271,7 +379,7 @@ func (mw *MutatingWebhook) newVaultClient(vaultConfig VaultConfig) (*vault.Clien
 			vault.ClientRole(vaultConfig.Role),
 			vault.ClientAuthPath(vaultConfig.Path),
 			vault.NamespacedSecretAuthMethod,
-			vault.ClientLogger(&clientLogger{logger: mw.logger}),
+			vault.ClientLogger(&vaultprov.ClientLogger{Logger: mw.logger}),
 			vault.ExistingSecret(saToken),
 			vault.VaultNamespace(vaultConfig.VaultNamespace),
 		)
@@ -282,49 +390,102 @@ func (mw *MutatingWebhook) newVaultClient(vaultConfig VaultConfig) (*vault.Clien
 		vault.ClientRole(vaultConfig.Role),
 		vault.ClientAuthPath(vaultConfig.Path),
 		vault.ClientAuthMethod(vaultConfig.AuthMethod),
-		vault.ClientLogger(&clientLogger{logger: mw.logger}),
+		vault.ClientLogger(&vaultprov.ClientLogger{Logger: mw.logger}),
 		vault.VaultNamespace(vaultConfig.VaultNamespace),
 	)
 }
 
-func (mw *MutatingWebhook) ServeMetrics(addr string, handler http.Handler) {
-	mw.logger.Info(fmt.Sprintf("Telemetry on http://%s", addr))
+// ======== BAO ========
 
-	mux := http.NewServeMux()
-	mux.Handle("/metrics", handler)
-	err := http.ListenAndServe(addr, mux)
+func (mw *MutatingWebhook) newBaoClient(baoConfig baoprov.Config) (*bao.Client, error) {
+	clientConfig := baoapi.DefaultConfig()
+	if clientConfig.Error != nil {
+		return nil, clientConfig.Error
+	}
+
+	clientConfig.Address = baoConfig.Addr
+
+	tlsConfig := baoapi.TLSConfig{Insecure: baoConfig.SkipVerify}
+	err := clientConfig.ConfigureTLS(&tlsConfig)
 	if err != nil {
-		mw.logger.Error(fmt.Errorf("error serving telemetry: %w", err).Error())
-		os.Exit(1)
+		return nil, err
 	}
-}
 
-func NewMutatingWebhook(logger *slog.Logger, k8sClient kubernetes.Interface) (*MutatingWebhook, error) {
-	namespace := os.Getenv("KUBERNETES_NAMESPACE") // only for kurun
-	if namespace == "" {
-		namespaceBytes, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+	if baoConfig.TLSSecret != "" {
+		tlsSecret, err := mw.k8sClient.CoreV1().Secrets(mw.namespace).Get(
+			context.Background(),
+			baoConfig.TLSSecret,
+			metav1.GetOptions{},
+		)
 		if err != nil {
-			return nil, errors.Wrap(err, "error reading k8s namespace")
+			return nil, errors.Wrap(err, "failed to read Bao TLS Secret")
 		}
-		namespace = string(namespaceBytes)
+
+		clientTLSConfig := clientConfig.HttpClient.Transport.(*http.Transport).TLSClientConfig
+
+		pool := x509.NewCertPool()
+
+		ok := pool.AppendCertsFromPEM(tlsSecret.Data["ca.crt"])
+		if !ok {
+			return nil, errors.Errorf("error loading Bao CA PEM from TLS Secret: %s", tlsSecret.Name)
+		}
+
+		clientTLSConfig.RootCAs = pool
 	}
 
-	return &MutatingWebhook{
-		k8sClient: k8sClient,
-		namespace: namespace,
-		registry:  NewRegistry(),
-		logger:    logger,
-	}, nil
-}
-
-func ErrorLoggerMutator(mutator mutating.MutatorFunc, logger log.Logger) mutating.MutatorFunc {
-	return func(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (result *mutating.MutatorResult, err error) {
-		r, err := mutator(ctx, ar, obj)
+	if baoConfig.BaoServiceAccount != "" {
+		sa, err := mw.k8sClient.CoreV1().ServiceAccounts(baoConfig.ObjectNamespace).Get(context.Background(), baoConfig.BaoServiceAccount, metav1.GetOptions{})
 		if err != nil {
-			logger.WithCtxValues(ctx).WithValues(log.Kv{
-				"error": err,
-			}).Errorf("Admission review request failed")
+			return nil, errors.Wrap(err, "Failed to retrieve specified service account on namespace "+baoConfig.ObjectNamespace)
 		}
-		return r, err
+
+		saToken := ""
+		if len(sa.Secrets) > 0 {
+			secret, err := mw.k8sClient.CoreV1().Secrets(baoConfig.ObjectNamespace).Get(context.Background(), sa.Secrets[0].Name, metav1.GetOptions{})
+			if err != nil {
+				return nil, errors.Wrap(err, "Failed to retrieve secret for service account "+sa.Secrets[0].Name+" in namespace "+baoConfig.ObjectNamespace)
+			}
+			saToken = string(secret.Data["token"])
+		}
+
+		if saToken == "" {
+			tokenTTL := int64(600) // min allowed duration is 10 mins
+			tokenRequest := &authenticationv1.TokenRequest{
+				Spec: authenticationv1.TokenRequestSpec{
+					Audiences:         []string{"https://kubernetes.default.svc"},
+					ExpirationSeconds: &tokenTTL,
+				},
+			}
+
+			token, err := mw.k8sClient.CoreV1().ServiceAccounts(baoConfig.ObjectNamespace).CreateToken(
+				context.Background(),
+				baoConfig.BaoServiceAccount,
+				tokenRequest,
+				metav1.CreateOptions{},
+			)
+			if err != nil {
+				return nil, errors.Wrap(err, "Failed to create a token for the specified service account "+baoConfig.BaoServiceAccount+" on namespace "+baoConfig.ObjectNamespace)
+			}
+			saToken = token.Status.Token
+		}
+
+		return bao.NewClientFromConfig(
+			clientConfig,
+			bao.ClientRole(baoConfig.Role),
+			bao.ClientAuthPath(baoConfig.Path),
+			bao.NamespacedSecretAuthMethod,
+			bao.ClientLogger(&baoprov.ClientLogger{Logger: mw.logger}),
+			bao.ExistingSecret(saToken),
+			bao.VaultNamespace(baoConfig.BaoNamespace),
+		)
 	}
+
+	return bao.NewClientFromConfig(
+		clientConfig,
+		bao.ClientRole(baoConfig.Role),
+		bao.ClientAuthPath(baoConfig.Path),
+		bao.ClientAuthMethod(baoConfig.AuthMethod),
+		bao.ClientLogger(&baoprov.ClientLogger{Logger: mw.logger}),
+		bao.VaultNamespace(baoConfig.BaoNamespace),
+	)
 }
