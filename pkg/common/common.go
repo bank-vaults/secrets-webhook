@@ -1,4 +1,4 @@
-// Copyright © 2024 Cisco
+// Copyright © 2024 Bank-Vaults Maintainers
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -79,15 +79,15 @@ const (
 
 	// Consul template annotations
 	// ref: https://bank-vaults.dev/docs/mutating-webhook/consul-template/
-	VaultConsulTemplateConfigmapAnnotation             = "vault.security.banzaicloud.io/vault-ct-configmap"
-	VaultConsulTemplateImageAnnotation                 = "vault.security.banzaicloud.io/vault-ct-image"
-	VaultConsulTemplateOnceAnnotation                  = "vault.security.banzaicloud.io/vault-ct-once"
-	VaultConsulTemplatePullPolicyAnnotation            = "vault.security.banzaicloud.io/vault-ct-pull-policy"
-	VaultConsulTemplateShareProcessNamespaceAnnotation = "vault.security.banzaicloud.io/vault-ct-share-process-namespace"
-	VaultConsulTemplateCPUAnnotation                   = "vault.security.banzaicloud.io/vault-ct-cpu"
-	VaultConsulTemplateMemoryAnnotation                = "vault.security.banzaicloud.io/vault-ct-memory"
-	VaultConsulTemplateSecretsMountPathAnnotation      = "vault.security.banzaicloud.io/vault-ct-secrets-mount-path"
-	VaultConsulTemplateInjectInitcontainersAnnotation  = "vault.security.banzaicloud.io/vault-ct-inject-in-initcontainers"
+	VaultConsulTemplateConfigmapAnnotation              = "vault.security.banzaicloud.io/vault-ct-configmap"
+	VaultConsulTemplateImageAnnotation                  = "vault.security.banzaicloud.io/vault-ct-image"
+	VaultConsulTemplateOnceAnnotation                   = "vault.security.banzaicloud.io/vault-ct-once"
+	VaultConsulTemplatePullPolicyAnnotation             = "vault.security.banzaicloud.io/vault-ct-pull-policy"
+	VaultConsulTemplateShareProcessNamespaceAnnotation  = "vault.security.banzaicloud.io/vault-ct-share-process-namespace"
+	VaultConsulTemplateCPUAnnotation                    = "vault.security.banzaicloud.io/vault-ct-cpu"
+	VaultConsulTemplateMemoryAnnotation                 = "vault.security.banzaicloud.io/vault-ct-memory"
+	VaultConsulTemplateSecretsMountPathAnnotation       = "vault.security.banzaicloud.io/vault-ct-secrets-mount-path"
+	VaultConsulTemplateInjectInInitcontainersAnnotation = "vault.security.banzaicloud.io/vault-ct-inject-in-initcontainers"
 
 	// Bao annotations
 	// ref: https://bank-vaults.dev/docs/mutating-webhook/bao/

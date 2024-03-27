@@ -38,7 +38,7 @@ ignored = [
 ]
 
 [header]
-authors = ["Banzai Cloud", "Bank-Vaults Maintainers", "Cisco"]
+authors = ["Banzai Cloud", "Bank-Vaults Maintainers"]
 ignorePaths = [".direnv", ".devenv", "vendor"]
 ignoreFiles = ["zz_generated.*.go"]
 template = """// Copyright © :YEAR: :AUTHOR:
