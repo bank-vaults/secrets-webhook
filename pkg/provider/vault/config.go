@@ -1,4 +1,4 @@
-// Copyright © 2023 Cisco
+// Copyright © 2023 Bank-Vaults Maintainers
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -341,7 +341,7 @@ func ParseConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 		config.VaultNamespace = viper.GetString("VAULT_NAMESPACE")
 	}
 
-	if val, ok := annotations[common.VaultConsulTemplateInjectInitcontainersAnnotation]; ok {
+	if val, ok := annotations[common.VaultConsulTemplateInjectInInitcontainersAnnotation]; ok {
 		config.CtInjectInInitcontainers, _ = strconv.ParseBool(val)
 	} else {
 		config.CtInjectInInitcontainers = false

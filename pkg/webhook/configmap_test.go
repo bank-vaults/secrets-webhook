@@ -65,8 +65,9 @@ func TestMutateConfigMap_Vault(t *testing.T) {
 
 	providerConfigs, err := parseProviderConfigs(&configMap, admissionReview, []string{vaultprov.ProviderName})
 	assert.NoError(t, err)
+	mw.providerConfigs = providerConfigs
 
-	err = mw.MutateConfigMap(&configMap, providerConfigs)
+	err = mw.MutateConfigMap(&configMap)
 	assert.NoError(t, err)
 
 	assert.Equal(t, map[string]string{
