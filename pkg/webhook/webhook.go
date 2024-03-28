@@ -255,11 +255,15 @@ func parseProviderConfig(obj metav1.Object, ar *model.AdmissionReview, providerN
 			return nil, errors.Wrap(err, "failed to parse vault config")
 		}
 
+		currentlyUsedProvider = vaultprov.ProviderName
+
 	case baoprov.ProviderName:
 		config, err = baoprov.ParseConfig(obj, ar)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse bao config")
 		}
+
+		currentlyUsedProvider = baoprov.ProviderName
 
 	default:
 		return nil, errors.Errorf("unknown provider: %s", providerName)

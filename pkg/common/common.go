@@ -90,7 +90,6 @@ const (
 	VaultConsulTemplateInjectInInitcontainersAnnotation = "vault.security.banzaicloud.io/vault-ct-inject-in-initcontainers"
 
 	// Bao annotations
-	// ref: https://bank-vaults.dev/docs/mutating-webhook/bao/
 	BaoAddrAnnotation                          = "bao.security.banzaicloud.io/bao-addr"
 	BaoImageAnnotation                         = "bao.security.banzaicloud.io/bao-image"
 	BaoImagePullPolicyAnnotation               = "bao.security.banzaicloud.io/bao-image-pull-policy"
@@ -113,7 +112,6 @@ const (
 	BaoFromPathAnnotation                      = "bao.security.banzaicloud.io/bao-from-path"
 
 	// Bao agent annotations
-	// ref: https://bank-vaults.dev/docs/mutating-webhook/bao-agent-templating/
 	BaoAgentAnnotation                      = "bao.security.banzaicloud.io/bao-agent"
 	BaoAgentConfigmapAnnotation             = "bao.security.banzaicloud.io/bao-agent-configmap"
 	BaoAgentOnceAnnotation                  = "bao.security.banzaicloud.io/bao-agent-once"
@@ -128,7 +126,6 @@ const (
 	BaoAgentEnvVariablesAnnotation          = "bao.security.banzaicloud.io/bao-agent-env-variables"
 
 	// Consul template annotations
-	// ref: https://bank-vaults.dev/docs/mutating-webhook/bao-consul-template/
 	BaoConsulTemplateConfigmapAnnotation              = "bao.security.banzaicloud.io/bao-ct-configmap"
 	BaoConsulTemplateImageAnnotation                  = "bao.security.banzaicloud.io/bao-ct-image"
 	BaoConsulTemplateOnceAnnotation                   = "bao.security.banzaicloud.io/bao-ct-once"

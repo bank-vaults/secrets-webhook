@@ -40,16 +40,12 @@ func (mw *MutatingWebhook) MutatePod(ctx context.Context, pod *corev1.Pod, webho
 
 	switch providerConfig := mw.providerConfig.(type) {
 	case vault.Config:
-		currentlyUsedProvider = vault.ProviderName
-
 		err := mw.mutatePodForVault(ctx, pod, webhookConfig, secretInitConfig, providerConfig, dryRun)
 		if err != nil {
 			return errors.Wrap(err, "failed to mutate secret")
 		}
 
 	case bao.Config:
-		currentlyUsedProvider = bao.ProviderName
-
 		err := mw.mutatePodForBao(ctx, pod, webhookConfig, secretInitConfig, providerConfig, dryRun)
 		if err != nil {
 			return errors.Wrap(err, "failed to mutate secret")

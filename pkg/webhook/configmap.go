@@ -35,16 +35,12 @@ func (mw *MutatingWebhook) MutateConfigMap(configMap *corev1.ConfigMap) error {
 
 	switch providerConfig := mw.providerConfig.(type) {
 	case vault.Config:
-		currentlyUsedProvider = vault.ProviderName
-
 		err := mw.mutateConfigMapForVault(configMap, providerConfig)
 		if err != nil {
 			return errors.Wrap(err, "failed to mutate secret")
 		}
 
 	case bao.Config:
-		currentlyUsedProvider = bao.ProviderName
-
 		err := mw.mutateConfigMapForBao(configMap, providerConfig)
 		if err != nil {
 			return errors.Wrap(err, "failed to mutate secret")

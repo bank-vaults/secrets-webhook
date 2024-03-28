@@ -86,16 +86,12 @@ func (mw *MutatingWebhook) MutateObject(object *unstructured.Unstructured) error
 
 	switch providerConfig := mw.providerConfig.(type) {
 	case vault.Config:
-		currentlyUsedProvider = vault.ProviderName
-
 		err := mw.mutateObjectForVault(object, providerConfig)
 		if err != nil {
 			return errors.Wrap(err, "failed to mutate secret")
 		}
 
 	case bao.Config:
-		currentlyUsedProvider = bao.ProviderName
-
 		err := mw.mutateObjectForBao(object, providerConfig)
 		if err != nil {
 			return errors.Wrap(err, "failed to mutate secret")
