@@ -40,12 +40,12 @@ import (
 )
 
 func TestSecretValueInjection(t *testing.T) {
-	secret := applyResource(features.New("secret"), "secret.yaml").
+	secretVault := applyResource(features.New("secret-vault"), "secret-vault.yaml").
 		Assess("object created", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 			secrets := &v1.SecretList{
 				Items: []v1.Secret{
 					{
-						ObjectMeta: metav1.ObjectMeta{Name: "test-secret", Namespace: cfg.Namespace()},
+						ObjectMeta: metav1.ObjectMeta{Name: "test-secret-vault", Namespace: cfg.Namespace()},
 					},
 				},
 			}
@@ -59,7 +59,7 @@ func TestSecretValueInjection(t *testing.T) {
 		Assess("secret values are injected", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 			var secret v1.Secret
 
-			err := cfg.Client().Resources(cfg.Namespace()).Get(ctx, "test-secret", cfg.Namespace(), &secret)
+			err := cfg.Client().Resources(cfg.Namespace()).Get(ctx, "test-secret-vault", cfg.Namespace(), &secret)
 			require.NoError(t, err)
 
 			type v1 struct {
@@ -89,12 +89,12 @@ func TestSecretValueInjection(t *testing.T) {
 		}).
 		Feature()
 
-	configMap := applyResource(features.New("configmap"), "configmap.yaml").
+	configMapVault := applyResource(features.New("configmap-vault"), "configmap-vault.yaml").
 		Assess("object created", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 			configMaps := &v1.ConfigMapList{
 				Items: []v1.ConfigMap{
 					{
-						ObjectMeta: metav1.ObjectMeta{Name: "test-configmap", Namespace: cfg.Namespace()},
+						ObjectMeta: metav1.ObjectMeta{Name: "test-configmap-vault", Namespace: cfg.Namespace()},
 					},
 				},
 			}
@@ -108,7 +108,7 @@ func TestSecretValueInjection(t *testing.T) {
 		Assess("secret values are injected", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 			var configMap v1.ConfigMap
 
-			err := cfg.Client().Resources(cfg.Namespace()).Get(ctx, "test-configmap", cfg.Namespace(), &configMap)
+			err := cfg.Client().Resources(cfg.Namespace()).Get(ctx, "test-configmap-vault", cfg.Namespace(), &configMap)
 			require.NoError(t, err)
 
 			assert.Equal(t, "secretId", string(configMap.Data["aws-access-key-id"]))
@@ -120,14 +120,14 @@ func TestSecretValueInjection(t *testing.T) {
 		}).
 		Feature()
 
-	testenv.Test(t, secret, configMap)
+	testenv.Test(t, secretVault, configMapVault)
 }
 
 func TestPodMutation(t *testing.T) {
-	deployment := applyResource(features.New("deployment"), "deployment.yaml").
+	deploymentVault := applyResource(features.New("deployment-vault"), "deployment-vault.yaml").
 		Assess("available", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 			deployment := &appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-deployment", Namespace: cfg.Namespace()},
+				ObjectMeta: metav1.ObjectMeta{Name: "test-deployment-vault", Namespace: cfg.Namespace()},
 			}
 
 			// wait for the deployment to become available
@@ -141,7 +141,7 @@ func TestPodMutation(t *testing.T) {
 
 			pods := &v1.PodList{}
 
-			err := r.List(ctx, pods, resources.WithLabelSelector("app.kubernetes.io/name=test-deployment"))
+			err := r.List(ctx, pods, resources.WithLabelSelector("app.kubernetes.io/name=test-deployment-vault"))
 			require.NoError(t, err)
 
 			if len(pods.Items) == 0 {
@@ -158,10 +158,10 @@ func TestPodMutation(t *testing.T) {
 		}).
 		Feature()
 
-	deploymentSeccontext := applyResource(features.New("deployment-seccontext"), "deployment-seccontext.yaml").
+	deploymentSeccontextVault := applyResource(features.New("deployment-seccontext-vault"), "deployment-seccontext-vault.yaml").
 		Assess("available", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 			deployment := &appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-deployment-seccontext", Namespace: cfg.Namespace()},
+				ObjectMeta: metav1.ObjectMeta{Name: "test-deployment-seccontext-vault", Namespace: cfg.Namespace()},
 			}
 
 			// wait for the deployment to become available
@@ -172,12 +172,12 @@ func TestPodMutation(t *testing.T) {
 		}).
 		Feature()
 
-	deploymentTemplating := applyResource(features.New("deployment-template"), "deployment-template.yaml").
+	deploymentTemplatingVault := applyResource(features.New("deployment-template-vault"), "deployment-template-vault.yaml").
 		Assess("available", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 			r := cfg.Client().Resources()
 
 			deployment := &appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-deployment-template", Namespace: cfg.Namespace()},
+				ObjectMeta: metav1.ObjectMeta{Name: "test-deployment-template-vault", Namespace: cfg.Namespace()},
 			}
 
 			// wait for the deployment to become available
@@ -191,7 +191,7 @@ func TestPodMutation(t *testing.T) {
 
 			pods := &v1.PodList{}
 
-			err := r.List(ctx, pods, resources.WithLabelSelector("app.kubernetes.io/name=test-deployment-template"))
+			err := r.List(ctx, pods, resources.WithLabelSelector("app.kubernetes.io/name=test-deployment-template-vault"))
 			require.NoError(t, err)
 
 			if len(pods.Items) == 0 {
@@ -217,10 +217,10 @@ func TestPodMutation(t *testing.T) {
 		}).
 		Feature()
 
-	deploymentInitSeccontext := applyResource(features.New("deployment-init-seccontext"), "deployment-init-seccontext.yaml").
+	deploymentInitSeccontextVault := applyResource(features.New("deployment-init-seccontext-vault"), "deployment-init-seccontext-vault.yaml").
 		Assess("available", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 			deployment := &appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-deployment-init-seccontext", Namespace: cfg.Namespace()},
+				ObjectMeta: metav1.ObjectMeta{Name: "test-deployment-init-seccontext-vault", Namespace: cfg.Namespace()},
 			}
 
 			// wait for the deployment to become available
@@ -234,7 +234,7 @@ func TestPodMutation(t *testing.T) {
 
 			pods := &v1.PodList{}
 
-			err := r.List(ctx, pods, resources.WithLabelSelector("app.kubernetes.io/name=test-deployment-init-seccontext"))
+			err := r.List(ctx, pods, resources.WithLabelSelector("app.kubernetes.io/name=test-deployment-init-seccontext-vault"))
 			require.NoError(t, err)
 
 			if len(pods.Items) == 0 {
@@ -258,7 +258,7 @@ func TestPodMutation(t *testing.T) {
 		}).
 		Feature()
 
-	testenv.Test(t, deployment, deploymentSeccontext, deploymentTemplating, deploymentInitSeccontext)
+	testenv.Test(t, deploymentVault, deploymentSeccontextVault, deploymentTemplatingVault, deploymentInitSeccontextVault)
 }
 
 func applyResource(builder *features.FeatureBuilder, file string) *features.FeatureBuilder {

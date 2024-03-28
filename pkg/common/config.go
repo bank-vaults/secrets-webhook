@@ -190,5 +190,6 @@ func SetWebhookAndSecretInitDefaults() {
 	viper.SetDefault("SECRET_INIT_MEMORY_LIMIT", "")
 	viper.SetDefault("SECRET_INIT_LOG_SERVER", "")
 	viper.SetDefault("SECRET_INIT_LOG_LEVEL", "info")
+
 	viper.AutomaticEnv()
 }

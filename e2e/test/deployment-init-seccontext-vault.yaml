@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: test-deployment-init-seccontext
+  name: test-deployment-init-seccontext-vault
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: test-deployment-init-seccontext
+      app.kubernetes.io/name: test-deployment-init-seccontext-vault
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: test-deployment-init-seccontext
+        app.kubernetes.io/name: test-deployment-init-seccontext-vault
       annotations:
         secrets-webhook.security.banzaicloud.io/provider: "vault"
         secrets-webhook.security.banzaicloud.io/run-as-non-root: "true"

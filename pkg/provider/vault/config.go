@@ -401,5 +401,6 @@ func SetDefaults() {
 	viper.SetDefault("transit_key_id", "")
 	viper.SetDefault("transit_path", "")
 	viper.SetDefault("transit_batch_size", 25)
+
 	viper.AutomaticEnv()
 }

@@ -400,5 +400,6 @@ func SetDefaults() {
 	viper.SetDefault("bao_transit_key_id", "")
 	viper.SetDefault("bao_transit_path", "")
 	viper.SetDefault("bao_transit_batch_size", 25)
+
 	viper.AutomaticEnv()
 }

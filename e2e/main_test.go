@@ -210,6 +210,28 @@ func useNamespace(ns string) env.Func {
 	}
 }
 
+type reverseFinishEnvironment struct {
+	env.Environment
+
+	finishFuncs []env.Func
+}
+
+// Finish registers funcs that are executed at the end of the test suite in a reverse order.
+func (e *reverseFinishEnvironment) Finish(f ...env.Func) env.Environment {
+	e.finishFuncs = append(f[:], e.finishFuncs...)
+
+	return e
+}
+
+// Run launches the test suite from within a TestMain.
+func (e *reverseFinishEnvironment) Run(m *testing.M) int {
+	e.Environment.Finish(e.finishFuncs...)
+
+	return e.Environment.Run(m)
+}
+
+// ======== VAULT ========
+
 func installVault(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
 	r, err := resources.New(cfg.Client().RESTConfig())
 	if err != nil {
@@ -289,24 +311,4 @@ func uninstallVault(ctx context.Context, cfg *envconf.Config) (context.Context, 
 	}
 
 	return ctx, nil
-}
-
-type reverseFinishEnvironment struct {
-	env.Environment
-
-	finishFuncs []env.Func
-}
-
-// Finish registers funcs that are executed at the end of the test suite in a reverse order.
-func (e *reverseFinishEnvironment) Finish(f ...env.Func) env.Environment {
-	e.finishFuncs = append(f[:], e.finishFuncs...)
-
-	return e
-}
-
-// Run launches the test suite from within a TestMain.
-func (e *reverseFinishEnvironment) Run(m *testing.M) int {
-	e.Environment.Finish(e.finishFuncs...)
-
-	return e.Environment.Run(m)
 }
