@@ -136,7 +136,7 @@ func (mw *MutatingWebhook) lookForEnvFrom(envFrom []corev1.EnvFromSource, ns str
 			}
 
 			for key, value := range data {
-				if hasProviderPrefix(currentlyUsedProvider, value, true) {
+				if hasProviderPrefix(value, true) {
 					envFromCM := corev1.EnvVar{
 						Name:  key,
 						Value: value,
@@ -158,7 +158,7 @@ func (mw *MutatingWebhook) lookForEnvFrom(envFrom []corev1.EnvFromSource, ns str
 
 			for name, v := range data {
 				value := string(v)
-				if hasProviderPrefix(currentlyUsedProvider, value, true) {
+				if hasProviderPrefix(value, true) {
 					envFromSec := corev1.EnvVar{
 						Name:  name,
 						Value: value,
@@ -183,7 +183,7 @@ func (mw *MutatingWebhook) lookForValueFrom(env corev1.EnvVar, ns string) (*core
 		}
 
 		value := data[env.ValueFrom.ConfigMapKeyRef.Key]
-		if hasProviderPrefix(currentlyUsedProvider, value, true) {
+		if hasProviderPrefix(value, true) {
 			fromCM := corev1.EnvVar{
 				Name:  env.Name,
 				Value: value,
@@ -202,7 +202,7 @@ func (mw *MutatingWebhook) lookForValueFrom(env corev1.EnvVar, ns string) (*core
 		}
 
 		value := string(data[env.ValueFrom.SecretKeyRef.Key])
-		if hasProviderPrefix(currentlyUsedProvider, value, true) {
+		if hasProviderPrefix(value, true) {
 			fromSecret := corev1.EnvVar{
 				Name:  env.Name,
 				Value: value,
@@ -272,8 +272,8 @@ func parseProviderConfig(obj metav1.Object, ar *model.AdmissionReview, providerN
 	return config, nil
 }
 
-func hasProviderPrefix(providerName string, value string, withInlineDelimiters bool) bool {
-	switch providerName {
+func hasProviderPrefix(value string, withInlineDelimiters bool) bool {
+	switch currentlyUsedProvider {
 	case vaultprov.ProviderName:
 		if withInlineDelimiters {
 			return common.HasVaultPrefix(value) || vaultinjector.HasInlineVaultDelimiters(value)
@@ -291,8 +291,8 @@ func hasProviderPrefix(providerName string, value string, withInlineDelimiters b
 	}
 }
 
-func hasInlineProviderDelimiters(providerName, value string) bool {
-	switch providerName {
+func hasInlineProviderDelimiters(value string) bool {
+	switch currentlyUsedProvider {
 	case vaultprov.ProviderName:
 		return vaultinjector.HasInlineVaultDelimiters(value)
 

@@ -36,6 +36,11 @@ import (
 const SecretInitVolumeName = "secret-init"
 
 func (mw *MutatingWebhook) MutatePod(ctx context.Context, pod *corev1.Pod, webhookConfig common.Config, secretInitConfig common.SecretInitConfig, dryRun bool) error {
+	if isPodAlreadyMutated(pod) {
+		mw.logger.Info(fmt.Sprintf("Pod %s is already mutated, skipping mutation.", pod.Name))
+		return nil
+	}
+
 	mw.logger.Debug("Successfully connected to the API")
 
 	switch providerConfig := mw.providerConfig.(type) {
@@ -121,7 +126,7 @@ func (mw *MutatingWebhook) mutateContainers(ctx context.Context, containers []co
 		}
 
 		for _, env := range container.Env {
-			if hasProviderPrefix(currentlyUsedProvider, env.Value, true) {
+			if hasProviderPrefix(env.Value, true) {
 				envVars = append(envVars, env)
 			}
 
@@ -602,11 +607,6 @@ func getBaseSecurityContext(podSecurityContext *corev1.PodSecurityContext, webho
 // ======== VAULT ========
 
 func (mw *MutatingWebhook) mutatePodForVault(ctx context.Context, pod *corev1.Pod, webhookConfig common.Config, secretInitConfig common.SecretInitConfig, vaultConfig vault.Config, dryRun bool) error {
-	if isPodAlreadyMutated(pod) {
-		mw.logger.Info(fmt.Sprintf("Pod %s is already mutated, skipping mutation.", pod.Name))
-		return nil
-	}
-
 	initContainersMutated, err := mw.mutateContainers(ctx, pod.Spec.InitContainers, &pod.Spec, webhookConfig, secretInitConfig, vaultConfig, vaultConfig.ObjectNamespace, vaultConfig.FromPath)
 	if err != nil {
 		return err
@@ -1121,11 +1121,6 @@ func getAgentContainersForVault(originalContainers []corev1.Container, podSecuri
 // ======== BAO ========
 
 func (mw *MutatingWebhook) mutatePodForBao(ctx context.Context, pod *corev1.Pod, webhookConfig common.Config, secretInitConfig common.SecretInitConfig, baoConfig bao.Config, dryRun bool) error {
-	if isPodAlreadyMutated(pod) {
-		mw.logger.Info(fmt.Sprintf("Pod %s is already mutated, skipping mutation.", pod.Name))
-		return nil
-	}
-
 	initContainersMutated, err := mw.mutateContainers(ctx, pod.Spec.InitContainers, &pod.Spec, webhookConfig, secretInitConfig, baoConfig, baoConfig.ObjectNamespace, baoConfig.FromPath)
 	if err != nil {
 		return err

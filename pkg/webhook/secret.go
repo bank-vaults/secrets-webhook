@@ -56,6 +56,16 @@ type dockerAuthConfig struct {
 }
 
 func (mw *MutatingWebhook) MutateSecret(secret *corev1.Secret) error {
+	// do an early exit if no mutation is needed
+	requiredToMutate, err := secretNeedsMutation(secret)
+	if err != nil {
+		return errors.Wrap(err, "failed to check if secret needs to be mutated")
+	}
+
+	if !requiredToMutate {
+		return nil
+	}
+
 	switch providerConfig := mw.providerConfig.(type) {
 	case vault.Config:
 		err := mw.mutateSecretForVault(secret, providerConfig)
@@ -92,14 +102,14 @@ func secretNeedsMutation(secret *corev1.Secret) (bool, error) {
 				}
 
 				auth := string(authBytes)
-				if hasProviderPrefix(currentlyUsedProvider, auth, false) {
+				if hasProviderPrefix(auth, false) {
 					return true, nil
 				}
 			}
 
-		} else if hasProviderPrefix(currentlyUsedProvider, string(value), false) {
+		} else if hasProviderPrefix(string(value), false) {
 			return true, nil
-		} else if hasInlineProviderDelimiters(currentlyUsedProvider, string(value)) {
+		} else if hasInlineProviderDelimiters(string(value)) {
 			return true, nil
 		}
 	}
@@ -110,16 +120,6 @@ func secretNeedsMutation(secret *corev1.Secret) (bool, error) {
 // ======== VAULT ========
 
 func (mw *MutatingWebhook) mutateSecretForVault(secret *corev1.Secret, vaultConfig vault.Config) error {
-	// do an early exit if no mutation is needed
-	requiredToMutate, err := secretNeedsMutation(secret)
-	if err != nil {
-		return errors.Wrap(err, "failed to check if secret needs to be mutated")
-	}
-
-	if !requiredToMutate {
-		return nil
-	}
-
 	vaultClient, err := mw.newVaultClient(vaultConfig)
 	if err != nil {
 		return errors.Wrap(err, "failed to create vault client")
@@ -227,16 +227,6 @@ func (mw *MutatingWebhook) mutateSecretDataForVault(secret *corev1.Secret, injec
 // ======== BAO ========
 
 func (mw *MutatingWebhook) mutateSecretForBao(secret *corev1.Secret, baoConfig bao.Config) error {
-	// do an early exit if no mutation is needed
-	requiredToMutate, err := secretNeedsMutation(secret)
-	if err != nil {
-		return errors.Wrap(err, "failed to check if secret needs to be mutated")
-	}
-
-	if !requiredToMutate {
-		return nil
-	}
-
 	baoClient, err := mw.newBaoClient(baoConfig)
 	if err != nil {
 		return errors.Wrap(err, "failed to create bao client")

@@ -55,13 +55,13 @@ func (mw *MutatingWebhook) MutateConfigMap(configMap *corev1.ConfigMap) error {
 
 func configMapNeedsMutation(configMap *corev1.ConfigMap) bool {
 	for _, value := range configMap.Data {
-		if hasProviderPrefix(currentlyUsedProvider, value, true) {
+		if hasProviderPrefix(value, true) {
 			return true
 		}
 	}
 
 	for _, value := range configMap.BinaryData {
-		if hasProviderPrefix(currentlyUsedProvider, string(value), false) {
+		if hasProviderPrefix(string(value), false) {
 			return true
 		}
 	}
