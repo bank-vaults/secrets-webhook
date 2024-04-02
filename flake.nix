@@ -27,6 +27,8 @@
 
             services = {
               vault.enable = true;
+              # TODO: Add Bao once it's available in nixpkgs
+              # bao.enable = true;
             };
 
             pre-commit.hooks = {
@@ -73,6 +75,7 @@
               HELM_DATA_HOME = "${config.devenv.shells.default.env.DEVENV_STATE}/helm/data";
 
               VAULT_TOKEN = "227e1cce-6bf7-30bb-2d2a-acc854318caf";
+              BAO_TOKEN = "227e1cce-6bf7-30bb-2d2a-acc854318caf";
             };
 
             # https://github.com/cachix/devenv/issues/528#issuecomment-1556108767
