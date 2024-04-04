@@ -73,9 +73,6 @@
               HELM_CACHE_HOME = "${config.devenv.shells.default.env.DEVENV_STATE}/helm/cache";
               HELM_CONFIG_HOME = "${config.devenv.shells.default.env.DEVENV_STATE}/helm/config";
               HELM_DATA_HOME = "${config.devenv.shells.default.env.DEVENV_STATE}/helm/data";
-
-              VAULT_TOKEN = "227e1cce-6bf7-30bb-2d2a-acc854318caf";
-              BAO_TOKEN = "227e1cce-6bf7-30bb-2d2a-acc854318caf";
             };
 
             # https://github.com/cachix/devenv/issues/528#issuecomment-1556108767

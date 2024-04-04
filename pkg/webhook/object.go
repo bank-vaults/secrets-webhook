@@ -81,10 +81,10 @@ func sliceIterator(s []interface{}) iterator {
 	return c
 }
 
-func (mw *MutatingWebhook) MutateObject(object *unstructured.Unstructured) error {
+func (mw *MutatingWebhook) MutateObject(object *unstructured.Unstructured, config interface{}) error {
 	mw.logger.Debug(fmt.Sprintf("mutating object: %s.%s", object.GetNamespace(), object.GetName()))
 
-	switch providerConfig := mw.providerConfig.(type) {
+	switch providerConfig := config.(type) {
 	case vault.Config:
 		err := mw.mutateObjectForVault(object, providerConfig)
 		if err != nil {
@@ -98,7 +98,7 @@ func (mw *MutatingWebhook) MutateObject(object *unstructured.Unstructured) error
 		}
 
 	default:
-		return errors.Errorf("unknown provider config type: %T", mw.providerConfig)
+		return errors.Errorf("unknown provider config type: %T", config)
 	}
 
 	return nil

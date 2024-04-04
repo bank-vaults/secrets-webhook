@@ -3403,9 +3403,8 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 				t.Errorf("parseProviderConfigs() error = %v, wantErr %v", err, ttp.wantErr)
 				return
 			}
-			mw.providerConfig = providerConfig
 
-			err = mw.MutatePod(context.Background(), ttp.args.pod, ttp.args.webhookConfig, ttp.args.secretInitConfig, false)
+			err = mw.MutatePod(context.Background(), ttp.args.pod, ttp.args.webhookConfig, ttp.args.secretInitConfig, providerConfig, false)
 			if (err != nil) != ttp.wantErr {
 				t.Errorf("MutatingWebhook.MutatePod() error = %v, wantErr %v", err, ttp.wantErr)
 				return

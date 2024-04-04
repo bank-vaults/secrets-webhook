@@ -27,13 +27,13 @@ import (
 	"github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 )
 
-func (mw *MutatingWebhook) MutateConfigMap(configMap *corev1.ConfigMap) error {
+func (mw *MutatingWebhook) MutateConfigMap(configMap *corev1.ConfigMap, config interface{}) error {
 	// do an early exit if no mutation is needed
 	if !configMapNeedsMutation(configMap) {
 		return nil
 	}
 
-	switch providerConfig := mw.providerConfig.(type) {
+	switch providerConfig := config.(type) {
 	case vault.Config:
 		err := mw.mutateConfigMapForVault(configMap, providerConfig)
 		if err != nil {
@@ -47,7 +47,7 @@ func (mw *MutatingWebhook) MutateConfigMap(configMap *corev1.ConfigMap) error {
 		}
 
 	default:
-		return errors.Errorf("unknown provider config type: %T", mw.providerConfig)
+		return errors.Errorf("unknown provider config type: %T", config)
 	}
 
 	return nil

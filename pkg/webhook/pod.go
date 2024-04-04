@@ -35,7 +35,7 @@ import (
 
 const SecretInitVolumeName = "secret-init"
 
-func (mw *MutatingWebhook) MutatePod(ctx context.Context, pod *corev1.Pod, webhookConfig common.Config, secretInitConfig common.SecretInitConfig, dryRun bool) error {
+func (mw *MutatingWebhook) MutatePod(ctx context.Context, pod *corev1.Pod, webhookConfig common.Config, secretInitConfig common.SecretInitConfig, config interface{}, dryRun bool) error {
 	if isPodAlreadyMutated(pod) {
 		mw.logger.Info(fmt.Sprintf("Pod %s is already mutated, skipping mutation.", pod.Name))
 		return nil
@@ -43,7 +43,7 @@ func (mw *MutatingWebhook) MutatePod(ctx context.Context, pod *corev1.Pod, webho
 
 	mw.logger.Debug("Successfully connected to the API")
 
-	switch providerConfig := mw.providerConfig.(type) {
+	switch providerConfig := config.(type) {
 	case vault.Config:
 		err := mw.mutatePodForVault(ctx, pod, webhookConfig, secretInitConfig, providerConfig, dryRun)
 		if err != nil {
@@ -57,7 +57,7 @@ func (mw *MutatingWebhook) MutatePod(ctx context.Context, pod *corev1.Pod, webho
 		}
 
 	default:
-		return errors.Errorf("unknown provider config type: %T", mw.providerConfig)
+		return errors.Errorf("unknown provider config type: %T", config)
 	}
 
 	return nil

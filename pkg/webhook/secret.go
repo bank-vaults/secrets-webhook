@@ -55,7 +55,7 @@ type dockerAuthConfig struct {
 	RegistryToken string `json:"registrytoken,omitempty"`
 }
 
-func (mw *MutatingWebhook) MutateSecret(secret *corev1.Secret) error {
+func (mw *MutatingWebhook) MutateSecret(secret *corev1.Secret, config interface{}) error {
 	// do an early exit if no mutation is needed
 	requiredToMutate, err := secretNeedsMutation(secret)
 	if err != nil {
@@ -66,7 +66,7 @@ func (mw *MutatingWebhook) MutateSecret(secret *corev1.Secret) error {
 		return nil
 	}
 
-	switch providerConfig := mw.providerConfig.(type) {
+	switch providerConfig := config.(type) {
 	case vault.Config:
 		err := mw.mutateSecretForVault(secret, providerConfig)
 		if err != nil {
@@ -80,7 +80,7 @@ func (mw *MutatingWebhook) MutateSecret(secret *corev1.Secret) error {
 		}
 
 	default:
-		return errors.Errorf("unknown provider config type: %T", mw.providerConfig)
+		return errors.Errorf("unknown provider config type: %T", config)
 	}
 
 	return nil

@@ -51,11 +51,10 @@ import (
 var currentlyUsedProvider string
 
 type MutatingWebhook struct {
-	k8sClient      kubernetes.Interface
-	namespace      string
-	registry       ImageRegistry
-	logger         *slog.Logger
-	providerConfig interface{}
+	k8sClient kubernetes.Interface
+	namespace string
+	registry  ImageRegistry
+	logger    *slog.Logger
 }
 
 func (mw *MutatingWebhook) SecretsMutator(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
@@ -70,20 +69,19 @@ func (mw *MutatingWebhook) SecretsMutator(ctx context.Context, ar *model.Admissi
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse provider configs: %w", err)
 	}
-	mw.providerConfig = config
 
 	switch v := obj.(type) {
 	case *corev1.Pod:
-		return &mutating.MutatorResult{MutatedObject: v}, mw.MutatePod(ctx, v, webhookConfig, secretInitConfig, ar.DryRun)
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutatePod(ctx, v, webhookConfig, secretInitConfig, config, ar.DryRun)
 
 	case *corev1.Secret:
-		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateSecret(v)
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateSecret(v, config)
 
 	case *corev1.ConfigMap:
-		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateConfigMap(v)
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateConfigMap(v, config)
 
 	case *unstructured.Unstructured:
-		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateObject(v)
+		return &mutating.MutatorResult{MutatedObject: v}, mw.MutateObject(v, config)
 
 	default:
 		return &mutating.MutatorResult{}, nil
