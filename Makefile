@@ -64,11 +64,11 @@ check: test lint ## Run lint checks and tests
 
 .PHONY: test
 test: ## Run tests
-	go test -race -v ./...
+	go test -race -count=1 -v ./...
 
 .PHONY: test-e2e
 test-e2e: ## Run e2e tests
-	go test -race -v -timeout 900s -tags e2e ./e2e/
+	go test -race -count=1 -v -timeout 900s -tags e2e ./e2e/
 
 .PHONY: test-e2e-local
 test-e2e-local: container-image ## Run e2e tests locally
