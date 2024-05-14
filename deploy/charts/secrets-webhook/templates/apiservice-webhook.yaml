@@ -107,7 +107,7 @@ metadata:
     cert-manager.io/inject-ca-from: "{{ .Release.Namespace }}/{{ .Values.certificate.servingCertificate }}"
 {{- end }}
 webhooks:
-- name: pods.{{ template "secrets-webhook.name" . }}.admission.banzaicloud.com
+- name: pods.{{ template "secrets-webhook.name" . }}.admission.bank-vaults.com
   {{- if semverCompare ">=1.14-0" (include "secrets-webhook.capabilities.kubeVersion" .) }}
   {{- with .Values.reinvocationPolicy }}
   reinvocationPolicy: {{ . }}
@@ -162,7 +162,7 @@ webhooks:
     {{- if $podsObjectSelector.matchExpressions }}
 {{ toYaml $podsObjectSelector.matchExpressions | indent 4 }}
     {{- end }}
-    - key: security.banzaicloud.io/mutate
+    - key: security.bank-vaults.io/mutate
       operator: NotIn
       values:
       - skip
@@ -171,7 +171,7 @@ webhooks:
   sideEffects: {{ .Values.apiSideEffectValue }}
 {{- end }}
 {{- if .Values.secretsMutation }}
-- name: secrets.{{ template "secrets-webhook.name" . }}.admission.banzaicloud.com
+- name: secrets.{{ template "secrets-webhook.name" . }}.admission.bank-vaults.com
   {{- with .Values.reinvocationPolicy }}
   reinvocationPolicy: {{ . }}
   {{- end }}
@@ -231,7 +231,7 @@ webhooks:
       operator: NotIn
       values:
       - helm
-    - key: security.banzaicloud.io/mutate
+    - key: security.bank-vaults.io/mutate
       operator: NotIn
       values:
       - skip
@@ -241,7 +241,7 @@ webhooks:
 {{- end }}
 {{- end }}
 {{- if .Values.configMapMutation }}
-- name: configmaps.{{ template "secrets-webhook.name" . }}.admission.banzaicloud.com
+- name: configmaps.{{ template "secrets-webhook.name" . }}.admission.bank-vaults.com
   {{- if semverCompare ">=1.14-0" (include "secrets-webhook.capabilities.kubeVersion" .) }}
   admissionReviewVersions: ["v1beta1"]
   {{- with .Values.reinvocationPolicy }}
@@ -301,7 +301,7 @@ webhooks:
       operator: NotIn
       values:
       - helm
-    - key: security.banzaicloud.io/mutate
+    - key: security.bank-vaults.io/mutate
       operator: NotIn
       values:
       - skip
@@ -311,7 +311,7 @@ webhooks:
 {{- end }}
 {{- end }}
 {{- if .Values.customResourceMutations }}
-- name: objects.{{ template "secrets-webhook.name" . }}.admission.banzaicloud.com
+- name: objects.{{ template "secrets-webhook.name" . }}.admission.bank-vaults.com
   {{- if semverCompare ">=1.14-0" (include "secrets-webhook.capabilities.kubeVersion" .) }}
   admissionReviewVersions: ["v1beta1"]
   {{- if .Values.timeoutSeconds }}
@@ -364,7 +364,7 @@ webhooks:
     {{- if $crObjectSelector.matchExpressions }}
 {{ toYaml $crObjectSelector.matchExpressions | indent 4 }}
     {{- end }}
-    - key: security.banzaicloud.io/mutate
+    - key: security.bank-vaults.io/mutate
       operator: NotIn
       values:
       - skip

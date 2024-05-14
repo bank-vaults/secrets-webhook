@@ -12,10 +12,10 @@ It can also inject statically into ConfigMaps, Secrets, and CustomResources.
 You will need to add the following annotations to the resources that you wish to mutate:
 
 ```yaml
-vault.security.banzaicloud.io/vault-addr: https://[URL FOR VAULT]
-vault.security.banzaicloud.io/vault-path: [Auth path]
-vault.security.banzaicloud.io/vault-role: [Auth role]
-vault.security.banzaicloud.io/vault-skip-verify: "true" # Container is missing Trusted Mozilla roots too.
+secrets-webhook.security.bank-vaults.io/vault-addr: https://[URL FOR VAULT]
+secrets-webhook.security.bank-vaults.io/vault-path: [Auth path]
+secrets-webhook.security.bank-vaults.io/vault-role: [Auth role]
+secrets-webhook.security.bank-vaults.io/vault-skip-verify: "true" # Container is missing Trusted Mozilla roots too.
 ```
 
 Be mindful how you reference Vault secrets itself. For KV v2 secrets, you will need to add the `/data/` to the path of the secret.

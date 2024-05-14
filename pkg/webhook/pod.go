@@ -1,4 +1,4 @@
-// Copyright © 2021 Banzai Cloud
+// Copyright © 2024 Bank-Vaults Maintainers
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -853,7 +853,7 @@ func getInitContainersForVault(originalContainers []corev1.Container, podSecurit
 	containers := []corev1.Container{}
 
 	if vaultConfig.TokenAuthMount != "" {
-		// vault.security.banzaicloud.io/token-auth-mount: "token:vault-token"
+		// secrets-webhook.security.bank-vaults.io/vault-token-auth-mount: "token:vault-token"
 		split := strings.Split(vaultConfig.TokenAuthMount, ":")
 		mountName := split[0]
 		tokenName := split[1]
@@ -1367,7 +1367,7 @@ func getInitContainersForBao(originalContainers []corev1.Container, podSecurityC
 	containers := []corev1.Container{}
 
 	if baoConfig.TokenAuthMount != "" {
-		// bao.security.banzaicloud.io/bao-token-auth-mount: "token:bao-token"
+		// secrets-webhook.security.bank-vaults.io/bao-token-auth-mount: "token:bao-token"
 		split := strings.Split(baoConfig.TokenAuthMount, ":")
 		mountName := split[0]
 		tokenName := split[1]

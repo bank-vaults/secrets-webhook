@@ -178,7 +178,7 @@ func ParseConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 		config.CtConfigMap = ""
 	}
 
-	if val, ok := annotations[common.ServiceAccountTokenVolumeNameAnnotation]; ok {
+	if val, ok := annotations[common.VaultServiceAccountTokenVolumeNameAnnotation]; ok {
 		config.ServiceAccountTokenVolumeName = val
 	} else if viper.GetString("SERVICE_ACCOUNT_TOKEN_VOLUME_NAME") != "" {
 		config.ServiceAccountTokenVolumeName = viper.GetString("SERVICE_ACCOUNT_TOKEN_VOLUME_NAME")
@@ -244,19 +244,19 @@ func ParseConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 		config.CtShareProcess = false
 	}
 
-	if val, ok := annotations[common.LogLevelAnnotation]; ok {
+	if val, ok := annotations[common.VaultLogLevelAnnotation]; ok {
 		config.LogLevel = val
 	} else {
 		config.LogLevel = viper.GetString("vault_log_level")
 	}
 
-	if val, ok := annotations[common.TransitKeyIDAnnotation]; ok {
+	if val, ok := annotations[common.VaultTransitKeyIDAnnotation]; ok {
 		config.TransitKeyID = val
 	} else {
 		config.TransitKeyID = viper.GetString("transit_key_id")
 	}
 
-	if val, ok := annotations[common.TransitPathAnnotation]; ok {
+	if val, ok := annotations[common.VaultTransitPathAnnotation]; ok {
 		config.TransitPath = val
 	} else {
 		config.TransitPath = viper.GetString("transit_path")
@@ -316,7 +316,7 @@ func ParseConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 		config.FromPath = val
 	}
 
-	if val, ok := annotations[common.TokenAuthMountAnnotation]; ok {
+	if val, ok := annotations[common.VaultTokenAuthMountAnnotation]; ok {
 		config.TokenAuthMount = val
 	}
 
@@ -347,7 +347,7 @@ func ParseConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 		config.CtInjectInInitcontainers = false
 	}
 
-	if val, ok := annotations[common.TransitBatchSizeAnnotation]; ok {
+	if val, ok := annotations[common.VaultTransitBatchSizeAnnotation]; ok {
 		batchSize, _ := strconv.ParseInt(val, 10, 32)
 		config.TransitBatchSize = int(batchSize)
 	} else {

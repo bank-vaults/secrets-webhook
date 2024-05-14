@@ -57,8 +57,10 @@ func ParseWebhookConfig(obj metav1.Object) Config {
 
 	annotations := obj.GetAnnotations()
 
-	if val, ok := annotations[MutateAnnotation]; ok {
-		Config.Mutate, _ = strconv.ParseBool(val)
+	if val := annotations[MutateAnnotation]; val == "skip" {
+		Config.Mutate = true
+
+		return Config
 	}
 
 	if val, ok := annotations[PSPAllowPrivilegeEscalationAnnotation]; ok {

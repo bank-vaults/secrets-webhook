@@ -1,4 +1,4 @@
-// Copyright © 2021 Banzai Cloud
+// Copyright © 2024 Bank-Vaults Maintainers
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -1191,15 +1191,15 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 				pod: &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Annotations: map[string]string{
-							common.VaultConsulTemplateConfigmapAnnotation:  "config-map-test",
-							common.VaultConfigfilePathAnnotation:           "/vault/secrets",
-							common.VaultAddrAnnotation:                     "test",
-							common.VaultSkipVerifyAnnotation:               "false",
-							common.VaultConsulTemplateCPUAnnotation:        "50m",
-							common.VaultConsulTemplateMemoryAnnotation:     "128Mi",
-							common.VaultImageAnnotation:                    "hashicorp/vault:latest",
-							common.VaultImagePullPolicyAnnotation:          "IfNotPresent",
-							common.ServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
+							common.VaultConsulTemplateConfigmapAnnotation:       "config-map-test",
+							common.VaultConfigfilePathAnnotation:                "/vault/secrets",
+							common.VaultAddrAnnotation:                          "test",
+							common.VaultSkipVerifyAnnotation:                    "false",
+							common.VaultConsulTemplateCPUAnnotation:             "50m",
+							common.VaultConsulTemplateMemoryAnnotation:          "128Mi",
+							common.VaultImageAnnotation:                         "hashicorp/vault:latest",
+							common.VaultImagePullPolicyAnnotation:               "IfNotPresent",
+							common.VaultServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -1234,15 +1234,15 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 			wantedPod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						common.VaultConsulTemplateConfigmapAnnotation:  "config-map-test",
-						common.VaultConfigfilePathAnnotation:           "/vault/secrets",
-						common.VaultAddrAnnotation:                     "test",
-						common.VaultSkipVerifyAnnotation:               "false",
-						common.VaultConsulTemplateCPUAnnotation:        "50m",
-						common.VaultConsulTemplateMemoryAnnotation:     "128Mi",
-						common.VaultImageAnnotation:                    "hashicorp/vault:latest",
-						common.VaultImagePullPolicyAnnotation:          "IfNotPresent",
-						common.ServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
+						common.VaultConsulTemplateConfigmapAnnotation:       "config-map-test",
+						common.VaultConfigfilePathAnnotation:                "/vault/secrets",
+						common.VaultAddrAnnotation:                          "test",
+						common.VaultSkipVerifyAnnotation:                    "false",
+						common.VaultConsulTemplateCPUAnnotation:             "50m",
+						common.VaultConsulTemplateMemoryAnnotation:          "128Mi",
+						common.VaultImageAnnotation:                         "hashicorp/vault:latest",
+						common.VaultImagePullPolicyAnnotation:               "IfNotPresent",
+						common.VaultServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -1409,16 +1409,16 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 				pod: &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Annotations: map[string]string{
-							common.VaultConsulTemplateConfigmapAnnotation:  "config-map-test",
-							common.VaultConsulTemplateOnceAnnotation:       "true",
-							common.VaultConfigfilePathAnnotation:           "/vault/secrets",
-							common.VaultAddrAnnotation:                     "test",
-							common.VaultSkipVerifyAnnotation:               "false",
-							common.VaultConsulTemplateCPUAnnotation:        "50m",
-							common.VaultConsulTemplateMemoryAnnotation:     "128Mi",
-							common.VaultImageAnnotation:                    "hashicorp/vault:latest",
-							common.VaultImagePullPolicyAnnotation:          "IfNotPresent",
-							common.ServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
+							common.VaultConsulTemplateConfigmapAnnotation:       "config-map-test",
+							common.VaultConsulTemplateOnceAnnotation:            "true",
+							common.VaultConfigfilePathAnnotation:                "/vault/secrets",
+							common.VaultAddrAnnotation:                          "test",
+							common.VaultSkipVerifyAnnotation:                    "false",
+							common.VaultConsulTemplateCPUAnnotation:             "50m",
+							common.VaultConsulTemplateMemoryAnnotation:          "128Mi",
+							common.VaultImageAnnotation:                         "hashicorp/vault:latest",
+							common.VaultImagePullPolicyAnnotation:               "IfNotPresent",
+							common.VaultServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -1453,16 +1453,16 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 			wantedPod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						common.VaultConsulTemplateConfigmapAnnotation:  "config-map-test",
-						common.VaultConsulTemplateOnceAnnotation:       "true",
-						common.VaultConfigfilePathAnnotation:           "/vault/secrets",
-						common.VaultAddrAnnotation:                     "test",
-						common.VaultSkipVerifyAnnotation:               "false",
-						common.VaultConsulTemplateCPUAnnotation:        "50m",
-						common.VaultConsulTemplateMemoryAnnotation:     "128Mi",
-						common.VaultImageAnnotation:                    "hashicorp/vault:latest",
-						common.VaultImagePullPolicyAnnotation:          "IfNotPresent",
-						common.ServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
+						common.VaultConsulTemplateConfigmapAnnotation:       "config-map-test",
+						common.VaultConsulTemplateOnceAnnotation:            "true",
+						common.VaultConfigfilePathAnnotation:                "/vault/secrets",
+						common.VaultAddrAnnotation:                          "test",
+						common.VaultSkipVerifyAnnotation:                    "false",
+						common.VaultConsulTemplateCPUAnnotation:             "50m",
+						common.VaultConsulTemplateMemoryAnnotation:          "128Mi",
+						common.VaultImageAnnotation:                         "hashicorp/vault:latest",
+						common.VaultImagePullPolicyAnnotation:               "IfNotPresent",
+						common.VaultServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -1629,18 +1629,18 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 				pod: &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Annotations: map[string]string{
-							common.VaultAgentConfigmapAnnotation:           "config-map-test",
-							common.VaultConfigfilePathAnnotation:           "/vault/secrets",
-							common.VaultAddrAnnotation:                     "test",
-							common.VaultSkipVerifyAnnotation:               "false",
-							common.VaultAgentCPURequestAnnotation:          "200m",
-							common.VaultAgentMemoryRequestAnnotation:       "256Mi",
-							common.VaultAgentCPULimitAnnotation:            "500m",
-							common.VaultAgentMemoryLimitAnnotation:         "384Mi",
-							common.VaultImageAnnotation:                    "hashicorp/vault:latest",
-							common.VaultImagePullPolicyAnnotation:          "IfNotPresent",
-							common.ServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
-							common.VaultAgentEnvVariablesAnnotation:        "[{\"Name\": \"SKIP_SETCAP\",\"Value\": \"1\"}]",
+							common.VaultAgentConfigmapAnnotation:                "config-map-test",
+							common.VaultConfigfilePathAnnotation:                "/vault/secrets",
+							common.VaultAddrAnnotation:                          "test",
+							common.VaultSkipVerifyAnnotation:                    "false",
+							common.VaultAgentCPURequestAnnotation:               "200m",
+							common.VaultAgentMemoryRequestAnnotation:            "256Mi",
+							common.VaultAgentCPULimitAnnotation:                 "500m",
+							common.VaultAgentMemoryLimitAnnotation:              "384Mi",
+							common.VaultImageAnnotation:                         "hashicorp/vault:latest",
+							common.VaultImagePullPolicyAnnotation:               "IfNotPresent",
+							common.VaultServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
+							common.VaultAgentEnvVariablesAnnotation:             "[{\"Name\": \"SKIP_SETCAP\",\"Value\": \"1\"}]",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -1669,18 +1669,18 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 			wantedPod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						common.VaultAgentConfigmapAnnotation:           "config-map-test",
-						common.VaultConfigfilePathAnnotation:           "/vault/secrets",
-						common.VaultAddrAnnotation:                     "test",
-						common.VaultSkipVerifyAnnotation:               "false",
-						common.VaultAgentCPURequestAnnotation:          "200m",
-						common.VaultAgentMemoryRequestAnnotation:       "256Mi",
-						common.VaultAgentCPULimitAnnotation:            "500m",
-						common.VaultAgentMemoryLimitAnnotation:         "384Mi",
-						common.VaultImageAnnotation:                    "hashicorp/vault:latest",
-						common.VaultImagePullPolicyAnnotation:          "IfNotPresent",
-						common.ServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
-						common.VaultAgentEnvVariablesAnnotation:        "[{\"Name\": \"SKIP_SETCAP\",\"Value\": \"1\"}]",
+						common.VaultAgentConfigmapAnnotation:                "config-map-test",
+						common.VaultConfigfilePathAnnotation:                "/vault/secrets",
+						common.VaultAddrAnnotation:                          "test",
+						common.VaultSkipVerifyAnnotation:                    "false",
+						common.VaultAgentCPURequestAnnotation:               "200m",
+						common.VaultAgentMemoryRequestAnnotation:            "256Mi",
+						common.VaultAgentCPULimitAnnotation:                 "500m",
+						common.VaultAgentMemoryLimitAnnotation:              "384Mi",
+						common.VaultImageAnnotation:                         "hashicorp/vault:latest",
+						common.VaultImagePullPolicyAnnotation:               "IfNotPresent",
+						common.VaultServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
+						common.VaultAgentEnvVariablesAnnotation:             "[{\"Name\": \"SKIP_SETCAP\",\"Value\": \"1\"}]",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -1813,7 +1813,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							common.VaultConsulTemplateMemoryAnnotation:                 "128Mi",
 							common.VaultImageAnnotation:                                "hashicorp/vault:latest",
 							common.VaultImagePullPolicyAnnotation:                      "IfNotPresent",
-							common.ServiceAccountTokenVolumeNameAnnotation:             "/var/run/secrets/kubernetes.io/serviceaccount",
+							common.VaultServiceAccountTokenVolumeNameAnnotation:        "/var/run/secrets/kubernetes.io/serviceaccount",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -1871,7 +1871,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 						common.VaultConsulTemplateMemoryAnnotation:                 "128Mi",
 						common.VaultImageAnnotation:                                "hashicorp/vault:latest",
 						common.VaultImagePullPolicyAnnotation:                      "IfNotPresent",
-						common.ServiceAccountTokenVolumeNameAnnotation:             "/var/run/secrets/kubernetes.io/serviceaccount",
+						common.VaultServiceAccountTokenVolumeNameAnnotation:        "/var/run/secrets/kubernetes.io/serviceaccount",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -2059,7 +2059,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 							common.VaultConsulTemplateMemoryAnnotation:                 "128Mi",
 							common.VaultImageAnnotation:                                "hashicorp/vault:latest",
 							common.VaultImagePullPolicyAnnotation:                      "IfNotPresent",
-							common.ServiceAccountTokenVolumeNameAnnotation:             "/var/run/secrets/vault",
+							common.VaultServiceAccountTokenVolumeNameAnnotation:        "/var/run/secrets/vault",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -2116,7 +2116,7 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 						common.VaultConsulTemplateMemoryAnnotation:                 "128Mi",
 						common.VaultImageAnnotation:                                "hashicorp/vault:latest",
 						common.VaultImagePullPolicyAnnotation:                      "IfNotPresent",
-						common.ServiceAccountTokenVolumeNameAnnotation:             "/var/run/secrets/vault",
+						common.VaultServiceAccountTokenVolumeNameAnnotation:        "/var/run/secrets/vault",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -2294,15 +2294,15 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 				pod: &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Annotations: map[string]string{
-							common.BaoConsulTemplateConfigmapAnnotation:    "config-map-test",
-							common.BaoConfigfilePathAnnotation:             "/bao/secrets",
-							common.BaoAddrAnnotation:                       "test",
-							common.BaoSkipVerifyAnnotation:                 "false",
-							common.BaoConsulTemplateCPUAnnotation:          "50m",
-							common.BaoConsulTemplateMemoryAnnotation:       "128Mi",
-							common.BaoImageAnnotation:                      "openbao/bao:latest",
-							common.BaoImagePullPolicyAnnotation:            "IfNotPresent",
-							common.ServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
+							common.BaoConsulTemplateConfigmapAnnotation:       "config-map-test",
+							common.BaoConfigfilePathAnnotation:                "/bao/secrets",
+							common.BaoAddrAnnotation:                          "test",
+							common.BaoSkipVerifyAnnotation:                    "false",
+							common.BaoConsulTemplateCPUAnnotation:             "50m",
+							common.BaoConsulTemplateMemoryAnnotation:          "128Mi",
+							common.BaoImageAnnotation:                         "openbao/bao:latest",
+							common.BaoImagePullPolicyAnnotation:               "IfNotPresent",
+							common.BaoServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -2337,15 +2337,15 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 			wantedPod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						common.BaoConsulTemplateConfigmapAnnotation:    "config-map-test",
-						common.BaoConfigfilePathAnnotation:             "/bao/secrets",
-						common.BaoAddrAnnotation:                       "test",
-						common.BaoSkipVerifyAnnotation:                 "false",
-						common.BaoConsulTemplateCPUAnnotation:          "50m",
-						common.BaoConsulTemplateMemoryAnnotation:       "128Mi",
-						common.BaoImageAnnotation:                      "openbao/bao:latest",
-						common.BaoImagePullPolicyAnnotation:            "IfNotPresent",
-						common.ServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
+						common.BaoConsulTemplateConfigmapAnnotation:       "config-map-test",
+						common.BaoConfigfilePathAnnotation:                "/bao/secrets",
+						common.BaoAddrAnnotation:                          "test",
+						common.BaoSkipVerifyAnnotation:                    "false",
+						common.BaoConsulTemplateCPUAnnotation:             "50m",
+						common.BaoConsulTemplateMemoryAnnotation:          "128Mi",
+						common.BaoImageAnnotation:                         "openbao/bao:latest",
+						common.BaoImagePullPolicyAnnotation:               "IfNotPresent",
+						common.BaoServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -2512,16 +2512,16 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 				pod: &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Annotations: map[string]string{
-							common.BaoConsulTemplateConfigmapAnnotation:    "config-map-test",
-							common.BaoConsulTemplateOnceAnnotation:         "true",
-							common.BaoConfigfilePathAnnotation:             "/bao/secrets",
-							common.BaoAddrAnnotation:                       "test",
-							common.BaoSkipVerifyAnnotation:                 "false",
-							common.BaoConsulTemplateCPUAnnotation:          "50m",
-							common.BaoConsulTemplateMemoryAnnotation:       "128Mi",
-							common.BaoImageAnnotation:                      "openbao/bao:latest",
-							common.BaoImagePullPolicyAnnotation:            "IfNotPresent",
-							common.ServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
+							common.BaoConsulTemplateConfigmapAnnotation:       "config-map-test",
+							common.BaoConsulTemplateOnceAnnotation:            "true",
+							common.BaoConfigfilePathAnnotation:                "/bao/secrets",
+							common.BaoAddrAnnotation:                          "test",
+							common.BaoSkipVerifyAnnotation:                    "false",
+							common.BaoConsulTemplateCPUAnnotation:             "50m",
+							common.BaoConsulTemplateMemoryAnnotation:          "128Mi",
+							common.BaoImageAnnotation:                         "openbao/bao:latest",
+							common.BaoImagePullPolicyAnnotation:               "IfNotPresent",
+							common.BaoServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -2556,16 +2556,16 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 			wantedPod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						common.BaoConsulTemplateConfigmapAnnotation:    "config-map-test",
-						common.BaoConsulTemplateOnceAnnotation:         "true",
-						common.BaoConfigfilePathAnnotation:             "/bao/secrets",
-						common.BaoAddrAnnotation:                       "test",
-						common.BaoSkipVerifyAnnotation:                 "false",
-						common.BaoConsulTemplateCPUAnnotation:          "50m",
-						common.BaoConsulTemplateMemoryAnnotation:       "128Mi",
-						common.BaoImageAnnotation:                      "openbao/bao:latest",
-						common.BaoImagePullPolicyAnnotation:            "IfNotPresent",
-						common.ServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
+						common.BaoConsulTemplateConfigmapAnnotation:       "config-map-test",
+						common.BaoConsulTemplateOnceAnnotation:            "true",
+						common.BaoConfigfilePathAnnotation:                "/bao/secrets",
+						common.BaoAddrAnnotation:                          "test",
+						common.BaoSkipVerifyAnnotation:                    "false",
+						common.BaoConsulTemplateCPUAnnotation:             "50m",
+						common.BaoConsulTemplateMemoryAnnotation:          "128Mi",
+						common.BaoImageAnnotation:                         "openbao/bao:latest",
+						common.BaoImagePullPolicyAnnotation:               "IfNotPresent",
+						common.BaoServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -2732,18 +2732,18 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 				pod: &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Annotations: map[string]string{
-							common.BaoAgentConfigmapAnnotation:             "config-map-test",
-							common.BaoConfigfilePathAnnotation:             "/bao/secrets",
-							common.BaoAddrAnnotation:                       "test",
-							common.BaoSkipVerifyAnnotation:                 "false",
-							common.BaoAgentCPURequestAnnotation:            "200m",
-							common.BaoAgentMemoryRequestAnnotation:         "256Mi",
-							common.BaoAgentCPULimitAnnotation:              "500m",
-							common.BaoAgentMemoryLimitAnnotation:           "384Mi",
-							common.BaoImageAnnotation:                      "openbao/bao:latest",
-							common.BaoImagePullPolicyAnnotation:            "IfNotPresent",
-							common.ServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
-							common.BaoAgentEnvVariablesAnnotation:          "[{\"Name\": \"SKIP_SETCAP\",\"Value\": \"1\"}]",
+							common.BaoAgentConfigmapAnnotation:                "config-map-test",
+							common.BaoConfigfilePathAnnotation:                "/bao/secrets",
+							common.BaoAddrAnnotation:                          "test",
+							common.BaoSkipVerifyAnnotation:                    "false",
+							common.BaoAgentCPURequestAnnotation:               "200m",
+							common.BaoAgentMemoryRequestAnnotation:            "256Mi",
+							common.BaoAgentCPULimitAnnotation:                 "500m",
+							common.BaoAgentMemoryLimitAnnotation:              "384Mi",
+							common.BaoImageAnnotation:                         "openbao/bao:latest",
+							common.BaoImagePullPolicyAnnotation:               "IfNotPresent",
+							common.BaoServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
+							common.BaoAgentEnvVariablesAnnotation:             "[{\"Name\": \"SKIP_SETCAP\",\"Value\": \"1\"}]",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -2772,18 +2772,18 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 			wantedPod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						common.BaoAgentConfigmapAnnotation:             "config-map-test",
-						common.BaoConfigfilePathAnnotation:             "/bao/secrets",
-						common.BaoAddrAnnotation:                       "test",
-						common.BaoSkipVerifyAnnotation:                 "false",
-						common.BaoAgentCPURequestAnnotation:            "200m",
-						common.BaoAgentMemoryRequestAnnotation:         "256Mi",
-						common.BaoAgentCPULimitAnnotation:              "500m",
-						common.BaoAgentMemoryLimitAnnotation:           "384Mi",
-						common.BaoImageAnnotation:                      "openbao/bao:latest",
-						common.BaoImagePullPolicyAnnotation:            "IfNotPresent",
-						common.ServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
-						common.BaoAgentEnvVariablesAnnotation:          "[{\"Name\": \"SKIP_SETCAP\",\"Value\": \"1\"}]",
+						common.BaoAgentConfigmapAnnotation:                "config-map-test",
+						common.BaoConfigfilePathAnnotation:                "/bao/secrets",
+						common.BaoAddrAnnotation:                          "test",
+						common.BaoSkipVerifyAnnotation:                    "false",
+						common.BaoAgentCPURequestAnnotation:               "200m",
+						common.BaoAgentMemoryRequestAnnotation:            "256Mi",
+						common.BaoAgentCPULimitAnnotation:                 "500m",
+						common.BaoAgentMemoryLimitAnnotation:              "384Mi",
+						common.BaoImageAnnotation:                         "openbao/bao:latest",
+						common.BaoImagePullPolicyAnnotation:               "IfNotPresent",
+						common.BaoServiceAccountTokenVolumeNameAnnotation: "/var/run/secrets/kubernetes.io/serviceaccount",
+						common.BaoAgentEnvVariablesAnnotation:             "[{\"Name\": \"SKIP_SETCAP\",\"Value\": \"1\"}]",
 					},
 				},
 				Spec: corev1.PodSpec{

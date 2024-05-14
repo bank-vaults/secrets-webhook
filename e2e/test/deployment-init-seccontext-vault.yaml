@@ -12,15 +12,15 @@ spec:
       labels:
         app.kubernetes.io/name: test-deployment-init-seccontext-vault
       annotations:
-        secrets-webhook.security.banzaicloud.io/provider: "vault"
-        secrets-webhook.security.banzaicloud.io/run-as-non-root: "true"
-        secrets-webhook.security.banzaicloud.io/run-as-user: "1000"
-        secrets-webhook.security.banzaicloud.io/run-as-group: "1000"
-        vault.security.banzaicloud.io/vault-addr: "https://vault.default.svc.cluster.local:8200"
-        vault.security.banzaicloud.io/vault-role: "default"
-        vault.security.banzaicloud.io/vault-tls-secret: vault-tls
-        # vault.security.banzaicloud.io/vault-skip-verify: "true"
-        vault.security.banzaicloud.io/vault-path: "kubernetes"
+        secrets-webhook.security.bank-vaults.io/provider: "vault"
+        secrets-webhook.security.bank-vaults.io/run-as-non-root: "true"
+        secrets-webhook.security.bank-vaults.io/run-as-user: "1000"
+        secrets-webhook.security.bank-vaults.io/run-as-group: "1000"
+        secrets-webhook.security.bank-vaults.io/vault-addr: "https://vault.default.svc.cluster.local:8200"
+        secrets-webhook.security.bank-vaults.io/vault-role: "default"
+        secrets-webhook.security.bank-vaults.io/vault-tls-secret: vault-tls
+        # secrets-webhook.security.bank-vaults.io/vault-skip-verify: "true"
+        secrets-webhook.security.bank-vaults.io/vault-path: "kubernetes"
     spec:
       containers:
         - name: alpine
