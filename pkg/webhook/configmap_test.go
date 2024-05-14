@@ -63,7 +63,7 @@ func TestMutateConfigMap_Vault(t *testing.T) {
 
 	admissionReview := &model.AdmissionReview{}
 
-	providerConfig, err := parseProviderConfig(&configMap, admissionReview, vaultprov.ProviderName)
+	providerConfig, err := loadProviderConfig(&configMap, admissionReview, vaultprov.ProviderName)
 	assert.NoError(t, err)
 
 	err = mw.MutateConfigMap(&configMap, providerConfig)

@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestParseConfig(t *testing.T) {
+func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		name        string
 		annotations map[string]string
@@ -198,10 +198,10 @@ func TestParseConfig(t *testing.T) {
 	for _, tt := range tests {
 		ttp := tt
 		t.Run(ttp.name, func(t *testing.T) {
-			configWant, err := ParseConfig(&metav1.ObjectMeta{Annotations: ttp.want}, &model.AdmissionReview{})
+			configWant, err := LoadConfig(&metav1.ObjectMeta{Annotations: ttp.want}, &model.AdmissionReview{})
 			assert.NoError(t, err)
 
-			configGot, err := ParseConfig(&metav1.ObjectMeta{Annotations: ttp.annotations}, &model.AdmissionReview{})
+			configGot, err := LoadConfig(&metav1.ObjectMeta{Annotations: ttp.annotations}, &model.AdmissionReview{})
 			assert.NoError(t, err)
 
 			assert.Equal(t, configWant, configGot)

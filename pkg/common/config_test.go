@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestParseConfig(t *testing.T) {
+func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		name        string
 		annotations map[string]string
@@ -80,13 +80,13 @@ func TestParseConfig(t *testing.T) {
 	for _, tt := range tests {
 		ttp := tt
 		t.Run(ttp.name, func(t *testing.T) {
-			whConfigWant := ParseWebhookConfig(&metav1.ObjectMeta{Annotations: ttp.want})
-			whConfigGot := ParseWebhookConfig(&metav1.ObjectMeta{Annotations: ttp.annotations})
+			whConfigWant := LoadWebhookConfig(&metav1.ObjectMeta{Annotations: ttp.want})
+			whConfigGot := LoadWebhookConfig(&metav1.ObjectMeta{Annotations: ttp.annotations})
 
 			assert.Equal(t, whConfigWant, whConfigGot)
 
-			secretInitConfigWant := ParseSecretInitConfig(&metav1.ObjectMeta{Annotations: ttp.want})
-			secretInitConfigGot := ParseSecretInitConfig(&metav1.ObjectMeta{Annotations: ttp.annotations})
+			secretInitConfigWant := LoadSecretInitConfig(&metav1.ObjectMeta{Annotations: ttp.want})
+			secretInitConfigGot := LoadSecretInitConfig(&metav1.ObjectMeta{Annotations: ttp.annotations})
 
 			assert.Equal(t, secretInitConfigWant, secretInitConfigGot)
 

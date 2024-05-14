@@ -58,16 +58,16 @@ type MutatingWebhook struct {
 }
 
 func (mw *MutatingWebhook) SecretsMutator(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
-	webhookConfig := common.ParseWebhookConfig(obj)
-	secretInitConfig := common.ParseSecretInitConfig(obj)
+	webhookConfig := common.LoadWebhookConfig(obj)
+	secretInitConfig := common.LoadSecretInitConfig(obj)
 
 	if webhookConfig.Mutate || webhookConfig.Provider == "" {
 		return &mutating.MutatorResult{}, nil
 	}
 
-	config, err := parseProviderConfig(obj, ar, webhookConfig.Provider)
+	config, err := loadProviderConfig(obj, ar, webhookConfig.Provider)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse provider configs: %w", err)
+		return nil, fmt.Errorf("failed to load provider configs: %w", err)
 	}
 
 	switch v := obj.(type) {
@@ -242,23 +242,23 @@ func ErrorLoggerMutator(mutator mutating.MutatorFunc, logger log.Logger) mutatin
 	}
 }
 
-// parseProviderConfig parses all provider configs that was declared in the webhook annotation
-func parseProviderConfig(obj metav1.Object, ar *model.AdmissionReview, providerName string) (interface{}, error) {
+// loadProviderConfig loads all provider configs that was declared in the webhook annotation
+func loadProviderConfig(obj metav1.Object, ar *model.AdmissionReview, providerName string) (interface{}, error) {
 	var config interface{}
 	var err error
 	switch providerName {
 	case vaultprov.ProviderName:
-		config, err = vaultprov.ParseConfig(obj, ar)
+		config, err = vaultprov.LoadConfig(obj, ar)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse vault config")
+			return nil, errors.Wrap(err, "failed to load vault config")
 		}
 
 		currentlyUsedProvider = vaultprov.ProviderName
 
 	case baoprov.ProviderName:
-		config, err = baoprov.ParseConfig(obj, ar)
+		config, err = baoprov.LoadConfig(obj, ar)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse bao config")
+			return nil, errors.Wrap(err, "failed to load bao config")
 		}
 
 		currentlyUsedProvider = baoprov.ProviderName

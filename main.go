@@ -42,7 +42,7 @@ import (
 )
 
 func init() {
-	common.SetWebhookAndSecretInitDefaults()
+	common.SetConfigDefaults()
 }
 
 func newK8SClient() (kubernetes.Interface, error) {

@@ -52,7 +52,7 @@ type SecretInitConfig struct {
 	MemoryLimit     resource.Quantity
 }
 
-func ParseWebhookConfig(obj metav1.Object) Config {
+func LoadWebhookConfig(obj metav1.Object) Config {
 	Config := Config{}
 
 	annotations := handleDeprecatedAnnotations(obj.GetAnnotations())
@@ -98,7 +98,7 @@ func ParseWebhookConfig(obj metav1.Object) Config {
 	return Config
 }
 
-func ParseSecretInitConfig(obj metav1.Object) SecretInitConfig {
+func LoadSecretInitConfig(obj metav1.Object) SecretInitConfig {
 	secretInitConfig := SecretInitConfig{}
 
 	annotations := obj.GetAnnotations()
@@ -127,9 +127,9 @@ func ParseSecretInitConfig(obj metav1.Object) SecretInitConfig {
 		secretInitConfig.Image = viper.GetString("secret_init_image")
 	}
 
-	secretInitConfig.LogServer = viper.GetString("SECRET_INIT_LOG_SERVER")
+	secretInitConfig.LogServer = viper.GetString("secret_init_log_server")
 
-	secretInitConfig.LogLevel = viper.GetString("SECRET_INIT_LOG_LEVEL")
+	secretInitConfig.LogLevel = viper.GetString("secret_init_log_level")
 
 	if val, ok := annotations[SecretInitImagePullPolicyAnnotation]; ok {
 		secretInitConfig.ImagePullPolicy = GetPullPolicy(val)
@@ -137,25 +137,25 @@ func ParseSecretInitConfig(obj metav1.Object) SecretInitConfig {
 		secretInitConfig.ImagePullPolicy = GetPullPolicy(viper.GetString("secret_init_image_pull_policy"))
 	}
 
-	if val, err := resource.ParseQuantity(viper.GetString("SECRET_INIT_CPU_REQUEST")); err == nil {
+	if val, err := resource.ParseQuantity(viper.GetString("secret_init_cpu_request")); err == nil {
 		secretInitConfig.CPURequest = val
 	} else {
 		secretInitConfig.CPURequest = resource.MustParse("50m")
 	}
 
-	if val, err := resource.ParseQuantity(viper.GetString("SECRET_INIT_MEMORY_REQUEST")); err == nil {
+	if val, err := resource.ParseQuantity(viper.GetString("secret_init_memory_request")); err == nil {
 		secretInitConfig.MemoryRequest = val
 	} else {
 		secretInitConfig.MemoryRequest = resource.MustParse("64Mi")
 	}
 
-	if val, err := resource.ParseQuantity(viper.GetString("SECRET_INIT_CPU_LIMIT")); err == nil {
+	if val, err := resource.ParseQuantity(viper.GetString("secret_init_cpu_limit")); err == nil {
 		secretInitConfig.CPULimit = val
 	} else {
 		secretInitConfig.CPULimit = resource.MustParse("250m")
 	}
 
-	if val, err := resource.ParseQuantity(viper.GetString("SECRET_INIT_MEMORY_LIMIT")); err == nil {
+	if val, err := resource.ParseQuantity(viper.GetString("secret_init_memory_limit")); err == nil {
 		secretInitConfig.MemoryLimit = val
 	} else {
 		secretInitConfig.MemoryLimit = resource.MustParse("64Mi")
@@ -164,7 +164,7 @@ func ParseSecretInitConfig(obj metav1.Object) SecretInitConfig {
 	return secretInitConfig
 }
 
-func SetWebhookAndSecretInitDefaults() {
+func SetConfigDefaults() {
 	// Webhook defaults
 	viper.SetDefault("psp_allow_privilege_escalation", "false")
 	viper.SetDefault("run_as_non_root", "false")
@@ -181,17 +181,18 @@ func SetWebhookAndSecretInitDefaults() {
 	viper.SetDefault("listen_address", ":8443")
 	viper.SetDefault("telemetry_listen_address", "")
 	viper.SetDefault("log_level", "info")
+
 	// Secret-init defaults
 	viper.SetDefault("secret_init_daemon", "false")
 	viper.SetDefault("secret_init_json_log", "false")
 	viper.SetDefault("secret_init_image", "ghcr.io/bank-vaults/secret-init:latest")
 	viper.SetDefault("secret_init_image_pull_policy", string(corev1.PullIfNotPresent))
-	viper.SetDefault("SECRET_INIT_CPU_REQUEST", "")
-	viper.SetDefault("SECRET_INIT_MEMORY_REQUEST", "")
-	viper.SetDefault("SECRET_INIT_CPU_LIMIT", "")
-	viper.SetDefault("SECRET_INIT_MEMORY_LIMIT", "")
-	viper.SetDefault("SECRET_INIT_LOG_SERVER", "")
-	viper.SetDefault("SECRET_INIT_LOG_LEVEL", "info")
+	viper.SetDefault("secret_init_cpu_request", "")
+	viper.SetDefault("secret_init_memory_request", "")
+	viper.SetDefault("secret_init_cpu_limit", "")
+	viper.SetDefault("secret_init_memory_limit", "")
+	viper.SetDefault("secret_init_log_server", "")
+	viper.SetDefault("secret_init_log_level", "info")
 
 	viper.AutomaticEnv()
 }

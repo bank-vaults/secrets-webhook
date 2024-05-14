@@ -99,7 +99,7 @@ type Config struct {
 	FromPath                      string
 }
 
-func ParseConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
+func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 	SetDefaults()
 
 	config := Config{
@@ -180,8 +180,8 @@ func ParseConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 
 	if val, ok := annotations[common.BaoServiceAccountTokenVolumeNameAnnotation]; ok {
 		config.ServiceAccountTokenVolumeName = val
-	} else if viper.GetString("SERVICE_ACCOUNT_TOKEN_VOLUME_NAME") != "" {
-		config.ServiceAccountTokenVolumeName = viper.GetString("SERVICE_ACCOUNT_TOKEN_VOLUME_NAME")
+	} else if viper.GetString("service_account_token_volume_name") != "" {
+		config.ServiceAccountTokenVolumeName = viper.GetString("service_account_token_volume_name")
 	} else {
 		config.ServiceAccountTokenVolumeName = "/var/run/secrets/kubernetes.io/serviceaccount"
 	}
@@ -337,7 +337,7 @@ func ParseConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 	if val, ok := annotations[common.BaoNamespaceAnnotation]; ok {
 		config.BaoNamespace = val
 	} else {
-		config.BaoNamespace = viper.GetString("BAO_NAMESPACE")
+		config.BaoNamespace = viper.GetString("bao_namespace")
 	}
 
 	if val, ok := annotations[common.BaoConsulTemplateInjectInInitcontainersAnnotation]; ok {
@@ -396,7 +396,7 @@ func SetDefaults() {
 	viper.SetDefault("bao_passthrough", "")
 	viper.SetDefault("bao_agent_share_process_namespace", "")
 	viper.SetDefault("bao_log_level", "info")
-	viper.SetDefault("BAO_NAMESPACE", "")
+	viper.SetDefault("bao_namespace", "")
 	viper.SetDefault("bao_transit_key_id", "")
 	viper.SetDefault("bao_transit_path", "")
 	viper.SetDefault("bao_transit_batch_size", 25)

@@ -3398,9 +3398,9 @@ func Test_mutatingWebhook_mutatePod(t *testing.T) {
 
 			admissionReview := &model.AdmissionReview{}
 
-			providerConfig, err := parseProviderConfig(ttp.args.pod, admissionReview, ttp.args.useConfig)
+			providerConfig, err := loadProviderConfig(ttp.args.pod, admissionReview, ttp.args.useConfig)
 			if (err != nil) != ttp.wantErr {
-				t.Errorf("parseProviderConfigs() error = %v, wantErr %v", err, ttp.wantErr)
+				t.Errorf("loadProviderConfig() error = %v, wantErr %v", err, ttp.wantErr)
 				return
 			}
 

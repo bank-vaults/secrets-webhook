@@ -99,7 +99,7 @@ type Config struct {
 	FromPath                      string
 }
 
-func ParseConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
+func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 	SetDefaults()
 
 	config := Config{
@@ -180,8 +180,8 @@ func ParseConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 
 	if val, ok := annotations[common.VaultServiceAccountTokenVolumeNameAnnotation]; ok {
 		config.ServiceAccountTokenVolumeName = val
-	} else if viper.GetString("SERVICE_ACCOUNT_TOKEN_VOLUME_NAME") != "" {
-		config.ServiceAccountTokenVolumeName = viper.GetString("SERVICE_ACCOUNT_TOKEN_VOLUME_NAME")
+	} else if viper.GetString("service_account_token_volume_name") != "" {
+		config.ServiceAccountTokenVolumeName = viper.GetString("service_account_token_volume_name")
 	} else {
 		config.ServiceAccountTokenVolumeName = "/var/run/secrets/kubernetes.io/serviceaccount"
 	}
@@ -338,7 +338,7 @@ func ParseConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 	if val, ok := annotations[common.VaultNamespaceAnnotation]; ok {
 		config.VaultNamespace = val
 	} else {
-		config.VaultNamespace = viper.GetString("VAULT_NAMESPACE")
+		config.VaultNamespace = viper.GetString("vault_namespace")
 	}
 
 	if val, ok := annotations[common.VaultConsulTemplateInjectInInitcontainersAnnotation]; ok {
@@ -397,7 +397,7 @@ func SetDefaults() {
 	viper.SetDefault("vault_passthrough", "")
 	viper.SetDefault("vault_agent_share_process_namespace", "")
 	viper.SetDefault("vault_log_level", "info")
-	viper.SetDefault("VAULT_NAMESPACE", "")
+	viper.SetDefault("vault_namespace", "")
 	viper.SetDefault("transit_key_id", "")
 	viper.SetDefault("transit_path", "")
 	viper.SetDefault("transit_batch_size", 25)
