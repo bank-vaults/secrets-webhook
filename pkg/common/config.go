@@ -55,7 +55,7 @@ type SecretInitConfig struct {
 func ParseWebhookConfig(obj metav1.Object) Config {
 	Config := Config{}
 
-	annotations := obj.GetAnnotations()
+	annotations := handleDeprecatedAnnotations(obj.GetAnnotations())
 
 	if val := annotations[MutateAnnotation]; val == "skip" {
 		Config.Mutate = true
@@ -194,4 +194,79 @@ func SetWebhookAndSecretInitDefaults() {
 	viper.SetDefault("SECRET_INIT_LOG_LEVEL", "info")
 
 	viper.AutomaticEnv()
+}
+
+// This is implemented to preserve backwards compatibility with the deprecated annotations
+func handleDeprecatedAnnotations(annotations map[string]string) map[string]string {
+	if val, ok := annotations[MutateAnnotationDeprecated]; ok {
+		annotations[MutateAnnotation] = val
+		delete(annotations, MutateAnnotationDeprecated)
+
+		// Do an early exit if the resource shouldn't be mutated
+		if val == "skip" {
+			return annotations
+		}
+	}
+
+	if val, ok := annotations[PSPAllowPrivilegeEscalationAnnotationDeprecated]; ok {
+		annotations[PSPAllowPrivilegeEscalationAnnotation] = val
+		delete(annotations, PSPAllowPrivilegeEscalationAnnotationDeprecated)
+	}
+
+	if val, ok := annotations[RunAsNonRootAnnotationDeprecated]; ok {
+		annotations[RunAsNonRootAnnotation] = val
+		delete(annotations, RunAsNonRootAnnotationDeprecated)
+	}
+
+	if val, ok := annotations[RunAsUserAnnotationDeprecated]; ok {
+		annotations[RunAsUserAnnotation] = val
+		delete(annotations, RunAsUserAnnotationDeprecated)
+	}
+
+	if val, ok := annotations[RunAsGroupAnnotationDeprecated]; ok {
+		annotations[RunAsGroupAnnotation] = val
+		delete(annotations, RunAsGroupAnnotationDeprecated)
+	}
+
+	if val, ok := annotations[ReadOnlyRootFsAnnotationDeprecated]; ok {
+		annotations[ReadOnlyRootFsAnnotation] = val
+		delete(annotations, ReadOnlyRootFsAnnotationDeprecated)
+	}
+
+	if val, ok := annotations[RegistrySkipVerifyAnnotationDeprecated]; ok {
+		annotations[RegistrySkipVerifyAnnotation] = val
+		delete(annotations, RegistrySkipVerifyAnnotationDeprecated)
+	}
+
+	if val, ok := annotations[MutateProbesAnnotationDeprecated]; ok {
+		annotations[MutateProbesAnnotation] = val
+		delete(annotations, MutateProbesAnnotationDeprecated)
+	}
+
+	if val, ok := annotations[VaultEnvDaemonAnnotationDeprecated]; ok {
+		annotations[SecretInitDaemonAnnotation] = val
+		delete(annotations, VaultEnvDaemonAnnotationDeprecated)
+	}
+
+	if val, ok := annotations[VaultEnvDelayAnnotationDeprecated]; ok {
+		annotations[SecretInitDelayAnnotation] = val
+		delete(annotations, VaultEnvDelayAnnotationDeprecated)
+	}
+
+	if val, ok := annotations[VaultEnvEnableJSONLogAnnotationDeprecated]; ok {
+		annotations[SecretInitJSONLogAnnotation] = val
+		delete(annotations, VaultEnvEnableJSONLogAnnotationDeprecated)
+	}
+
+	if val, ok := annotations[VaultEnvImageAnnotationDeprecated]; ok {
+		annotations[SecretInitImageAnnotation] = val
+		delete(annotations, VaultEnvImageAnnotationDeprecated)
+	}
+
+	if val, ok := annotations[VaultEnvImagePullPolicyAnnotationDeprecated]; ok {
+		annotations[SecretInitImagePullPolicyAnnotation] = val
+		delete(annotations, VaultEnvImagePullPolicyAnnotationDeprecated)
+	}
+
+	return annotations
 }
