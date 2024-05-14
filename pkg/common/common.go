@@ -20,6 +20,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// ANNOTATIONS
 const (
 	// Webhook annotations
 	// ref: https://bank-vaults.dev/docs/mutating-webhook/annotations/
@@ -137,8 +138,93 @@ const (
 	BaoConsulTemplateInjectInInitcontainersAnnotation = "secrets-webhook.security.bank-vaults.io/bao-ct-inject-in-initcontainers"
 )
 
+// ENVIRONMENT VARIABLES
 const (
-	// DEPRECATED
+	// Webhook environment variables
+	PSPAllowPrivilegeEscalationEnvVar = "psp_allow_privilege_escalation"
+	RunAsNonRootEnvVar                = "run_as_non_root"
+	RunAsUserEnvVar                   = "run_as_user"
+	RunAsGroupEnvVar                  = "run_as_group"
+	ReadonlyRootFSEnvVar              = "readonly_root_fs"
+	RegistrySkipVerifyEnvVar          = "registry_skip_verify"
+	MutateConfigMapEnvVar             = "mutate_configmap"
+	DefaultImagePullSecretEnvVar      = "default_image_pull_secret"
+	DefaultImagePullSecretSAEnvVar    = "default_image_pull_secret_service_account"
+	DefaultImagePullSecretNSEnvVar    = "default_image_pull_secret_namespace"
+	TLSCertFileEnvVar                 = "tls_cert_file"
+	TLSPrivateKeyFileEnvVar           = "tls_private_key_file"
+	ListenAddressEnvVar               = "listen_address"
+	TelemetryListenAddressEnvVar      = "telemetry_listen_address"
+	LogLevelEnvVar                    = "log_level"
+
+	// Secret-init environment variables
+	SecretInitDaemonEnvVar          = "secret_init_daemon"
+	SecretInitDelayEnvVar           = "secret_init_delay"
+	SecretInitJSONLogEnvVar         = "secret_init_json_log"
+	SecretInitImageEnvVar           = "secret_init_image"
+	SecretInitLogServerEnvVar       = "secret_init_log_server"
+	SecretInitLogLevelEnvVar        = "secret_init_log_level"
+	SecretInitimagePullPolicyEnvVar = "secret_init_image_pull_policy"
+	SecretInitCPURequestEnvVar      = "secret_init_cpu_request"
+	SecretInitMemoryRequestEnvVar   = "secret_init_memory_request"
+	SecretInitCPULimitEnvVar        = "secret_init_cpu_limit"
+	SecretInitMemoryLimitEnvVar     = "secret_init_memory_limit"
+
+	// Vault environment variables
+	VaultImageEnvVar                      = "vault_image"
+	VaultImagePullPolicyEnvVar            = "vault_image_pull_policy"
+	VaultCTImageEnvVar                    = "vault_ct_image"
+	VaultCTPullPolicyEnvVar               = "vault_ct_pull_policy"
+	VaultAddrEnvVar                       = "vault_addr"
+	VaultSkipVerifyEnvVar                 = "vault_skip_verify"
+	VaultPathEnvVar                       = "vault_path"
+	VaultAuthMethodEnvVar                 = "vault_auth_method"
+	VaultRoleEnvVar                       = "vault_role"
+	VaultTLSSecretEnvVar                  = "vault_tls_secret"
+	VaultClientTimeoutEnvVar              = "vault_client_timeout"
+	VaultAgentEnvVar                      = "vault_agent"
+	VaultCTShareProcessNamespaceEnvVar    = "vault_ct_share_process_namespace"
+	VaultIgnoreMissingSecretsEnvVar       = "vault_ignore_missing_secrets"
+	VaultPassthroughEnvVar                = "vault_passthrough"
+	VaultAgentShareProcessNamespaceEnvVar = "vault_agent_share_process_namespace"
+	VaultLogLevelEnvVar                   = "vault_log_level"
+	VaultNamespaceEnvVar                  = "vault_namespace"
+	VaultTransitKeyIDEnvVar               = "vault_transit_key_id"
+	VaultTransitPathEnvVar                = "vault_transit_path"
+	VaultTransitBatchSizeEnvVar           = "vault_transit_batch_size"
+	VaultTokenEnvVar                      = "vault_token"
+	VaultSAEnvVar                         = "vault_serviceaccount"
+	VaultSATokenVolumeNameEnvVar          = "vault_service_account_token_volume_name"
+
+	// Bao environment variables
+	BaoImageEnvVar                      = "bao_image"
+	BaoImagePullPolicyEnvVar            = "bao_image_pull_policy"
+	BaoCTImageEnvVar                    = "bao_ct_image"
+	BaoCTPullPolicyEnvVar               = "bao_ct_pull_policy"
+	BaoAddrEnvVar                       = "bao_addr"
+	BaoSkipVerifyEnvVar                 = "bao_skip_verify"
+	BaoPathEnvVar                       = "bao_path"
+	BaoAuthMethodEnvVar                 = "bao_auth_method"
+	BaoRoleEnvVar                       = "bao_role"
+	BaoTLSSecretEnvVar                  = "bao_tls_secret"
+	BaoClientTimeoutEnvVar              = "bao_client_timeout"
+	BaoAgentEnvVar                      = "bao_agent"
+	BaoCTShareProcessNamespaceEnvVar    = "bao_ct_share_process_namespace"
+	BaoIgnoreMissingSecretsEnvVar       = "bao_ignore_missing_secrets"
+	BaoPassthroughEnvVar                = "bao_passthrough"
+	BaoAgentShareProcessNamespaceEnvVar = "bao_agent_share_process_namespace"
+	BaoLogLevelEnvVar                   = "bao_log_level"
+	BaoNamespaceEnvVar                  = "bao_namespace"
+	BaoTransitKeyIDEnvVar               = "bao_transit_key_id"
+	BaoTransitPathEnvVar                = "bao_transit_path"
+	BaoTransitBatchSizeEnvVar           = "bao_transit_batch_size"
+	BaoTokenEnvVar                      = "bao_token"
+	BaoSAEnvVar                         = "bao_serviceaccount"
+	BaoSATokenVolumeNameEnvVar          = "bao_service_account_token_volume_name"
+)
+
+// DEPRECATED ANNOTATIONS
+const (
 	// Webhook annotations
 	PSPAllowPrivilegeEscalationAnnotationDeprecated = "vault.security.banzaicloud.io/psp-allow-privilege-escalation"
 	RunAsNonRootAnnotationDeprecated                = "vault.security.banzaicloud.io/run-as-non-root"

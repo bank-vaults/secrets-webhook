@@ -111,13 +111,13 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 	if val, ok := annotations[common.BaoAddrAnnotation]; ok {
 		config.Addr = val
 	} else {
-		config.Addr = viper.GetString("bao_addr")
+		config.Addr = viper.GetString(common.BaoAddrEnvVar)
 	}
 
 	if val, ok := annotations[common.BaoRoleAnnotation]; ok {
 		config.Role = val
 	} else {
-		if val := viper.GetString("bao_role"); val != "" {
+		if val := viper.GetString(common.BaoRoleEnvVar); val != "" {
 			config.Role = val
 		} else {
 			switch p := obj.(type) {
@@ -132,44 +132,44 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 	if val, ok := annotations[common.BaoAuthMethodAnnotation]; ok {
 		config.AuthMethod = val
 	} else {
-		config.AuthMethod = viper.GetString("bao_auth_method")
+		config.AuthMethod = viper.GetString(common.BaoAuthMethodEnvVar)
 	}
 
 	if val, ok := annotations[common.BaoPathAnnotation]; ok {
 		config.Path = val
 	} else {
-		config.Path = viper.GetString("bao_path")
+		config.Path = viper.GetString(common.BaoPathEnvVar)
 	}
 
 	// TODO: Check for flag to verify we want to use namespace-local SAs instead of the webhook namespaces SA
 	if val, ok := annotations[common.BaoServiceaccountAnnotation]; ok {
 		config.BaoServiceAccount = val
 	} else {
-		config.BaoServiceAccount = viper.GetString("bao_serviceaccount")
+		config.BaoServiceAccount = viper.GetString(common.BaoSAEnvVar)
 	}
 
 	if val, ok := annotations[common.BaoSkipVerifyAnnotation]; ok {
 		config.SkipVerify, _ = strconv.ParseBool(val)
 	} else {
-		config.SkipVerify = viper.GetBool("bao_skip_verify")
+		config.SkipVerify = viper.GetBool(common.BaoSkipVerifyEnvVar)
 	}
 
 	if val, ok := annotations[common.BaoTLSSecretAnnotation]; ok {
 		config.TLSSecret = val
 	} else {
-		config.TLSSecret = viper.GetString("bao_tls_secret")
+		config.TLSSecret = viper.GetString(common.BaoTLSSecretEnvVar)
 	}
 
 	if val, ok := annotations[common.BaoClientTimeoutAnnotation]; ok {
 		config.ClientTimeout, _ = time.ParseDuration(val)
 	} else {
-		config.ClientTimeout, _ = time.ParseDuration(viper.GetString("bao_client_timeout"))
+		config.ClientTimeout, _ = time.ParseDuration(viper.GetString(common.BaoClientTimeoutEnvVar))
 	}
 
 	if val, ok := annotations[common.BaoAgentAnnotation]; ok {
 		config.UseAgent, _ = strconv.ParseBool(val)
 	} else {
-		config.UseAgent, _ = strconv.ParseBool(viper.GetString("bao_agent"))
+		config.UseAgent, _ = strconv.ParseBool(viper.GetString(common.BaoAgentEnvVar))
 	}
 
 	if val, ok := annotations[common.BaoConsulTemplateConfigmapAnnotation]; ok {
@@ -180,8 +180,8 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 
 	if val, ok := annotations[common.BaoServiceAccountTokenVolumeNameAnnotation]; ok {
 		config.ServiceAccountTokenVolumeName = val
-	} else if viper.GetString("service_account_token_volume_name") != "" {
-		config.ServiceAccountTokenVolumeName = viper.GetString("service_account_token_volume_name")
+	} else if viper.GetString(common.BaoSATokenVolumeNameEnvVar) != "" {
+		config.ServiceAccountTokenVolumeName = viper.GetString(common.BaoSATokenVolumeNameEnvVar)
 	} else {
 		config.ServiceAccountTokenVolumeName = "/var/run/secrets/kubernetes.io/serviceaccount"
 	}
@@ -189,19 +189,19 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 	if val, ok := annotations[common.BaoConsulTemplateImageAnnotation]; ok {
 		config.CtImage = val
 	} else {
-		config.CtImage = viper.GetString("bao_ct_image")
+		config.CtImage = viper.GetString(common.BaoCTImageEnvVar)
 	}
 
 	if val, ok := annotations[common.BaoIgnoreMissingSecretsAnnotation]; ok {
 		config.IgnoreMissingSecrets = val
 	} else {
-		config.IgnoreMissingSecrets = viper.GetString("bao_ignore_missing_secrets")
+		config.IgnoreMissingSecrets = viper.GetString(common.BaoIgnoreMissingSecretsEnvVar)
 	}
 
 	if val, ok := annotations[common.BaoPassthroughAnnotation]; ok {
 		config.Passthrough = val
 	} else {
-		config.Passthrough = viper.GetString("bao_passthrough")
+		config.Passthrough = viper.GetString(common.BaoPassthroughEnvVar)
 	}
 
 	if val, ok := annotations[common.BaoConfigfilePathAnnotation]; ok {
@@ -215,7 +215,7 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 	if val, ok := annotations[common.BaoConsulTemplatePullPolicyAnnotation]; ok {
 		config.CtImagePullPolicy = common.GetPullPolicy(val)
 	} else {
-		config.CtImagePullPolicy = common.GetPullPolicy(viper.GetString("bao_ct_pull_policy"))
+		config.CtImagePullPolicy = common.GetPullPolicy(viper.GetString(common.BaoCTPullPolicyEnvVar))
 	}
 
 	if val, ok := annotations[common.BaoConsulTemplateOnceAnnotation]; ok {
@@ -247,19 +247,19 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 	if val, ok := annotations[common.BaoLogLevelAnnotation]; ok {
 		config.LogLevel = val
 	} else {
-		config.LogLevel = viper.GetString("bao_log_level")
+		config.LogLevel = viper.GetString(common.BaoLogLevelEnvVar)
 	}
 
 	if val, ok := annotations[common.BaoTransitKeyIDAnnotation]; ok {
 		config.TransitKeyID = val
 	} else {
-		config.TransitKeyID = viper.GetString("transit_key_id")
+		config.TransitKeyID = viper.GetString(common.BaoTransitKeyIDEnvVar)
 	}
 
 	if val, ok := annotations[common.BaoTransitPathAnnotation]; ok {
 		config.TransitPath = val
 	} else {
-		config.TransitPath = viper.GetString("transit_path")
+		config.TransitPath = viper.GetString(common.BaoTransitPathEnvVar)
 	}
 
 	if val, ok := annotations[common.BaoAgentConfigmapAnnotation]; ok {
@@ -321,13 +321,13 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 	if val, ok := annotations[common.BaoImageAnnotation]; ok {
 		config.AgentImage = val
 	} else {
-		config.AgentImage = viper.GetString("bao_image")
+		config.AgentImage = viper.GetString(common.BaoImageEnvVar)
 	}
 
 	if val, ok := annotations[common.BaoImagePullPolicyAnnotation]; ok {
 		config.AgentImagePullPolicy = common.GetPullPolicy(val)
 	} else {
-		config.AgentImagePullPolicy = common.GetPullPolicy(viper.GetString("bao_image_pull_policy"))
+		config.AgentImagePullPolicy = common.GetPullPolicy(viper.GetString(common.BaoImagePullPolicyEnvVar))
 	}
 
 	if val, ok := annotations[common.BaoAgentEnvVariablesAnnotation]; ok {
@@ -337,7 +337,7 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 	if val, ok := annotations[common.BaoNamespaceAnnotation]; ok {
 		config.BaoNamespace = val
 	} else {
-		config.BaoNamespace = viper.GetString("bao_namespace")
+		config.BaoNamespace = viper.GetString(common.BaoNamespaceEnvVar)
 	}
 
 	if val, ok := annotations[common.BaoConsulTemplateInjectInInitcontainersAnnotation]; ok {
@@ -350,10 +350,10 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 		batchSize, _ := strconv.ParseInt(val, 10, 32)
 		config.TransitBatchSize = int(batchSize)
 	} else {
-		config.TransitBatchSize = viper.GetInt("bao_transit_batch_size")
+		config.TransitBatchSize = viper.GetInt(common.BaoTransitBatchSizeEnvVar)
 	}
 
-	config.Token = viper.GetString("bao_token")
+	config.Token = viper.GetString(common.BaoTokenEnvVar)
 
 	// parse resulting config.Role as potential template with fields of Config
 	tmpl, err := template.New("baoRole").Option("missingkey=error").Parse(config.Role)
@@ -379,27 +379,27 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 }
 
 func SetDefaults() {
-	viper.SetDefault("bao_image", "csatib02/opanbao:dev")
-	viper.SetDefault("bao_image_pull_policy", string(corev1.PullIfNotPresent))
-	viper.SetDefault("bao_ct_image", "hashicorp/consul-template:0.32.0")
-	viper.SetDefault("bao_ct_pull_policy", string(corev1.PullIfNotPresent))
-	viper.SetDefault("bao_addr", "https://bao:8300")
-	viper.SetDefault("bao_skip_verify", "false")
-	viper.SetDefault("bao_path", "kubernetes")
-	viper.SetDefault("bao_auth_method", "jwt")
-	viper.SetDefault("bao_role", "")
-	viper.SetDefault("bao_tls_secret", "")
-	viper.SetDefault("bao_client_timeout", "10s")
-	viper.SetDefault("bao_agent", "false")
-	viper.SetDefault("bao_ct_share_process_namespace", "")
-	viper.SetDefault("bao_ignore_missing_secrets", "false")
-	viper.SetDefault("bao_passthrough", "")
-	viper.SetDefault("bao_agent_share_process_namespace", "")
-	viper.SetDefault("bao_log_level", "info")
-	viper.SetDefault("bao_namespace", "")
-	viper.SetDefault("bao_transit_key_id", "")
-	viper.SetDefault("bao_transit_path", "")
-	viper.SetDefault("bao_transit_batch_size", 25)
+	viper.SetDefault(common.BaoImageEnvVar, "csatib02/opanbao:dev")
+	viper.SetDefault(common.BaoImagePullPolicyEnvVar, string(corev1.PullIfNotPresent))
+	viper.SetDefault(common.BaoCTImageEnvVar, "hashicorp/consul-template:0.32.0")
+	viper.SetDefault(common.BaoCTPullPolicyEnvVar, string(corev1.PullIfNotPresent))
+	viper.SetDefault(common.BaoAddrEnvVar, "https://bao:8300")
+	viper.SetDefault(common.BaoSkipVerifyEnvVar, "false")
+	viper.SetDefault(common.BaoPathEnvVar, "kubernetes")
+	viper.SetDefault(common.BaoAuthMethodEnvVar, "jwt")
+	viper.SetDefault(common.BaoRoleEnvVar, "")
+	viper.SetDefault(common.BaoTLSSecretEnvVar, "")
+	viper.SetDefault(common.BaoClientTimeoutEnvVar, "10s")
+	viper.SetDefault(common.BaoAgentEnvVar, "false")
+	viper.SetDefault(common.BaoCTShareProcessNamespaceEnvVar, "")
+	viper.SetDefault(common.BaoIgnoreMissingSecretsEnvVar, "false")
+	viper.SetDefault(common.BaoPassthroughEnvVar, "")
+	viper.SetDefault(common.BaoAgentShareProcessNamespaceEnvVar, "")
+	viper.SetDefault(common.BaoLogLevelEnvVar, "info")
+	viper.SetDefault(common.BaoNamespaceEnvVar, "")
+	viper.SetDefault(common.BaoTransitKeyIDEnvVar, "")
+	viper.SetDefault(common.BaoTransitPathEnvVar, "")
+	viper.SetDefault(common.BaoTransitBatchSizeEnvVar, 25)
 
 	viper.AutomaticEnv()
 }

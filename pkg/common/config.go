@@ -106,56 +106,56 @@ func LoadSecretInitConfig(obj metav1.Object) SecretInitConfig {
 	if val, ok := annotations[SecretInitDaemonAnnotation]; ok {
 		secretInitConfig.Daemon, _ = strconv.ParseBool(val)
 	} else {
-		secretInitConfig.Daemon, _ = strconv.ParseBool(viper.GetString("secret_init_daemon"))
+		secretInitConfig.Daemon, _ = strconv.ParseBool(viper.GetString(SecretInitDaemonEnvVar))
 	}
 
 	if val, ok := annotations[SecretInitDelayAnnotation]; ok {
 		secretInitConfig.Delay, _ = time.ParseDuration(val)
 	} else {
-		secretInitConfig.Delay, _ = time.ParseDuration(viper.GetString("secret_init_delay"))
+		secretInitConfig.Delay, _ = time.ParseDuration(viper.GetString(SecretInitDelayEnvVar))
 	}
 
 	if val, ok := annotations[SecretInitJSONLogAnnotation]; ok {
 		secretInitConfig.JSONLog = val
 	} else {
-		secretInitConfig.JSONLog = viper.GetString("secret_init_json_log")
+		secretInitConfig.JSONLog = viper.GetString(SecretInitJSONLogEnvVar)
 	}
 
 	if val, ok := annotations[SecretInitImageAnnotation]; ok {
 		secretInitConfig.Image = val
 	} else {
-		secretInitConfig.Image = viper.GetString("secret_init_image")
+		secretInitConfig.Image = viper.GetString(SecretInitImageEnvVar)
 	}
 
-	secretInitConfig.LogServer = viper.GetString("secret_init_log_server")
+	secretInitConfig.LogServer = viper.GetString(SecretInitLogServerEnvVar)
 
-	secretInitConfig.LogLevel = viper.GetString("secret_init_log_level")
+	secretInitConfig.LogLevel = viper.GetString(SecretInitLogLevelEnvVar)
 
 	if val, ok := annotations[SecretInitImagePullPolicyAnnotation]; ok {
 		secretInitConfig.ImagePullPolicy = GetPullPolicy(val)
 	} else {
-		secretInitConfig.ImagePullPolicy = GetPullPolicy(viper.GetString("secret_init_image_pull_policy"))
+		secretInitConfig.ImagePullPolicy = GetPullPolicy(viper.GetString(SecretInitimagePullPolicyEnvVar))
 	}
 
-	if val, err := resource.ParseQuantity(viper.GetString("secret_init_cpu_request")); err == nil {
+	if val, err := resource.ParseQuantity(viper.GetString(SecretInitCPURequestEnvVar)); err == nil {
 		secretInitConfig.CPURequest = val
 	} else {
 		secretInitConfig.CPURequest = resource.MustParse("50m")
 	}
 
-	if val, err := resource.ParseQuantity(viper.GetString("secret_init_memory_request")); err == nil {
+	if val, err := resource.ParseQuantity(viper.GetString(SecretInitMemoryRequestEnvVar)); err == nil {
 		secretInitConfig.MemoryRequest = val
 	} else {
 		secretInitConfig.MemoryRequest = resource.MustParse("64Mi")
 	}
 
-	if val, err := resource.ParseQuantity(viper.GetString("secret_init_cpu_limit")); err == nil {
+	if val, err := resource.ParseQuantity(viper.GetString(SecretInitCPULimitEnvVar)); err == nil {
 		secretInitConfig.CPULimit = val
 	} else {
 		secretInitConfig.CPULimit = resource.MustParse("250m")
 	}
 
-	if val, err := resource.ParseQuantity(viper.GetString("secret_init_memory_limit")); err == nil {
+	if val, err := resource.ParseQuantity(viper.GetString(SecretInitMemoryLimitEnvVar)); err == nil {
 		secretInitConfig.MemoryLimit = val
 	} else {
 		secretInitConfig.MemoryLimit = resource.MustParse("64Mi")
@@ -166,33 +166,33 @@ func LoadSecretInitConfig(obj metav1.Object) SecretInitConfig {
 
 func SetConfigDefaults() {
 	// Webhook defaults
-	viper.SetDefault("psp_allow_privilege_escalation", "false")
-	viper.SetDefault("run_as_non_root", "false")
-	viper.SetDefault("run_as_user", "0")
-	viper.SetDefault("run_as_group", "0")
-	viper.SetDefault("readonly_root_fs", "false")
-	viper.SetDefault("registry_skip_verify", "false")
-	viper.SetDefault("mutate_configmap", "false")
-	viper.SetDefault("default_image_pull_secret", "")
-	viper.SetDefault("default_image_pull_secret_service_account", "")
-	viper.SetDefault("default_image_pull_secret_namespace", "")
-	viper.SetDefault("tls_cert_file", "")
-	viper.SetDefault("tls_private_key_file", "")
-	viper.SetDefault("listen_address", ":8443")
-	viper.SetDefault("telemetry_listen_address", "")
-	viper.SetDefault("log_level", "info")
+	viper.SetDefault(PSPAllowPrivilegeEscalationEnvVar, "false")
+	viper.SetDefault(RunAsNonRootEnvVar, "false")
+	viper.SetDefault(RunAsUserEnvVar, "0")
+	viper.SetDefault(RunAsGroupEnvVar, "0")
+	viper.SetDefault(ReadonlyRootFSEnvVar, "false")
+	viper.SetDefault(RegistrySkipVerifyEnvVar, "false")
+	viper.SetDefault(MutateConfigMapEnvVar, "false")
+	viper.SetDefault(DefaultImagePullSecretEnvVar, "")
+	viper.SetDefault(DefaultImagePullSecretSAEnvVar, "")
+	viper.SetDefault(DefaultImagePullSecretNSEnvVar, "")
+	viper.SetDefault(TLSCertFileEnvVar, "")
+	viper.SetDefault(TLSPrivateKeyFileEnvVar, "")
+	viper.SetDefault(ListenAddressEnvVar, ":8443")
+	viper.SetDefault(TelemetryListenAddressEnvVar, "")
+	viper.SetDefault(LogLevelEnvVar, "info")
 
 	// Secret-init defaults
-	viper.SetDefault("secret_init_daemon", "false")
-	viper.SetDefault("secret_init_json_log", "false")
-	viper.SetDefault("secret_init_image", "ghcr.io/bank-vaults/secret-init:latest")
-	viper.SetDefault("secret_init_image_pull_policy", string(corev1.PullIfNotPresent))
-	viper.SetDefault("secret_init_cpu_request", "")
-	viper.SetDefault("secret_init_memory_request", "")
-	viper.SetDefault("secret_init_cpu_limit", "")
-	viper.SetDefault("secret_init_memory_limit", "")
-	viper.SetDefault("secret_init_log_server", "")
-	viper.SetDefault("secret_init_log_level", "info")
+	viper.SetDefault(SecretInitDaemonEnvVar, "false")
+	viper.SetDefault(SecretInitJSONLogEnvVar, "false")
+	viper.SetDefault(SecretInitImageEnvVar, "ghcr.io/bank-vaults/secret-init:latest")
+	viper.SetDefault(SecretInitimagePullPolicyEnvVar, string(corev1.PullIfNotPresent))
+	viper.SetDefault(SecretInitCPURequestEnvVar, "")
+	viper.SetDefault(SecretInitMemoryRequestEnvVar, "")
+	viper.SetDefault(SecretInitCPULimitEnvVar, "")
+	viper.SetDefault(SecretInitMemoryLimitEnvVar, "")
+	viper.SetDefault(SecretInitLogServerEnvVar, "")
+	viper.SetDefault(SecretInitLogLevelEnvVar, "info")
 
 	viper.AutomaticEnv()
 }

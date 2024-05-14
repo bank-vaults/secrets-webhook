@@ -111,13 +111,13 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 	if val, ok := annotations[common.VaultAddrAnnotation]; ok {
 		config.Addr = val
 	} else {
-		config.Addr = viper.GetString("vault_addr")
+		config.Addr = viper.GetString(common.VaultAddrEnvVar)
 	}
 
 	if val, ok := annotations[common.VaultRoleAnnotation]; ok {
 		config.Role = val
 	} else {
-		if val := viper.GetString("vault_role"); val != "" {
+		if val := viper.GetString(common.VaultRoleEnvVar); val != "" {
 			config.Role = val
 		} else {
 			switch p := obj.(type) {
@@ -132,44 +132,44 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 	if val, ok := annotations[common.VaultAuthMethodAnnotation]; ok {
 		config.AuthMethod = val
 	} else {
-		config.AuthMethod = viper.GetString("vault_auth_method")
+		config.AuthMethod = viper.GetString(common.VaultAuthMethodEnvVar)
 	}
 
 	if val, ok := annotations[common.VaultPathAnnotation]; ok {
 		config.Path = val
 	} else {
-		config.Path = viper.GetString("vault_path")
+		config.Path = viper.GetString(common.VaultPathEnvVar)
 	}
 
 	// TODO: Check for flag to verify we want to use namespace-local SAs instead of the webhook namespaces SA
 	if val, ok := annotations[common.VaultServiceaccountAnnotation]; ok {
 		config.VaultServiceAccount = val
 	} else {
-		config.VaultServiceAccount = viper.GetString("vault_serviceaccount")
+		config.VaultServiceAccount = viper.GetString(common.VaultSAEnvVar)
 	}
 
 	if val, ok := annotations[common.VaultSkipVerifyAnnotation]; ok {
 		config.SkipVerify, _ = strconv.ParseBool(val)
 	} else {
-		config.SkipVerify = viper.GetBool("vault_skip_verify")
+		config.SkipVerify = viper.GetBool(common.VaultSkipVerifyEnvVar)
 	}
 
 	if val, ok := annotations[common.VaultTLSSecretAnnotation]; ok {
 		config.TLSSecret = val
 	} else {
-		config.TLSSecret = viper.GetString("vault_tls_secret")
+		config.TLSSecret = viper.GetString(common.VaultTLSSecretEnvVar)
 	}
 
 	if val, ok := annotations[common.VaultClientTimeoutAnnotation]; ok {
 		config.ClientTimeout, _ = time.ParseDuration(val)
 	} else {
-		config.ClientTimeout, _ = time.ParseDuration(viper.GetString("vault_client_timeout"))
+		config.ClientTimeout, _ = time.ParseDuration(viper.GetString(common.VaultClientTimeoutEnvVar))
 	}
 
 	if val, ok := annotations[common.VaultAgentAnnotation]; ok {
 		config.UseAgent, _ = strconv.ParseBool(val)
 	} else {
-		config.UseAgent, _ = strconv.ParseBool(viper.GetString("vault_agent"))
+		config.UseAgent, _ = strconv.ParseBool(viper.GetString(common.VaultAgentEnvVar))
 	}
 
 	if val, ok := annotations[common.VaultConsulTemplateConfigmapAnnotation]; ok {
@@ -180,8 +180,8 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 
 	if val, ok := annotations[common.VaultServiceAccountTokenVolumeNameAnnotation]; ok {
 		config.ServiceAccountTokenVolumeName = val
-	} else if viper.GetString("service_account_token_volume_name") != "" {
-		config.ServiceAccountTokenVolumeName = viper.GetString("service_account_token_volume_name")
+	} else if viper.GetString(common.VaultSATokenVolumeNameEnvVar) != "" {
+		config.ServiceAccountTokenVolumeName = viper.GetString(common.VaultSATokenVolumeNameEnvVar)
 	} else {
 		config.ServiceAccountTokenVolumeName = "/var/run/secrets/kubernetes.io/serviceaccount"
 	}
@@ -189,19 +189,19 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 	if val, ok := annotations[common.VaultConsulTemplateImageAnnotation]; ok {
 		config.CtImage = val
 	} else {
-		config.CtImage = viper.GetString("vault_ct_image")
+		config.CtImage = viper.GetString(common.VaultCTImageEnvVar)
 	}
 
 	if val, ok := annotations[common.VaultIgnoreMissingSecretsAnnotation]; ok {
 		config.IgnoreMissingSecrets = val
 	} else {
-		config.IgnoreMissingSecrets = viper.GetString("vault_ignore_missing_secrets")
+		config.IgnoreMissingSecrets = viper.GetString(common.VaultIgnoreMissingSecretsEnvVar)
 	}
 
 	if val, ok := annotations[common.VaultPassthroughAnnotation]; ok {
 		config.Passthrough = val
 	} else {
-		config.Passthrough = viper.GetString("vault_passthrough")
+		config.Passthrough = viper.GetString(common.VaultPassthroughEnvVar)
 	}
 
 	if val, ok := annotations[common.VaultConfigfilePathAnnotation]; ok {
@@ -215,7 +215,7 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 	if val, ok := annotations[common.VaultConsulTemplatePullPolicyAnnotation]; ok {
 		config.CtImagePullPolicy = common.GetPullPolicy(val)
 	} else {
-		config.CtImagePullPolicy = common.GetPullPolicy(viper.GetString("vault_ct_pull_policy"))
+		config.CtImagePullPolicy = common.GetPullPolicy(viper.GetString(common.VaultCTPullPolicyEnvVar))
 	}
 
 	if val, ok := annotations[common.VaultConsulTemplateOnceAnnotation]; ok {
@@ -247,19 +247,19 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 	if val, ok := annotations[common.VaultLogLevelAnnotation]; ok {
 		config.LogLevel = val
 	} else {
-		config.LogLevel = viper.GetString("vault_log_level")
+		config.LogLevel = viper.GetString(common.VaultLogLevelEnvVar)
 	}
 
 	if val, ok := annotations[common.VaultTransitKeyIDAnnotation]; ok {
 		config.TransitKeyID = val
 	} else {
-		config.TransitKeyID = viper.GetString("transit_key_id")
+		config.TransitKeyID = viper.GetString(common.VaultTransitKeyIDEnvVar)
 	}
 
 	if val, ok := annotations[common.VaultTransitPathAnnotation]; ok {
 		config.TransitPath = val
 	} else {
-		config.TransitPath = viper.GetString("transit_path")
+		config.TransitPath = viper.GetString(common.VaultTransitPathEnvVar)
 	}
 
 	if val, ok := annotations[common.VaultAgentConfigmapAnnotation]; ok {
@@ -323,12 +323,12 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 	if val, ok := annotations[common.VaultImageAnnotation]; ok {
 		config.AgentImage = val
 	} else {
-		config.AgentImage = viper.GetString("vault_image")
+		config.AgentImage = viper.GetString(common.VaultImageEnvVar)
 	}
 	if val, ok := annotations[common.VaultImagePullPolicyAnnotation]; ok {
 		config.AgentImagePullPolicy = common.GetPullPolicy(val)
 	} else {
-		config.AgentImagePullPolicy = common.GetPullPolicy(viper.GetString("vault_image_pull_policy"))
+		config.AgentImagePullPolicy = common.GetPullPolicy(viper.GetString(common.VaultImagePullPolicyEnvVar))
 	}
 
 	if val, ok := annotations[common.VaultAgentEnvVariablesAnnotation]; ok {
@@ -338,7 +338,7 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 	if val, ok := annotations[common.VaultNamespaceAnnotation]; ok {
 		config.VaultNamespace = val
 	} else {
-		config.VaultNamespace = viper.GetString("vault_namespace")
+		config.VaultNamespace = viper.GetString(common.VaultNamespaceEnvVar)
 	}
 
 	if val, ok := annotations[common.VaultConsulTemplateInjectInInitcontainersAnnotation]; ok {
@@ -351,10 +351,10 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 		batchSize, _ := strconv.ParseInt(val, 10, 32)
 		config.TransitBatchSize = int(batchSize)
 	} else {
-		config.TransitBatchSize = viper.GetInt("transit_batch_size")
+		config.TransitBatchSize = viper.GetInt(common.VaultTransitBatchSizeEnvVar)
 	}
 
-	config.Token = viper.GetString("vault_token")
+	config.Token = viper.GetString(common.VaultTokenEnvVar)
 
 	// parse resulting config.Role as potential template with fields of config
 	tmpl, err := template.New("vaultRole").Option("missingkey=error").Parse(config.Role)
@@ -380,27 +380,27 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 }
 
 func SetDefaults() {
-	viper.SetDefault("vault_image", "hashicorp/vault:latest")
-	viper.SetDefault("vault_image_pull_policy", string(corev1.PullIfNotPresent))
-	viper.SetDefault("vault_ct_image", "hashicorp/consul-template:0.32.0")
-	viper.SetDefault("vault_ct_pull_policy", string(corev1.PullIfNotPresent))
-	viper.SetDefault("vault_addr", "https://vault:8200")
-	viper.SetDefault("vault_skip_verify", "false")
-	viper.SetDefault("vault_path", "kubernetes")
-	viper.SetDefault("vault_auth_method", "jwt")
-	viper.SetDefault("vault_role", "")
-	viper.SetDefault("vault_tls_secret", "")
-	viper.SetDefault("vault_client_timeout", "10s")
-	viper.SetDefault("vault_agent", "false")
-	viper.SetDefault("vault_ct_share_process_namespace", "")
-	viper.SetDefault("vault_ignore_missing_secrets", "false")
-	viper.SetDefault("vault_passthrough", "")
-	viper.SetDefault("vault_agent_share_process_namespace", "")
-	viper.SetDefault("vault_log_level", "info")
-	viper.SetDefault("vault_namespace", "")
-	viper.SetDefault("transit_key_id", "")
-	viper.SetDefault("transit_path", "")
-	viper.SetDefault("transit_batch_size", 25)
+	viper.SetDefault(common.VaultImageEnvVar, "hashicorp/vault:latest")
+	viper.SetDefault(common.VaultImagePullPolicyEnvVar, string(corev1.PullIfNotPresent))
+	viper.SetDefault(common.VaultCTImageEnvVar, "hashicorp/consul-template:0.32.0")
+	viper.SetDefault(common.VaultCTPullPolicyEnvVar, string(corev1.PullIfNotPresent))
+	viper.SetDefault(common.VaultAddrEnvVar, "https://vault:8200")
+	viper.SetDefault(common.VaultSkipVerifyEnvVar, "false")
+	viper.SetDefault(common.VaultPathEnvVar, "kubernetes")
+	viper.SetDefault(common.VaultAuthMethodEnvVar, "jwt")
+	viper.SetDefault(common.VaultRoleEnvVar, "")
+	viper.SetDefault(common.VaultTLSSecretEnvVar, "")
+	viper.SetDefault(common.VaultClientTimeoutEnvVar, "10s")
+	viper.SetDefault(common.VaultAgentEnvVar, "false")
+	viper.SetDefault(common.VaultCTShareProcessNamespaceEnvVar, "")
+	viper.SetDefault(common.VaultIgnoreMissingSecretsEnvVar, "false")
+	viper.SetDefault(common.VaultPassthroughEnvVar, "")
+	viper.SetDefault(common.VaultAgentShareProcessNamespaceEnvVar, "")
+	viper.SetDefault(common.VaultLogLevelEnvVar, "info")
+	viper.SetDefault(common.VaultNamespaceEnvVar, "")
+	viper.SetDefault(common.VaultTransitKeyIDEnvVar, "")
+	viper.SetDefault(common.VaultTransitPathEnvVar, "")
+	viper.SetDefault(common.VaultTransitBatchSizeEnvVar, 25)
 
 	viper.AutomaticEnv()
 }
