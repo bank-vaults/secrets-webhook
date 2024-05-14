@@ -3,6 +3,7 @@
 export PATH := $(abspath bin/):${PATH}
 
 CONTAINER_IMAGE_REF = ghcr.io/bank-vaults/secrets-webhook:dev
+OPERATOR_VERSION ?= latest
 
 ##@ General
 
@@ -72,7 +73,7 @@ test-e2e: ## Run e2e tests
 
 .PHONY: test-e2e-local
 test-e2e-local: container-image ## Run e2e tests locally
-	LOAD_IMAGE=${CONTAINER_IMAGE_REF} WEBHOOK_VERSION=dev ${MAKE} test-e2e
+	LOAD_IMAGE=${CONTAINER_IMAGE_REF} WEBHOOK_VERSION=dev OPERATOR_VERSION=$(OPERATOR_VERSION) ${MAKE} test-e2e
 
 .PHONY: lint
 lint: lint-go lint-helm lint-docker lint-yaml

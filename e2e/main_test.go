@@ -43,9 +43,6 @@ import (
 	"sigs.k8s.io/e2e-framework/third_party/helm"
 )
 
-// Upgrade this when a new version is released
-const vaultOperatorVersion = "1.22.1"
-
 var testenv env.Environment
 
 func TestMain(m *testing.M) {
@@ -126,12 +123,16 @@ func TestMain(m *testing.M) {
 func installVaultOperator(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
 	manager := helm.New(cfg.KubeconfigFile())
 
+	version := "latest"
+	if v := os.Getenv("OPERATOR_VERSION"); v != "" {
+		version = v
+	}
+
 	err := manager.RunInstall(
 		helm.WithName("vault-operator"), // This is weird that ReleaseName works differently, but it is what it is
 		helm.WithChart("oci://ghcr.io/bank-vaults/helm-charts/vault-operator"),
 		helm.WithNamespace("vault-operator"),
-		helm.WithArgs("--create-namespace"),
-		helm.WithVersion(vaultOperatorVersion),
+		helm.WithArgs("--create-namespace", "--set", "image.tag="+version),
 		helm.WithWait(),
 		helm.WithTimeout("2m"),
 	)
