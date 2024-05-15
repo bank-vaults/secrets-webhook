@@ -106,6 +106,8 @@ func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
 		ObjectNamespace: ar.Namespace,
 	}
 
+	// Preserve backwards compatibility with deprecated environment variables and annotations
+	handleDeprecatedEnvVars()
 	annotations := handleDeprecatedAnnotations(obj.GetAnnotations())
 
 	if val, ok := annotations[common.VaultAddrAnnotation]; ok {
@@ -613,4 +615,27 @@ func handleDeprecatedAnnotations(annotations map[string]string) map[string]strin
 	}
 
 	return annotations
+}
+
+// This is implemented to preserve backwards compatibility with the deprecated environment variables
+func handleDeprecatedEnvVars() {
+	if val := viper.GetString(common.VaultSATokenVolumeNameEnvVarDeprecated); val != "" {
+		viper.Set(common.VaultSATokenVolumeNameEnvVar, val)
+	}
+
+	if val := viper.GetString(common.VaultTransitKeyIDEnvVarDeprecated); val != "" {
+		viper.Set(common.VaultTransitKeyIDEnvVar, val)
+	}
+
+	if val := viper.GetString(common.VaultTransitPathEnvVarDeprecated); val != "" {
+		viper.Set(common.VaultTransitPathEnvVar, val)
+	}
+
+	if val := viper.GetInt(common.VaultTransitBatchSizeEnvVarDeprecated); val != 0 {
+		viper.Set(common.VaultTransitBatchSizeEnvVar, val)
+	}
+
+	if val := viper.GetString(common.VaultNamespaceEnvVarDeprecated); val != "" {
+		viper.Set(common.VaultNamespaceEnvVar, val)
+	}
 }

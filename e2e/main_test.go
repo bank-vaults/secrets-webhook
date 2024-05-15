@@ -257,7 +257,7 @@ func installVault(ctx context.Context, cfg *envconf.Config) (context.Context, er
 	}
 
 	// wait for the statefulSet to become available
-	err = wait.For(conditions.New(r).ResourcesFound(statefulSets), wait.WithTimeout(1*time.Minute))
+	err = wait.For(conditions.New(r).ResourcesFound(statefulSets), wait.WithTimeout(2*time.Minute))
 	if err != nil {
 		return ctx, err
 	}
@@ -269,7 +269,7 @@ func installVault(ctx context.Context, cfg *envconf.Config) (context.Context, er
 	}
 
 	// wait for the pod to become available
-	err = wait.For(conditions.New(r).PodReady(&pod), wait.WithTimeout(1*time.Minute))
+	err = wait.For(conditions.New(r).PodReady(&pod), wait.WithTimeout(2*time.Minute))
 	if err != nil {
 		return ctx, err
 	}
@@ -287,7 +287,7 @@ func waitForVaultTLS(ctx context.Context, cfg *envconf.Config) (context.Context,
 	}
 
 	// wait for the vault-tls secret to become available
-	err := wait.For(conditions.New(cfg.Client().Resources()).ResourcesFound(vaultTLSSecrets), wait.WithTimeout(1*time.Minute))
+	err := wait.For(conditions.New(cfg.Client().Resources()).ResourcesFound(vaultTLSSecrets), wait.WithTimeout(2*time.Minute))
 	if err != nil {
 		return ctx, err
 	}

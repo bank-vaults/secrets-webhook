@@ -55,6 +55,7 @@ type SecretInitConfig struct {
 func LoadWebhookConfig(obj metav1.Object) Config {
 	Config := Config{}
 
+	handleDeprecatedEnvVars()
 	annotations := handleDeprecatedAnnotations(obj.GetAnnotations())
 
 	if val := annotations[MutateAnnotation]; val == "skip" {
@@ -65,26 +66,38 @@ func LoadWebhookConfig(obj metav1.Object) Config {
 
 	if val, ok := annotations[PSPAllowPrivilegeEscalationAnnotation]; ok {
 		Config.PspAllowPrivilegeEscalation, _ = strconv.ParseBool(val)
+	} else {
+		Config.PspAllowPrivilegeEscalation, _ = strconv.ParseBool(viper.GetString(PSPAllowPrivilegeEscalationEnvVar))
 	}
 
 	if val, ok := annotations[RunAsNonRootAnnotation]; ok {
 		Config.RunAsNonRoot, _ = strconv.ParseBool(val)
+	} else {
+		Config.RunAsNonRoot, _ = strconv.ParseBool(viper.GetString(RunAsNonRootEnvVar))
 	}
 
 	if val, ok := annotations[RunAsUserAnnotation]; ok {
 		Config.RunAsUser, _ = strconv.ParseInt(val, 10, 64)
+	} else {
+		Config.RunAsUser, _ = strconv.ParseInt(viper.GetString(RunAsUserEnvVar), 0, 64)
 	}
 
 	if val, ok := annotations[RunAsGroupAnnotation]; ok {
 		Config.RunAsGroup, _ = strconv.ParseInt(val, 10, 64)
+	} else {
+		Config.RunAsGroup, _ = strconv.ParseInt(viper.GetString(RunAsGroupEnvVar), 0, 64)
 	}
 
 	if val, ok := annotations[ReadOnlyRootFsAnnotation]; ok {
 		Config.ReadOnlyRootFilesystem, _ = strconv.ParseBool(val)
+	} else {
+		Config.ReadOnlyRootFilesystem, _ = strconv.ParseBool(viper.GetString(ReadonlyRootFSEnvVar))
 	}
 
 	if val, ok := annotations[RegistrySkipVerifyAnnotation]; ok {
 		Config.RegistrySkipVerify, _ = strconv.ParseBool(val)
+	} else {
+		Config.RegistrySkipVerify, _ = strconv.ParseBool(viper.GetString(RegistrySkipVerifyEnvVar))
 	}
 
 	if val, ok := annotations[MutateProbesAnnotation]; ok {
@@ -134,7 +147,7 @@ func LoadSecretInitConfig(obj metav1.Object) SecretInitConfig {
 	if val, ok := annotations[SecretInitImagePullPolicyAnnotation]; ok {
 		secretInitConfig.ImagePullPolicy = GetPullPolicy(val)
 	} else {
-		secretInitConfig.ImagePullPolicy = GetPullPolicy(viper.GetString(SecretInitimagePullPolicyEnvVar))
+		secretInitConfig.ImagePullPolicy = GetPullPolicy(viper.GetString(SecretInitImagePullPolicyEnvVar))
 	}
 
 	if val, err := resource.ParseQuantity(viper.GetString(SecretInitCPURequestEnvVar)); err == nil {
@@ -186,7 +199,7 @@ func SetConfigDefaults() {
 	viper.SetDefault(SecretInitDaemonEnvVar, "false")
 	viper.SetDefault(SecretInitJSONLogEnvVar, "false")
 	viper.SetDefault(SecretInitImageEnvVar, "ghcr.io/bank-vaults/secret-init:latest")
-	viper.SetDefault(SecretInitimagePullPolicyEnvVar, string(corev1.PullIfNotPresent))
+	viper.SetDefault(SecretInitImagePullPolicyEnvVar, string(corev1.PullIfNotPresent))
 	viper.SetDefault(SecretInitCPURequestEnvVar, "")
 	viper.SetDefault(SecretInitMemoryRequestEnvVar, "")
 	viper.SetDefault(SecretInitCPULimitEnvVar, "")
@@ -270,4 +283,50 @@ func handleDeprecatedAnnotations(annotations map[string]string) map[string]strin
 	}
 
 	return annotations
+}
+
+func handleDeprecatedEnvVars() {
+	if val := viper.GetString(VaultEnvDaemonEnvVarDeprecated); val != "" {
+		viper.Set(SecretInitDaemonEnvVar, val)
+	}
+
+	if val := viper.GetString(VaultEnvDelayEnvVarDeprecated); val != "" {
+		viper.Set(SecretInitDelayEnvVar, val)
+	}
+
+	if val := viper.GetString(VaultEnvPassthroughEnvVarDeprecated); val != "" {
+		viper.Set(VaultPassthroughEnvVar, val)
+	}
+
+	if val := viper.GetString(VaultEnvEnableJSONLogEnvVarDeprecated); val != "" {
+		viper.Set(SecretInitJSONLogEnvVar, val)
+	}
+
+	if val := viper.GetString(VaultEnvImageEnvVarDeprecated); val != "" {
+		viper.Set(SecretInitImageEnvVar, val)
+	}
+
+	if val := viper.GetString(VaultEnvLogServerEnvVarDeprecated); val != "" {
+		viper.Set(SecretInitLogServerEnvVar, val)
+	}
+
+	if val := viper.GetString(VaultEnvImagePullPolicyEnvVarDeprecated); val != "" {
+		viper.Set(SecretInitImagePullPolicyEnvVar, val)
+	}
+
+	if val := viper.GetString(VaultEnvCPURequestEnvVarDeprecated); val != "" {
+		viper.Set(SecretInitCPURequestEnvVar, val)
+	}
+
+	if val := viper.GetString(VaultEnvMemoryRequestEnvVarDeprecated); val != "" {
+		viper.Set(SecretInitMemoryRequestEnvVar, val)
+	}
+
+	if val := viper.GetString(VaultEnvCPULimitEnvVarDeprecated); val != "" {
+		viper.Set(SecretInitCPULimitEnvVar, val)
+	}
+
+	if val := viper.GetString(VaultEnvMemoryLimitEnvVarDeprecated); val != "" {
+		viper.Set(SecretInitMemoryLimitEnvVar, val)
+	}
 }

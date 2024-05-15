@@ -164,7 +164,7 @@ const (
 	SecretInitImageEnvVar           = "secret_init_image"
 	SecretInitLogServerEnvVar       = "secret_init_log_server"
 	SecretInitLogLevelEnvVar        = "secret_init_log_level"
-	SecretInitimagePullPolicyEnvVar = "secret_init_image_pull_policy"
+	SecretInitImagePullPolicyEnvVar = "secret_init_image_pull_policy"
 	SecretInitCPURequestEnvVar      = "secret_init_cpu_request"
 	SecretInitMemoryRequestEnvVar   = "secret_init_memory_request"
 	SecretInitCPULimitEnvVar        = "secret_init_cpu_limit"
@@ -223,7 +223,7 @@ const (
 	BaoSATokenVolumeNameEnvVar          = "bao_service_account_token_volume_name"
 )
 
-// DEPRECATED ANNOTATIONS
+// DEPRECATED ANNOTATIONS AND ENVIRONMENT VARIABLES
 const (
 	// Webhook annotations
 	PSPAllowPrivilegeEscalationAnnotationDeprecated = "vault.security.banzaicloud.io/psp-allow-privilege-escalation"
@@ -288,6 +288,26 @@ const (
 	VaultConsulTemplateMemoryAnnotationDeprecated                 = "vault.security.banzaicloud.io/vault-ct-memory"
 	VaultConsulTemplateSecretsMountPathAnnotationDeprecated       = "vault.security.banzaicloud.io/vault-ct-secrets-mount-path"
 	VaultConsulTemplateInjectInInitcontainersAnnotationDeprecated = "vault.security.banzaicloud.io/vault-ct-inject-in-initcontainers"
+
+	// Vault-env environment variables
+	VaultEnvDaemonEnvVarDeprecated          = "vault_env_daemon"
+	VaultEnvDelayEnvVarDeprecated           = "vault_env_delay"
+	VaultEnvPassthroughEnvVarDeprecated     = "vault_env_passthrough"
+	VaultEnvEnableJSONLogEnvVarDeprecated   = "enable_json_log"
+	VaultEnvImageEnvVarDeprecated           = "vault_env_image"
+	VaultEnvLogServerEnvVarDeprecated       = "VAULT_ENV_LOG_SERVER"
+	VaultEnvImagePullPolicyEnvVarDeprecated = "vault_env_pull_policy"
+	VaultEnvCPURequestEnvVarDeprecated      = "VAULT_ENV_CPU_REQUEST"
+	VaultEnvMemoryRequestEnvVarDeprecated   = "VAULT_ENV_MEMORY_REQUEST"
+	VaultEnvCPULimitEnvVarDeprecated        = "VAULT_ENV_CPU_LIMIT"
+	VaultEnvMemoryLimitEnvVarDeprecated     = "VAULT_ENV_MEMORY_LIMIT"
+
+	// Vault environment variables
+	VaultSATokenVolumeNameEnvVarDeprecated = "SERVICE_ACCOUNT_TOKEN_VOLUME_NAME"
+	VaultTransitKeyIDEnvVarDeprecated      = "transit_key_id"
+	VaultTransitPathEnvVarDeprecated       = "transit_path"
+	VaultTransitBatchSizeEnvVarDeprecated  = "transit_batch_size"
+	VaultNamespaceEnvVarDeprecated         = "VAULT_NAMESPACE"
 )
 
 func HasVaultPrefix(value string) bool {
