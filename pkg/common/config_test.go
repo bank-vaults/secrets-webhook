@@ -15,6 +15,7 @@
 package common
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -151,6 +152,7 @@ func TestLoadConfig(t *testing.T) {
 			}
 			t.Cleanup(func() {
 				viper.Reset()
+				os.Clearenv()
 			})
 
 			whConfig := LoadWebhookConfig(&metav1.ObjectMeta{Annotations: ttp.annotations})

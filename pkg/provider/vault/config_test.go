@@ -15,15 +15,17 @@
 package vault
 
 import (
+	"os"
 	"testing"
 	"time"
 
-	"github.com/bank-vaults/secrets-webhook/pkg/common"
 	"github.com/slok/kubewebhook/v2/pkg/model"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/bank-vaults/secrets-webhook/pkg/common"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -250,7 +252,6 @@ func TestLoadConfig(t *testing.T) {
 				VaultServiceAccount:           "",
 				Token:                         "",
 				IgnoreMissingSecrets:          "false",
-				Passthrough:                   "VAULT_SKIP_VERIFY,VAULT_ADDR",
 				LogLevel:                      "info",
 				ServiceAccountTokenVolumeName: "vault-token",
 				TransitKeyID:                  "new-transit-key-id",
@@ -266,11 +267,13 @@ func TestLoadConfig(t *testing.T) {
 	for _, tt := range tests {
 		ttp := tt
 		t.Run(ttp.name, func(t *testing.T) {
+			viper.Reset()
 			for key, value := range ttp.envVars {
 				viper.Set(key, value)
 			}
 			t.Cleanup(func() {
 				viper.Reset()
+				os.Clearenv()
 			})
 
 			config, err := LoadConfig(&metav1.ObjectMeta{Annotations: ttp.annotations}, &model.AdmissionReview{})
