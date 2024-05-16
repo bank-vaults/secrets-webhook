@@ -281,6 +281,20 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 								},
 							},
 						},
+						ReadinessProbe: &corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								Exec: &corev1.ExecAction{
+									Command: []string{"/bin/bash"},
+								},
+							},
+						},
+						StartupProbe: &corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								Exec: &corev1.ExecAction{
+									Command: []string{"/bin/bash"},
+								},
+							},
+						},
 						Env: []corev1.EnvVar{
 							{
 								Name:  "myvar",
@@ -303,6 +317,20 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					Args:         []string{"/bin/bash"},
 					VolumeMounts: []corev1.VolumeMount{{Name: "secret-init", MountPath: "/bank-vaults/"}},
 					LivenessProbe: &corev1.Probe{
+						ProbeHandler: corev1.ProbeHandler{
+							Exec: &corev1.ExecAction{
+								Command: []string{"/bank-vaults/secret-init", "/bin/bash"},
+							},
+						},
+					},
+					ReadinessProbe: &corev1.Probe{
+						ProbeHandler: corev1.ProbeHandler{
+							Exec: &corev1.ExecAction{
+								Command: []string{"/bank-vaults/secret-init", "/bin/bash"},
+							},
+						},
+					},
+					StartupProbe: &corev1.Probe{
 						ProbeHandler: corev1.ProbeHandler{
 							Exec: &corev1.ExecAction{
 								Command: []string{"/bank-vaults/secret-init", "/bin/bash"},
@@ -757,6 +785,20 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 								},
 							},
 						},
+						ReadinessProbe: &corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								Exec: &corev1.ExecAction{
+									Command: []string{"/bin/bash"},
+								},
+							},
+						},
+						StartupProbe: &corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								Exec: &corev1.ExecAction{
+									Command: []string{"/bin/bash"},
+								},
+							},
+						},
 						Env: []corev1.EnvVar{
 							{
 								Name:  "myvar",
@@ -779,6 +821,20 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					Args:         []string{"/bin/bash"},
 					VolumeMounts: []corev1.VolumeMount{{Name: "secret-init", MountPath: "/bank-vaults/"}},
 					LivenessProbe: &corev1.Probe{
+						ProbeHandler: corev1.ProbeHandler{
+							Exec: &corev1.ExecAction{
+								Command: []string{"/bank-vaults/secret-init", "/bin/bash"},
+							},
+						},
+					},
+					ReadinessProbe: &corev1.Probe{
+						ProbeHandler: corev1.ProbeHandler{
+							Exec: &corev1.ExecAction{
+								Command: []string{"/bank-vaults/secret-init", "/bin/bash"},
+							},
+						},
+					},
+					StartupProbe: &corev1.Probe{
 						ProbeHandler: corev1.ProbeHandler{
 							Exec: &corev1.ExecAction{
 								Command: []string{"/bank-vaults/secret-init", "/bin/bash"},
