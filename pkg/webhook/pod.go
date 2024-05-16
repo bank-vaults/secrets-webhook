@@ -109,6 +109,12 @@ func areProbesAlreadyMutated(container *corev1.Container) bool {
 		}
 	}
 
+	if container.StartupProbe != nil && container.StartupProbe.Exec != nil {
+		if len(container.StartupProbe.Exec.Command) > 0 && container.StartupProbe.Exec.Command[0] == "/bank-vaults/secret-init" {
+			return true
+		}
+	}
+
 	return false
 }
 
@@ -179,12 +185,20 @@ func (mw *MutatingWebhook) mutateContainers(ctx context.Context, containers []co
 					container.LivenessProbe.Exec.Command = append(container.LivenessProbe.Exec.Command, lProbeCmd...)
 				}
 
-				// mutate LivenessProbe
+				// mutate ReadinessProbe
 				if container.ReadinessProbe != nil && container.ReadinessProbe.Exec != nil {
 					rProbeCmd := container.ReadinessProbe.Exec.Command
 					container.ReadinessProbe.Exec.Command = []string{"/bank-vaults/secret-init"}
 					container.ReadinessProbe.Exec.Command = append(container.ReadinessProbe.Exec.Command, rProbeCmd...)
 				}
+
+				// mutate StartupProbe
+				if container.StartupProbe != nil && container.StartupProbe.Exec != nil {
+					sProbeCmd := container.StartupProbe.Exec.Command
+					container.StartupProbe.Exec.Command = []string{"/bank-vaults/secret-init"}
+					container.StartupProbe.Exec.Command = append(container.StartupProbe.Exec.Command, sProbeCmd...)
+				}
+
 			}
 
 		}
