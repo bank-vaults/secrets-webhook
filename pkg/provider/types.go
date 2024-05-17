@@ -28,14 +28,14 @@ import (
 )
 
 type Mutator interface {
-	MutateConfigMap(configMap *corev1.ConfigMap) error
-	MutateSecret(secret *corev1.Secret) error
-	MutateObject(object *unstructured.Unstructured) error
+	MutateConfigMap(ctx context.Context, configMap *corev1.ConfigMap, k8sClient kubernetes.Interface, k8sNamespace string) error
+	MutateSecret(ctx context.Context, secret *corev1.Secret, k8sClient kubernetes.Interface, k8sNamespace string) error
+	MutateObject(ctx context.Context, object *unstructured.Unstructured, k8sClient kubernetes.Interface, k8sNamespace string) error
 	MutatePod(ctx context.Context, pod *corev1.Pod, webhookConfig appCommon.Config, secretInitConfig appCommon.SecretInitConfig, k8sClient kubernetes.Interface, registry registry.ImageRegistry, dryRun bool) error
 	// For testing purposes
 	MutateContainers(ctx context.Context, containers []corev1.Container, podSpec *corev1.PodSpec, webhookConfig appCommon.Config, secretInitConfig appCommon.SecretInitConfig, k8sClient kubernetes.Interface, registry registry.ImageRegistry) (bool, error)
 }
 
 type Provider interface {
-	NewMutator(ctx context.Context, obj metav1.Object, client kubernetes.Interface, arNamespace string, k8sNamespace string, logger *slog.Logger) (*Mutator, error)
+	NewMutator(obj metav1.Object, arNamespace string, logger *slog.Logger) (*Mutator, error)
 }

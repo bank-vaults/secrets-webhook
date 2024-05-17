@@ -854,7 +854,7 @@ func (m *mutator) addAgentSecretsVolToContainers(containers []corev1.Container) 
 
 		container.VolumeMounts = append(container.VolumeMounts, []corev1.VolumeMount{
 			{
-				Name:      "agent-secrets-" + ProviderName,
+				Name:      "agent-secrets",
 				MountPath: m.config.ConfigfilePath,
 			},
 		}...)

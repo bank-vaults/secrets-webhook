@@ -1198,7 +1198,7 @@ func Test_mutator_mutatePod(t *testing.T) {
 									MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
 								},
 								{
-									Name:      "agent-secrets-vault",
+									Name:      "agent-secrets",
 									MountPath: "/vault/secrets",
 								},
 							},

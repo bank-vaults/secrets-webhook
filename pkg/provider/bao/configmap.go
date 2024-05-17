@@ -15,18 +15,25 @@
 package bao
 
 import (
+	"context"
+
 	"github.com/bank-vaults/internal/pkg/baoinjector"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/provider/common"
 )
 
-func (m *mutator) MutateConfigMap(configMap *corev1.ConfigMap) error {
+func (m *mutator) MutateConfigMap(ctx context.Context, configMap *corev1.ConfigMap, k8sClient kubernetes.Interface, k8sNamespace string) error {
 	// do an early exit if no mutation is needed
 	if !configMapNeedsMutation(configMap) {
 		return nil
 	}
 
+	err := m.newClient(ctx, k8sClient, k8sNamespace)
+	if err != nil {
+		return err
+	}
 	defer m.client.Close()
 
 	config := baoinjector.Config{
@@ -36,7 +43,6 @@ func (m *mutator) MutateConfigMap(configMap *corev1.ConfigMap) error {
 	}
 	injector := baoinjector.NewSecretInjector(config, m.client, nil, m.logger)
 
-	var err error
 	configMap.Data, err = injector.GetDataFromBao(configMap.Data)
 	if err != nil {
 		return err

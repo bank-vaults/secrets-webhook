@@ -57,14 +57,14 @@ func (mw *MutatingWebhook) SecretsMutator(ctx context.Context, ar *model.Admissi
 	switch webhookConfig.Provider {
 	case vaultprov.ProviderName:
 		provider := vaultprov.Provider{}
-		mutator, err = provider.NewMutator(ctx, obj, mw.k8sClient, ar.Namespace, mw.namespace, mw.logger)
+		mutator, err = provider.NewMutator(obj, ar.Namespace, mw.logger)
 		if err != nil {
 			return &mutating.MutatorResult{}, errors.Wrap(err, "failed to create Vault mutator")
 		}
 
 	case baoprov.ProviderName:
 		provider := baoprov.Provider{}
-		mutator, err = provider.NewMutator(ctx, obj, mw.k8sClient, ar.Namespace, mw.namespace, mw.logger)
+		mutator, err = provider.NewMutator(obj, ar.Namespace, mw.logger)
 		if err != nil {
 			return &mutating.MutatorResult{}, errors.Wrap(err, "failed to create Bao mutator")
 		}
@@ -78,13 +78,13 @@ func (mw *MutatingWebhook) SecretsMutator(ctx context.Context, ar *model.Admissi
 		return &mutating.MutatorResult{MutatedObject: v}, mutator.MutatePod(ctx, v, webhookConfig, secretInitConfig, mw.k8sClient, mw.registry, ar.DryRun)
 
 	case *corev1.Secret:
-		return &mutating.MutatorResult{MutatedObject: v}, mutator.MutateSecret(v)
+		return &mutating.MutatorResult{MutatedObject: v}, mutator.MutateSecret(ctx, v, mw.k8sClient, mw.namespace)
 
 	case *corev1.ConfigMap:
-		return &mutating.MutatorResult{MutatedObject: v}, mutator.MutateConfigMap(v)
+		return &mutating.MutatorResult{MutatedObject: v}, mutator.MutateConfigMap(ctx, v, mw.k8sClient, mw.namespace)
 
 	case *unstructured.Unstructured:
-		return &mutating.MutatorResult{MutatedObject: v}, mutator.MutateObject(v)
+		return &mutating.MutatorResult{MutatedObject: v}, mutator.MutateObject(ctx, v, mw.k8sClient, mw.namespace)
 
 	default:
 		return &mutating.MutatorResult{}, nil

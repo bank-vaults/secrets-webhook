@@ -15,17 +15,24 @@
 package vault
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/bank-vaults/internal/pkg/vaultinjector"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/provider/common"
 )
 
-func (m *mutator) MutateObject(object *unstructured.Unstructured) error {
+func (m *mutator) MutateObject(ctx context.Context, object *unstructured.Unstructured, k8sClient kubernetes.Interface, k8sNamespace string) error {
 	m.logger.Debug(fmt.Sprintf("mutating object: %s.%s", object.GetNamespace(), object.GetName()))
+
+	err := m.newClient(ctx, k8sClient, k8sNamespace)
+	if err != nil {
+		return err
+	}
 	defer m.client.Close()
 
 	injectorConfig := vaultinjector.Config{
