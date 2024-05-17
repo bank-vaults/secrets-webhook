@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   vault:
     container_name: secrets-webhook-vault
