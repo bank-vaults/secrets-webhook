@@ -15,21 +15,19 @@
 //go:build integration
 // +build integration
 
-package webhook
+package vault
 
 import (
+	"log/slog"
 	"testing"
 
 	"github.com/bank-vaults/vault-sdk/vault"
 	vaultapi "github.com/hashicorp/vault/api"
-	"github.com/slok/kubewebhook/v2/pkg/model"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
-
-	vaultprov "github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 )
 
-func TestMutateConfigMap_Vault(t *testing.T) {
+func TestMutateConfigMap(t *testing.T) {
 	config := vaultapi.DefaultConfig()
 	if config.Error != nil {
 		assert.NoError(t, config.Error)
@@ -47,8 +45,6 @@ func TestMutateConfigMap_Vault(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	mw := MutatingWebhook{}
-
 	configMap := corev1.ConfigMap{
 		Data: map[string]string{
 			"aws-access-key-id": "vault:secret/data/account#access_key",
@@ -60,13 +56,8 @@ func TestMutateConfigMap_Vault(t *testing.T) {
 			}`,
 		},
 	}
-
-	admissionReview := &model.AdmissionReview{}
-
-	providerConfig, err := loadProviderConfig(&configMap, admissionReview, vaultprov.ProviderName)
-	assert.NoError(t, err)
-
-	err = mw.MutateConfigMap(&configMap, providerConfig)
+	mutator := mutator{client: client, config: &Config{}, logger: slog.Default()}
+	err = mutator.MutateConfigMap(&configMap)
 	assert.NoError(t, err)
 
 	assert.Equal(t, map[string]string{

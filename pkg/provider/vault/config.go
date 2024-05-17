@@ -23,35 +23,12 @@ import (
 	"time"
 
 	"emperror.dev/errors"
-	"github.com/slok/kubewebhook/v2/pkg/model"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/common"
-)
-
-const (
-	AgentConfig = `
-pid_file = "/tmp/pidfile"
-
-auto_auth {
-        method "kubernetes" {
-                namespace = "%s"
-                mount_path = "auth/%s"
-                config = {
-                        role = "%s"
-                }
-        }
-
-        sink "file" {
-                config = {
-                        path = "/vault/.vault-token"
-                }
-        }
-}`
-	ProviderName = "vault"
 )
 
 type Config struct {
@@ -99,11 +76,11 @@ type Config struct {
 	FromPath                      string
 }
 
-func LoadConfig(obj metav1.Object, ar *model.AdmissionReview) (Config, error) {
+func LoadConfig(obj metav1.Object, namespace string) (Config, error) {
 	SetDefaults()
 
 	config := Config{
-		ObjectNamespace: ar.Namespace,
+		ObjectNamespace: namespace,
 	}
 
 	// Preserve backwards compatibility with deprecated environment variables and annotations

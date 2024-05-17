@@ -19,7 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/slok/kubewebhook/v2/pkg/model"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -276,7 +275,7 @@ func TestLoadConfig(t *testing.T) {
 				os.Clearenv()
 			})
 
-			config, err := LoadConfig(&metav1.ObjectMeta{Annotations: ttp.annotations}, &model.AdmissionReview{})
+			config, err := LoadConfig(&metav1.ObjectMeta{Annotations: ttp.annotations}, "")
 			assert.NoError(t, err)
 
 			assert.Equal(t, ttp.configWant, config)

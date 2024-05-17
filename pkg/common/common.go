@@ -14,11 +14,7 @@
 
 package common
 
-import (
-	"strings"
-
-	corev1 "k8s.io/api/core/v1"
-)
+import corev1 "k8s.io/api/core/v1"
 
 // ANNOTATIONS
 const (
@@ -309,14 +305,6 @@ const (
 	VaultTransitBatchSizeEnvVarDeprecated  = "transit_batch_size"
 	VaultNamespaceEnvVarDeprecated         = "VAULT_NAMESPACE"
 )
-
-func HasVaultPrefix(value string) bool {
-	return strings.HasPrefix(value, "vault:") || strings.HasPrefix(value, ">>vault:")
-}
-
-func HasBaoPrefix(value string) bool {
-	return strings.HasPrefix(value, "bao:") || strings.HasPrefix(value, ">>bao:")
-}
 
 func GetPullPolicy(pullPolicyStr string) corev1.PullPolicy {
 	switch pullPolicyStr {

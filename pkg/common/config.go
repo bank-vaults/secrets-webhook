@@ -53,62 +53,62 @@ type SecretInitConfig struct {
 }
 
 func LoadWebhookConfig(obj metav1.Object) Config {
-	Config := Config{}
+	config := Config{}
 
 	handleDeprecatedEnvVars()
 	annotations := handleDeprecatedAnnotations(obj.GetAnnotations())
 
 	if val := annotations[MutateAnnotation]; val == "skip" {
-		Config.Mutate = true
+		config.Mutate = true
 
-		return Config
+		return config
 	}
 
 	if val, ok := annotations[PSPAllowPrivilegeEscalationAnnotation]; ok {
-		Config.PspAllowPrivilegeEscalation, _ = strconv.ParseBool(val)
+		config.PspAllowPrivilegeEscalation, _ = strconv.ParseBool(val)
 	} else {
-		Config.PspAllowPrivilegeEscalation, _ = strconv.ParseBool(viper.GetString(PSPAllowPrivilegeEscalationEnvVar))
+		config.PspAllowPrivilegeEscalation, _ = strconv.ParseBool(viper.GetString(PSPAllowPrivilegeEscalationEnvVar))
 	}
 
 	if val, ok := annotations[RunAsNonRootAnnotation]; ok {
-		Config.RunAsNonRoot, _ = strconv.ParseBool(val)
+		config.RunAsNonRoot, _ = strconv.ParseBool(val)
 	} else {
-		Config.RunAsNonRoot, _ = strconv.ParseBool(viper.GetString(RunAsNonRootEnvVar))
+		config.RunAsNonRoot, _ = strconv.ParseBool(viper.GetString(RunAsNonRootEnvVar))
 	}
 
 	if val, ok := annotations[RunAsUserAnnotation]; ok {
-		Config.RunAsUser, _ = strconv.ParseInt(val, 10, 64)
+		config.RunAsUser, _ = strconv.ParseInt(val, 10, 64)
 	} else {
-		Config.RunAsUser, _ = strconv.ParseInt(viper.GetString(RunAsUserEnvVar), 0, 64)
+		config.RunAsUser, _ = strconv.ParseInt(viper.GetString(RunAsUserEnvVar), 0, 64)
 	}
 
 	if val, ok := annotations[RunAsGroupAnnotation]; ok {
-		Config.RunAsGroup, _ = strconv.ParseInt(val, 10, 64)
+		config.RunAsGroup, _ = strconv.ParseInt(val, 10, 64)
 	} else {
-		Config.RunAsGroup, _ = strconv.ParseInt(viper.GetString(RunAsGroupEnvVar), 0, 64)
+		config.RunAsGroup, _ = strconv.ParseInt(viper.GetString(RunAsGroupEnvVar), 0, 64)
 	}
 
 	if val, ok := annotations[ReadOnlyRootFsAnnotation]; ok {
-		Config.ReadOnlyRootFilesystem, _ = strconv.ParseBool(val)
+		config.ReadOnlyRootFilesystem, _ = strconv.ParseBool(val)
 	} else {
-		Config.ReadOnlyRootFilesystem, _ = strconv.ParseBool(viper.GetString(ReadonlyRootFSEnvVar))
+		config.ReadOnlyRootFilesystem, _ = strconv.ParseBool(viper.GetString(ReadonlyRootFSEnvVar))
 	}
 
 	if val, ok := annotations[RegistrySkipVerifyAnnotation]; ok {
-		Config.RegistrySkipVerify, _ = strconv.ParseBool(val)
+		config.RegistrySkipVerify, _ = strconv.ParseBool(val)
 	} else {
-		Config.RegistrySkipVerify, _ = strconv.ParseBool(viper.GetString(RegistrySkipVerifyEnvVar))
+		config.RegistrySkipVerify, _ = strconv.ParseBool(viper.GetString(RegistrySkipVerifyEnvVar))
 	}
 
 	if val, ok := annotations[MutateProbesAnnotation]; ok {
-		Config.MutateProbes, _ = strconv.ParseBool(val)
+		config.MutateProbes, _ = strconv.ParseBool(val)
 	}
 
 	if val, ok := annotations[ProviderAnnotation]; ok {
-		Config.Provider = val
+		config.Provider = val
 	}
 
-	return Config
+	return config
 }
 
 func LoadSecretInitConfig(obj metav1.Object) SecretInitConfig {
