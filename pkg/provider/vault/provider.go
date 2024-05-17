@@ -146,7 +146,7 @@ func (*Provider) NewMutator(_ context.Context, obj metav1.Object, client kuberne
 			return nil, errors.Wrap(err, "failed to create Vault client")
 		}
 
-		return &mutator{client: vaultClient, config: &config}, nil
+		return &mutator{client: vaultClient, config: &config, logger: logger}, nil
 	}
 
 	vaultClient, err := vault.NewClientFromConfig(
@@ -161,7 +161,7 @@ func (*Provider) NewMutator(_ context.Context, obj metav1.Object, client kuberne
 		return nil, errors.Wrap(err, "failed to create Vault client")
 	}
 
-	return &mutator{client: vaultClient, config: &config}, nil
+	return &mutator{client: vaultClient, config: &config, logger: logger}, nil
 }
 
 func isValidPrefix(value string) bool {

@@ -146,7 +146,7 @@ func (*Provider) NewMutator(_ context.Context, obj metav1.Object, client kuberne
 			return nil, errors.Wrap(err, "failed to create Bao client")
 		}
 
-		return &mutator{client: baoClient, config: &config}, nil
+		return &mutator{client: baoClient, config: &config, logger: logger}, nil
 	}
 
 	baoClient, err := bao.NewClientFromConfig(
@@ -161,7 +161,7 @@ func (*Provider) NewMutator(_ context.Context, obj metav1.Object, client kuberne
 		return nil, errors.Wrap(err, "failed to create Bao client")
 	}
 
-	return &mutator{client: baoClient, config: &config}, nil
+	return &mutator{client: baoClient, config: &config, logger: logger}, nil
 }
 
 func isValidPrefix(value string) bool {
