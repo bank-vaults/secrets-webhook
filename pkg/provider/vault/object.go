@@ -51,8 +51,10 @@ func traverseObject(o interface{}, injector *vaultinjector.SecretInjector) error
 	switch value := o.(type) {
 	case map[string]interface{}:
 		iterator = common.MapIterator(value)
+
 	case []interface{}:
 		iterator = common.SliceIterator(value)
+
 	default:
 		return nil
 	}
@@ -74,6 +76,7 @@ func traverseObject(o interface{}, injector *vaultinjector.SecretInjector) error
 					if err != nil {
 						return err
 					}
+
 					dataFromVault = strings.Replace(dataFromVault, vaultSecretReference[0], mapData["data"], -1)
 				}
 

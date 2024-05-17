@@ -615,4 +615,8 @@ func handleDeprecatedEnvVars() {
 	if val := viper.GetString(common.VaultNamespaceEnvVarDeprecated); val != "" {
 		viper.Set(common.VaultNamespaceEnvVar, val)
 	}
+
+	if val := viper.GetString(common.VaultEnvPassthroughEnvVarDeprecated); val != "" {
+		viper.Set(common.VaultPassthroughEnvVar, val)
+	}
 }

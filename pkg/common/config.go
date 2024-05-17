@@ -294,10 +294,6 @@ func handleDeprecatedEnvVars() {
 		viper.Set(SecretInitDelayEnvVar, val)
 	}
 
-	if val := viper.GetString(VaultEnvPassthroughEnvVarDeprecated); val != "" {
-		viper.Set(VaultPassthroughEnvVar, val)
-	}
-
 	if val := viper.GetString(VaultEnvEnableJSONLogEnvVarDeprecated); val != "" {
 		viper.Set(SecretInitJSONLogEnvVar, val)
 	}

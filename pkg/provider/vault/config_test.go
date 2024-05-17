@@ -259,6 +259,7 @@ func TestLoadConfig(t *testing.T) {
 				VaultNamespace:                "new-vault-namespace",
 				CtShareProcessDefault:         "empty",
 				AgentShareProcessDefault:      "empty",
+				Passthrough:                   "VAULT_SKIP_VERIFY,VAULT_ADDR",
 			},
 		},
 	}

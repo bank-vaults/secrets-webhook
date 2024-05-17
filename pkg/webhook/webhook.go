@@ -130,6 +130,7 @@ func ErrorLoggerMutator(mutator mutating.MutatorFunc, logger log.Logger) mutatin
 				"error": err,
 			}).Errorf("Admission review request failed")
 		}
+
 		return r, err
 	}
 }

@@ -32,6 +32,7 @@ func IsPodAlreadyMutated(pod *corev1.Pod) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -55,11 +56,12 @@ func IsLogLevelSet(envVars []corev1.EnvVar) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
-func GetDataFromConfigmap(k8sClient kubernetes.Interface, cmName string, ns string) (map[string]string, error) {
-	configMap, err := k8sClient.CoreV1().ConfigMaps(ns).Get(context.Background(), cmName, metav1.GetOptions{})
+func GetDataFromConfigmap(ctx context.Context, k8sClient kubernetes.Interface, cmName string, ns string) (map[string]string, error) {
+	configMap, err := k8sClient.CoreV1().ConfigMaps(ns).Get(ctx, cmName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -67,8 +69,8 @@ func GetDataFromConfigmap(k8sClient kubernetes.Interface, cmName string, ns stri
 	return configMap.Data, nil
 }
 
-func GetDataFromSecret(k8sClient kubernetes.Interface, secretName string, ns string) (map[string][]byte, error) {
-	secret, err := k8sClient.CoreV1().Secrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
+func GetDataFromSecret(ctx context.Context, k8sClient kubernetes.Interface, secretName string, ns string) (map[string][]byte, error) {
+	secret, err := k8sClient.CoreV1().Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

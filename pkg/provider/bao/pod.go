@@ -136,6 +136,7 @@ func (m *mutator) MutatePod(ctx context.Context, pod *corev1.Pod, webhookConfig 
 			if m.config.CtInjectInInitcontainers {
 				m.addSecretsVolToContainers(pod.Spec.InitContainers)
 			}
+
 			pod.Spec.InitContainers = append(m.getContainers(pod.Spec.SecurityContext, webhookConfig, containerEnvVars, containerVolMounts), pod.Spec.InitContainers...)
 		}
 
@@ -152,10 +153,10 @@ func (m *mutator) MutatePod(ctx context.Context, pod *corev1.Pod, webhookConfig 
 				configMap := m.getConfigMapForBaoAgent(pod)
 				agentConfigMapName = configMap.Name
 				if !dryRun {
-					_, err := k8sClient.CoreV1().ConfigMaps(m.config.ObjectNamespace).Create(context.Background(), configMap, metav1.CreateOptions{})
+					_, err := k8sClient.CoreV1().ConfigMaps(m.config.ObjectNamespace).Create(ctx, configMap, metav1.CreateOptions{})
 					if err != nil {
 						if apierrors.IsAlreadyExists(err) {
-							_, err = k8sClient.CoreV1().ConfigMaps(m.config.ObjectNamespace).Update(context.Background(), configMap, metav1.UpdateOptions{})
+							_, err = k8sClient.CoreV1().ConfigMaps(m.config.ObjectNamespace).Update(ctx, configMap, metav1.UpdateOptions{})
 							if err != nil {
 								return errors.WrapIf(err, "failed to update ConfigMap for config")
 							}
@@ -211,10 +212,11 @@ func (m *mutator) MutateContainers(ctx context.Context, containers []corev1.Cont
 	for i, container := range containers {
 		var envVars []corev1.EnvVar
 		if len(container.EnvFrom) > 0 {
-			envFrom, err := lookForEnvFrom(k8sClient, container.EnvFrom, m.config.ObjectNamespace)
+			envFrom, err := lookForEnvFrom(ctx, k8sClient, container.EnvFrom, m.config.ObjectNamespace)
 			if err != nil {
 				return false, err
 			}
+
 			envVars = append(envVars, envFrom...)
 		}
 
@@ -223,13 +225,14 @@ func (m *mutator) MutateContainers(ctx context.Context, containers []corev1.Cont
 				envVars = append(envVars, env)
 			}
 			if env.ValueFrom != nil {
-				valueFrom, err := lookForValueFrom(k8sClient, env, m.config.ObjectNamespace)
+				valueFrom, err := lookForValueFrom(ctx, k8sClient, env, m.config.ObjectNamespace)
 				if err != nil {
 					return false, err
 				}
 				if valueFrom == nil {
 					continue
 				}
+
 				envVars = append(envVars, *valueFrom)
 			}
 		}
@@ -442,12 +445,12 @@ func (m *mutator) MutateContainers(ctx context.Context, containers []corev1.Cont
 	return mutated, nil
 }
 
-func lookForEnvFrom(k8sClient kubernetes.Interface, envFrom []corev1.EnvFromSource, ns string) ([]corev1.EnvVar, error) {
+func lookForEnvFrom(ctx context.Context, k8sClient kubernetes.Interface, envFrom []corev1.EnvFromSource, ns string) ([]corev1.EnvVar, error) {
 	var envVars []corev1.EnvVar
 
 	for _, ef := range envFrom {
 		if ef.ConfigMapRef != nil {
-			data, err := common.GetDataFromConfigmap(k8sClient, ef.ConfigMapRef.Name, ns)
+			data, err := common.GetDataFromConfigmap(ctx, k8sClient, ef.ConfigMapRef.Name, ns)
 			if err != nil {
 				if apierrors.IsNotFound(err) || (ef.ConfigMapRef.Optional != nil && *ef.ConfigMapRef.Optional) {
 					continue
@@ -462,13 +465,14 @@ func lookForEnvFrom(k8sClient kubernetes.Interface, envFrom []corev1.EnvFromSour
 						Name:  key,
 						Value: value,
 					}
+
 					envVars = append(envVars, envFromCM)
 				}
 			}
 		}
 
 		if ef.SecretRef != nil {
-			data, err := common.GetDataFromSecret(k8sClient, ef.SecretRef.Name, ns)
+			data, err := common.GetDataFromSecret(ctx, k8sClient, ef.SecretRef.Name, ns)
 			if err != nil {
 				if apierrors.IsNotFound(err) || (ef.SecretRef.Optional != nil && *ef.SecretRef.Optional) {
 					continue
@@ -484,6 +488,7 @@ func lookForEnvFrom(k8sClient kubernetes.Interface, envFrom []corev1.EnvFromSour
 						Name:  name,
 						Value: value,
 					}
+
 					envVars = append(envVars, envFromSec)
 				}
 			}
@@ -493,13 +498,14 @@ func lookForEnvFrom(k8sClient kubernetes.Interface, envFrom []corev1.EnvFromSour
 	return envVars, nil
 }
 
-func lookForValueFrom(k8sClient kubernetes.Interface, env corev1.EnvVar, ns string) (*corev1.EnvVar, error) {
+func lookForValueFrom(ctx context.Context, k8sClient kubernetes.Interface, env corev1.EnvVar, ns string) (*corev1.EnvVar, error) {
 	if env.ValueFrom.ConfigMapKeyRef != nil {
-		data, err := common.GetDataFromConfigmap(k8sClient, env.ValueFrom.ConfigMapKeyRef.Name, ns)
+		data, err := common.GetDataFromConfigmap(ctx, k8sClient, env.ValueFrom.ConfigMapKeyRef.Name, ns)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				return nil, nil
 			}
+
 			return nil, err
 		}
 
@@ -509,16 +515,18 @@ func lookForValueFrom(k8sClient kubernetes.Interface, env corev1.EnvVar, ns stri
 				Name:  env.Name,
 				Value: value,
 			}
+
 			return &fromCM, nil
 		}
 	}
 
 	if env.ValueFrom.SecretKeyRef != nil {
-		data, err := common.GetDataFromSecret(k8sClient, env.ValueFrom.SecretKeyRef.Name, ns)
+		data, err := common.GetDataFromSecret(ctx, k8sClient, env.ValueFrom.SecretKeyRef.Name, ns)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				return nil, nil
 			}
+
 			return nil, err
 		}
 
@@ -528,6 +536,7 @@ func lookForValueFrom(k8sClient kubernetes.Interface, env corev1.EnvVar, ns stri
 				Name:  env.Name,
 				Value: value,
 			}
+
 			return &fromSecret, nil
 		}
 	}
@@ -715,6 +724,7 @@ func (m *mutator) getConfigMapForBaoAgent(pod *corev1.Pod) *corev1.ConfigMap {
 			}
 		}
 	}
+
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name + "-bao-agent-config",
@@ -781,6 +791,7 @@ func (m *mutator) getVolumes(existingVolumes []corev1.Volume, agentConfigMapName
 			},
 		})
 	}
+
 	if m.config.CtConfigMap != "" {
 		m.logger.Debug("Add consul template volumes to podspec")
 
@@ -906,6 +917,7 @@ func (m *mutator) getAgentContainers(originalContainers []corev1.Container, podS
 		if err != nil {
 			envVars = []corev1.EnvVar{}
 		}
+
 		containerEnvVars = append(containerEnvVars, envVars...)
 	}
 

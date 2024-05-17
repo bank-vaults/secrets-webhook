@@ -82,6 +82,7 @@ func (m *mutator) newClient(ctx context.Context, k8sClient kubernetes.Interface,
 			if err != nil {
 				return errors.Wrap(err, "Failed to retrieve secret for service account "+sa.Secrets[0].Name+" in namespace "+m.config.ObjectNamespace)
 			}
+
 			saToken = string(secret.Data["token"])
 		}
 
@@ -103,6 +104,7 @@ func (m *mutator) newClient(ctx context.Context, k8sClient kubernetes.Interface,
 			if err != nil {
 				return errors.Wrap(err, "Failed to create a token for the specified service account "+m.config.VaultServiceAccount+" on namespace "+m.config.ObjectNamespace)
 			}
+
 			saToken = token.Status.Token
 		}
 
