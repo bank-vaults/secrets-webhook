@@ -76,16 +76,24 @@ type Config struct {
 	FromPath                      string
 }
 
-func LoadConfig(obj metav1.Object, namespace string) (Config, error) {
-	SetDefaults()
+func loadConfig(obj metav1.Object) (Config, error) {
+	setDefaults()
+	handleDeprecatedEnvVars()
 
 	config := Config{
-		ObjectNamespace: namespace,
+		ObjectNamespace: obj.GetNamespace(),
 	}
 
-	// Preserve backwards compatibility with deprecated environment variables and annotations
-	handleDeprecatedEnvVars()
-	annotations := handleDeprecatedAnnotations(obj.GetAnnotations())
+	annotations := obj.GetAnnotations()
+
+	if val, ok := annotations[common.CleanupOldAnnotationsAnnotation]; ok {
+		ok, _ := strconv.ParseBool(val)
+		if ok {
+			annotations = handleDeprecatedVaultAnnotations(annotations)
+		} else {
+			annotations = handleDeprecatedVaultAnnotationsWithoutDelete(annotations)
+		}
+	}
 
 	if val, ok := annotations[common.VaultAddrAnnotation]; ok {
 		config.Addr = val
@@ -358,7 +366,7 @@ func LoadConfig(obj metav1.Object, namespace string) (Config, error) {
 	return config, nil
 }
 
-func SetDefaults() {
+func setDefaults() {
 	viper.SetDefault(common.VaultImageEnvVar, "hashicorp/vault:latest")
 	viper.SetDefault(common.VaultImagePullPolicyEnvVar, string(corev1.PullIfNotPresent))
 	viper.SetDefault(common.VaultCTImageEnvVar, "hashicorp/consul-template:0.32.0")
@@ -385,7 +393,7 @@ func SetDefaults() {
 }
 
 // This is implemented to preserve backwards compatibility with the deprecated annotations
-func handleDeprecatedAnnotations(annotations map[string]string) map[string]string {
+func handleDeprecatedVaultAnnotations(annotations map[string]string) map[string]string {
 	if val, ok := annotations[common.VaultAddrAnnotationDeprecated]; ok {
 		annotations[common.VaultAddrAnnotation] = val
 		delete(annotations, common.VaultAddrAnnotationDeprecated)
@@ -589,6 +597,175 @@ func handleDeprecatedAnnotations(annotations map[string]string) map[string]strin
 	if val, ok := annotations[common.VaultTransitBatchSizeAnnotationDeprecated]; ok {
 		annotations[common.VaultTransitBatchSizeAnnotation] = val
 		delete(annotations, common.VaultTransitBatchSizeAnnotationDeprecated)
+	}
+
+	return annotations
+}
+
+// This is implemented to preserve backwards compatibility with the deprecated annotations
+func handleDeprecatedVaultAnnotationsWithoutDelete(annotations map[string]string) map[string]string {
+	if val, ok := annotations[common.VaultAddrAnnotationDeprecated]; ok {
+		annotations[common.VaultAddrAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultRoleAnnotationDeprecated]; ok {
+		annotations[common.VaultRoleAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultAuthMethodAnnotationDeprecated]; ok {
+		annotations[common.VaultAuthMethodAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultPathAnnotationDeprecated]; ok {
+		annotations[common.VaultPathAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultServiceaccountAnnotationDeprecated]; ok {
+		annotations[common.VaultServiceaccountAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultSkipVerifyAnnotationDeprecated]; ok {
+		annotations[common.VaultSkipVerifyAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultTLSSecretAnnotationDeprecated]; ok {
+		annotations[common.VaultTLSSecretAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultClientTimeoutAnnotationDeprecated]; ok {
+		annotations[common.VaultClientTimeoutAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultAgentAnnotationDeprecated]; ok {
+		annotations[common.VaultAgentAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultConsulTemplateConfigmapAnnotationDeprecated]; ok {
+		annotations[common.VaultConsulTemplateConfigmapAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultServiceAccountTokenVolumeNameAnnotationDeprecated]; ok {
+		annotations[common.VaultServiceAccountTokenVolumeNameAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultConsulTemplateImageAnnotationDeprecated]; ok {
+		annotations[common.VaultConsulTemplateImageAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultIgnoreMissingSecretsAnnotationDeprecated]; ok {
+		annotations[common.VaultIgnoreMissingSecretsAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultEnvPassthroughAnnotationDeprecated]; ok {
+		annotations[common.VaultPassthroughAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultConfigfilePathAnnotationDeprecated]; ok {
+		annotations[common.VaultConfigfilePathAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultConsulTemplateSecretsMountPathAnnotationDeprecated]; ok {
+		annotations[common.VaultConsulTemplateSecretsMountPathAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultConsulTemplatePullPolicyAnnotationDeprecated]; ok {
+		annotations[common.VaultConsulTemplatePullPolicyAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultConsulTemplateOnceAnnotationDeprecated]; ok {
+		annotations[common.VaultConsulTemplateOnceAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultConsulTemplateCPUAnnotationDeprecated]; ok {
+		annotations[common.VaultConsulTemplateCPUAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultConsulTemplateMemoryAnnotationDeprecated]; ok {
+		annotations[common.VaultConsulTemplateMemoryAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultConsulTemplateShareProcessNamespaceAnnotationDeprecated]; ok {
+		annotations[common.VaultConsulTemplateShareProcessNamespaceAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultLogLevelAnnotationDeprecated]; ok {
+		annotations[common.VaultLogLevelAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultTransitKeyIDAnnotationDeprecated]; ok {
+		annotations[common.VaultTransitKeyIDAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultTransitPathAnnotationDeprecated]; ok {
+		annotations[common.VaultTransitPathAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultAgentConfigmapAnnotationDeprecated]; ok {
+		annotations[common.VaultAgentConfigmapAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultAgentOnceAnnotationDeprecated]; ok {
+		annotations[common.VaultAgentOnceAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultAgentCPUAnnotationDeprecated]; ok {
+		annotations[common.VaultAgentCPUAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultAgentCPULimitAnnotationDeprecated]; ok {
+		annotations[common.VaultAgentCPULimitAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultAgentMemoryAnnotationDeprecated]; ok {
+		annotations[common.VaultAgentMemoryAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultAgentMemoryLimitAnnotationDeprecated]; ok {
+		annotations[common.VaultAgentMemoryLimitAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultAgentCPURequestAnnotationDeprecated]; ok {
+		annotations[common.VaultAgentCPURequestAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultAgentMemoryRequestAnnotationDeprecated]; ok {
+		annotations[common.VaultAgentMemoryRequestAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultAgentShareProcessNamespaceAnnotationDeprecated]; ok {
+		annotations[common.VaultAgentShareProcessNamespaceAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultEnvFromPathAnnotationDeprecated]; ok {
+		annotations[common.VaultFromPathAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultTokenAuthMountAnnotationDeprecated]; ok {
+		annotations[common.VaultTokenAuthMountAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultImageAnnotationDeprecated]; ok {
+		annotations[common.VaultImageAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultImagePullPolicyAnnotationDeprecated]; ok {
+		annotations[common.VaultImagePullPolicyAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultAgentEnvVariablesAnnotationDeprecated]; ok {
+		annotations[common.VaultAgentEnvVariablesAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultNamespaceAnnotationDeprecated]; ok {
+		annotations[common.VaultNamespaceAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultConsulTemplateInjectInInitcontainersAnnotationDeprecated]; ok {
+		annotations[common.VaultConsulTemplateInjectInInitcontainersAnnotation] = val
+	}
+
+	if val, ok := annotations[common.VaultTransitBatchSizeAnnotationDeprecated]; ok {
+		annotations[common.VaultTransitBatchSizeAnnotation] = val
 	}
 
 	return annotations

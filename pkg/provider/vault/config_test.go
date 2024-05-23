@@ -37,6 +37,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "Handle deprecated annotations all",
 			annotations: map[string]string{
+				common.CleanupOldAnnotationsAnnotation:                               "true",
 				common.VaultAddrAnnotationDeprecated:                                 "http://vault.example.com",
 				common.VaultImageAnnotationDeprecated:                                "vault:latest",
 				common.VaultImagePullPolicyAnnotationDeprecated:                      "IfNotPresent",
@@ -125,6 +126,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "Handle deprecated annotations mixed",
 			annotations: map[string]string{
+				common.CleanupOldAnnotationsAnnotation:                               "true",
 				common.VaultAddrAnnotationDeprecated:                                 "https://vault.newexample.com",
 				common.VaultImageAnnotation:                                          "vault:1.7.0",
 				common.VaultImagePullPolicyAnnotationDeprecated:                      "Always",
@@ -276,7 +278,7 @@ func TestLoadConfig(t *testing.T) {
 				os.Clearenv()
 			})
 
-			config, err := LoadConfig(&metav1.ObjectMeta{Annotations: ttp.annotations}, "")
+			config, err := loadConfig(&metav1.ObjectMeta{Annotations: ttp.annotations})
 			assert.NoError(t, err)
 
 			assert.Equal(t, ttp.configWant, config)

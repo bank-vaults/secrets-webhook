@@ -49,8 +49,8 @@ const (
 
 type Provider struct{}
 
-func (*Provider) NewMutator(obj metav1.Object, arNamespace string, logger *slog.Logger) (provider.Mutator, error) {
-	config, err := LoadConfig(obj, arNamespace)
+func (*Provider) NewMutator(obj metav1.Object, logger *slog.Logger) (provider.Mutator, error) {
+	config, err := loadConfig(obj)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load Vault configuration")
 	}

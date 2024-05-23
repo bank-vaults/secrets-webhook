@@ -57,14 +57,14 @@ func (mw *MutatingWebhook) SecretsMutator(ctx context.Context, ar *model.Admissi
 	switch webhookConfig.Provider {
 	case vaultprov.ProviderName:
 		provider := vaultprov.Provider{}
-		mutator, err = provider.NewMutator(obj, ar.Namespace, mw.logger)
+		mutator, err = provider.NewMutator(obj, mw.logger)
 		if err != nil {
 			return &mutating.MutatorResult{}, errors.Wrap(err, "failed to create Vault mutator")
 		}
 
 	case baoprov.ProviderName:
 		provider := baoprov.Provider{}
-		mutator, err = provider.NewMutator(obj, ar.Namespace, mw.logger)
+		mutator, err = provider.NewMutator(obj, mw.logger)
 		if err != nil {
 			return &mutating.MutatorResult{}, errors.Wrap(err, "failed to create Bao mutator")
 		}
