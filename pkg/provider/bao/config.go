@@ -76,11 +76,11 @@ type Config struct {
 	FromPath                      string
 }
 
-func LoadConfig(obj metav1.Object, namespace string) (Config, error) {
-	SetDefaults()
+func LoadConfig(obj metav1.Object) (Config, error) {
+	setDefaults()
 
 	config := Config{
-		ObjectNamespace: namespace,
+		ObjectNamespace: obj.GetNamespace(),
 	}
 
 	annotations := obj.GetAnnotations()
@@ -355,8 +355,8 @@ func LoadConfig(obj metav1.Object, namespace string) (Config, error) {
 	return config, nil
 }
 
-func SetDefaults() {
-	viper.SetDefault(common.BaoImageEnvVar, "csatib02/opanbao:dev")
+func setDefaults() {
+	viper.SetDefault(common.BaoImageEnvVar, "quay.io/openbao/openbao@sha256:a015ae0adb1af5b45b33632e29879ff87063d0878e9359584a50b2706e500e9a")
 	viper.SetDefault(common.BaoImagePullPolicyEnvVar, string(corev1.PullIfNotPresent))
 	viper.SetDefault(common.BaoCTImageEnvVar, "hashicorp/consul-template:0.32.0")
 	viper.SetDefault(common.BaoCTPullPolicyEnvVar, string(corev1.PullIfNotPresent))
