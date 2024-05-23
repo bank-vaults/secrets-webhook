@@ -24,7 +24,6 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -51,7 +50,7 @@ func TestSecretValueInjection(t *testing.T) {
 			}
 
 			// wait for the secret to become available
-			err := wait.For(conditions.New(cfg.Client().Resources()).ResourcesFound(secrets), wait.WithTimeout(1*time.Minute))
+			err := wait.For(conditions.New(cfg.Client().Resources()).ResourcesFound(secrets), wait.WithTimeout(defaultTimeout))
 			require.NoError(t, err)
 
 			return ctx
@@ -100,7 +99,7 @@ func TestSecretValueInjection(t *testing.T) {
 			}
 
 			// wait for the secret to become available
-			err := wait.For(conditions.New(cfg.Client().Resources()).ResourcesFound(configMaps), wait.WithTimeout(1*time.Minute))
+			err := wait.For(conditions.New(cfg.Client().Resources()).ResourcesFound(configMaps), wait.WithTimeout(defaultTimeout))
 			require.NoError(t, err)
 
 			return ctx
@@ -131,7 +130,7 @@ func TestPodMutation(t *testing.T) {
 			}
 
 			// wait for the deployment to become available
-			err := wait.For(conditions.New(cfg.Client().Resources()).DeploymentConditionMatch(deployment, appsv1.DeploymentAvailable, v1.ConditionTrue), wait.WithTimeout(2*time.Minute))
+			err := wait.For(conditions.New(cfg.Client().Resources()).DeploymentConditionMatch(deployment, appsv1.DeploymentAvailable, v1.ConditionTrue), wait.WithTimeout(defaultTimeout))
 			require.NoError(t, err)
 
 			return ctx
@@ -165,7 +164,7 @@ func TestPodMutation(t *testing.T) {
 			}
 
 			// wait for the deployment to become available
-			err := wait.For(conditions.New(cfg.Client().Resources()).DeploymentConditionMatch(deployment, appsv1.DeploymentAvailable, v1.ConditionTrue), wait.WithTimeout(2*time.Minute))
+			err := wait.For(conditions.New(cfg.Client().Resources()).DeploymentConditionMatch(deployment, appsv1.DeploymentAvailable, v1.ConditionTrue), wait.WithTimeout(defaultTimeout))
 			require.NoError(t, err)
 
 			return ctx
@@ -181,7 +180,7 @@ func TestPodMutation(t *testing.T) {
 			}
 
 			// wait for the deployment to become available
-			err := wait.For(conditions.New(r).DeploymentConditionMatch(deployment, appsv1.DeploymentAvailable, v1.ConditionTrue), wait.WithTimeout(2*time.Minute))
+			err := wait.For(conditions.New(r).DeploymentConditionMatch(deployment, appsv1.DeploymentAvailable, v1.ConditionTrue), wait.WithTimeout(defaultTimeout))
 			require.NoError(t, err)
 
 			return ctx
@@ -199,7 +198,7 @@ func TestPodMutation(t *testing.T) {
 			}
 
 			// wait for the container to become available
-			err = wait.For(conditions.New(r).ContainersReady(&pods.Items[0]), wait.WithTimeout(2*time.Minute))
+			err = wait.For(conditions.New(r).ContainersReady(&pods.Items[0]), wait.WithTimeout(defaultTimeout))
 			require.NoError(t, err)
 
 			var stdout, stderr bytes.Buffer
@@ -224,7 +223,7 @@ func TestPodMutation(t *testing.T) {
 			}
 
 			// wait for the deployment to become available
-			err := wait.For(conditions.New(cfg.Client().Resources()).DeploymentConditionMatch(deployment, appsv1.DeploymentAvailable, v1.ConditionTrue), wait.WithTimeout(2*time.Minute))
+			err := wait.For(conditions.New(cfg.Client().Resources()).DeploymentConditionMatch(deployment, appsv1.DeploymentAvailable, v1.ConditionTrue), wait.WithTimeout(defaultTimeout))
 			require.NoError(t, err)
 
 			return ctx
@@ -242,7 +241,7 @@ func TestPodMutation(t *testing.T) {
 			}
 
 			// wait for the container to become available
-			err = wait.For(conditions.New(r).ContainersReady(&pods.Items[0]), wait.WithTimeout(2*time.Minute))
+			err = wait.For(conditions.New(r).ContainersReady(&pods.Items[0]), wait.WithTimeout(defaultTimeout))
 			require.NoError(t, err)
 
 			securityContext := pods.Items[0].Spec.InitContainers[0].SecurityContext
