@@ -23,24 +23,24 @@ spec:
       securityContext:
         runAsUser: 1000
       initContainers:
-      - name: init-ubuntu
-        image: ubuntu
-        command: ["sh", "-c", "echo $AWS_SECRET_ACCESS_KEY && echo initContainers ready"]
-        env:
-        - name: AWS_SECRET_ACCESS_KEY
-          value: vault:secret/data/accounts/aws#AWS_SECRET_ACCESS_KEY
-        resources:
-          limits:
-            memory: "128Mi"
-            cpu: "100m"
+        - name: init-ubuntu
+          image: ubuntu
+          command: ["sh", "-c", "echo $AWS_SECRET_ACCESS_KEY && echo initContainers ready"]
+          env:
+            - name: AWS_SECRET_ACCESS_KEY
+              value: vault:secret/data/accounts/aws#AWS_SECRET_ACCESS_KEY
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
       containers:
-      - name: alpine
-        image: alpine
-        command: ["sh", "-c", "echo $AWS_SECRET_ACCESS_KEY && echo going to sleep... && sleep 10000"]
-        env:
-        - name: AWS_SECRET_ACCESS_KEY
-          value: vault:secret/data/accounts/aws#AWS_SECRET_ACCESS_KEY
-        resources:
-          limits:
-            memory: "128Mi"
-            cpu: "100m"
+        - name: alpine
+          image: alpine
+          command: ["sh", "-c", "echo $AWS_SECRET_ACCESS_KEY && echo going to sleep... && sleep 10000"]
+          env:
+            - name: AWS_SECRET_ACCESS_KEY
+              value: vault:secret/data/accounts/aws#AWS_SECRET_ACCESS_KEY
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "100m"

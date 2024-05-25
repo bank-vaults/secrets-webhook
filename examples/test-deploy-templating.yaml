@@ -64,13 +64,13 @@ spec:
     spec:
       serviceAccountName: default
       containers:
-      - name: alpine
-        image: alpine
-        command: ["sh", "-c", "cat /vault/secrets/config.yaml && echo going to sleep... && sleep 1000"]
-        resources:
-          limits:
-            cpu: 20m
-            memory: 10Mi
-          requests:
-            cpu: 20m
-            memory: 10Mi
+        - name: alpine
+          image: alpine
+          command: ["sh", "-c", "cat /vault/secrets/config.yaml && echo going to sleep... && sleep 1000"]
+          resources:
+            limits:
+              cpu: 20m
+              memory: 10Mi
+            requests:
+              cpu: 20m
+              memory: 10Mi

@@ -8,18 +8,18 @@ spec:
     spec:
       template:
         metadata:
-            labels:
-              app.kubernetes.io/name: hello-secrets
-            annotations:
-              secrets-webhook.security.bank-vaults.io/provider: "vault"
-              secrets-webhook.security.bank-vaults.io/vault-addr: "https://vault:8200"
-              secrets-webhook.security.bank-vaults.io/vault-tls-secret: vault-tls
+          labels:
+            app.kubernetes.io/name: hello-secrets
+          annotations:
+            secrets-webhook.security.bank-vaults.io/provider: "vault"
+            secrets-webhook.security.bank-vaults.io/vault-addr: "https://vault:8200"
+            secrets-webhook.security.bank-vaults.io/vault-tls-secret: vault-tls
         spec:
           containers:
-          - name: alpine
-            image: alpine
-            command: ["sh", "-c", "echo $AWS_SECRET_ACCESS_KEY"]
-            env:
-            - name: AWS_SECRET_ACCESS_KEY
-              value: vault:secret/data/accounts/aws#${.AWS_SECRET_ACCESS_KEY} # Go templates are also supported with ${} delimiters
+            - name: alpine
+              image: alpine
+              command: ["sh", "-c", "echo $AWS_SECRET_ACCESS_KEY"]
+              env:
+                - name: AWS_SECRET_ACCESS_KEY
+                  value: vault:secret/data/accounts/aws#${.AWS_SECRET_ACCESS_KEY} # Go templates are also supported with ${} delimiters
           restartPolicy: OnFailure

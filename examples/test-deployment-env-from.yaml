@@ -18,10 +18,14 @@ spec:
         secrets-webhook.security.bank-vaults.io/vault-from-path: "secret/data/accounts/aws"
     spec:
       initContainers:
-      - name: init-ubuntu
-        image: ubuntu
-        command: ["sh", "-c", "echo AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID && echo initContainers ready"]
+        - name: init-ubuntu
+          image: ubuntu
+          command: ["sh", "-c", "echo AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID && echo initContainers ready"]
       containers:
-      - name: alpine
-        image: alpine
-        command: ["sh", "-c", "echo AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY && echo going to sleep... && sleep 10000"]
+        - name: alpine
+          image: alpine
+          command: ["sh", "-c", "echo AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY && echo going to sleep... && sleep 10000"]
+          resources:
+            limits:
+              cpu: "0.5"
+              memory: "512Mi"

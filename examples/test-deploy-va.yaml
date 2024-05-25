@@ -18,13 +18,13 @@ spec:
         secrets-webhook.security.bank-vaults.io/vault-agent-configmap: vault-agent-pki
     spec:
       containers:
-      - name: alpine
-        image: alpine
-        command: ["sh", "-c", "apk add openssl; while true; do openssl x509 -text -noout -in /vault/secrets/my-server.crt; echo; sleep 5; done"]
-        resources:
-          limits:
-            memory: "128Mi"
-            cpu: "100m"
+        - name: alpine
+          image: alpine
+          command: ["sh", "-c", "apk add openssl; while true; do openssl x509 -text -noout -in /vault/secrets/my-server.crt; echo; sleep 5; done"]
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
 
 ---
 
