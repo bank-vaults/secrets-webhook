@@ -37,7 +37,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "Handle deprecated annotations all",
 			annotations: map[string]string{
-				common.CleanupOldAnnotationsAnnotation:                               "true",
 				common.VaultAddrAnnotationDeprecated:                                 "http://vault.example.com",
 				common.VaultImageAnnotationDeprecated:                                "vault:latest",
 				common.VaultImagePullPolicyAnnotationDeprecated:                      "IfNotPresent",
@@ -126,7 +125,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "Handle deprecated annotations mixed",
 			annotations: map[string]string{
-				common.CleanupOldAnnotationsAnnotation:                               "true",
 				common.VaultAddrAnnotationDeprecated:                                 "https://vault.newexample.com",
 				common.VaultImageAnnotation:                                          "vault:1.7.0",
 				common.VaultImagePullPolicyAnnotationDeprecated:                      "Always",
@@ -269,7 +267,6 @@ func TestLoadConfig(t *testing.T) {
 	for _, tt := range tests {
 		ttp := tt
 		t.Run(ttp.name, func(t *testing.T) {
-			viper.Reset()
 			for key, value := range ttp.envVars {
 				viper.Set(key, value)
 			}

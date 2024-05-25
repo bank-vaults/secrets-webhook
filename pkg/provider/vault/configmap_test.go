@@ -18,6 +18,7 @@
 package vault
 
 import (
+	"context"
 	"log/slog"
 	"testing"
 
@@ -25,6 +26,8 @@ import (
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
+	kubernetesConfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 func TestMutateConfigMap(t *testing.T) {
@@ -56,8 +59,15 @@ func TestMutateConfigMap(t *testing.T) {
 			}`,
 		},
 	}
+	kubeConfig, err := kubernetesConfig.GetConfig()
+	assert.NoError(t, err)
+
+	k8sClient, err := kubernetes.NewForConfig(kubeConfig)
+	assert.NoError(t, err)
+
 	mutator := mutator{client: client, config: &Config{}, logger: slog.Default()}
-	err = mutator.MutateConfigMap(&configMap)
+	err = mutator.MutateConfigMap(context.Background(), &configMap, k8sClient, "default")
+
 	assert.NoError(t, err)
 
 	assert.Equal(t, map[string]string{

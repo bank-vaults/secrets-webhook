@@ -29,7 +29,6 @@ const (
 	MutateAnnotation                      = "secrets-webhook.security.bank-vaults.io/mutate"
 	MutateProbesAnnotation                = "secrets-webhook.security.bank-vaults.io/mutate-probes"
 	ProviderAnnotation                    = "secrets-webhook.security.bank-vaults.io/provider"
-	CleanupOldAnnotationsAnnotation       = "secrets-webhook.security.bank-vaults.io/cleanup-old-annotations"
 
 	// Secret-init annotations
 	SecretInitDaemonAnnotation          = "secrets-webhook.security.bank-vaults.io/secret-init-daemon"

@@ -22,7 +22,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestLoadSecretInitConfig(t *testing.T) {
@@ -35,7 +34,6 @@ func TestLoadSecretInitConfig(t *testing.T) {
 		{
 			name: "Handle deprecated secret init annotations all",
 			annotations: map[string]string{
-				CleanupOldAnnotationsAnnotation:             "true",
 				VaultEnvDaemonAnnotationDeprecated:          "true",
 				VaultEnvDelayAnnotationDeprecated:           "10s",
 				VaultEnvEnableJSONLogAnnotationDeprecated:   "true",
@@ -96,7 +94,7 @@ func TestLoadSecretInitConfig(t *testing.T) {
 				os.Clearenv()
 			})
 
-			secretInitConfig := LoadSecretInitConfig(&metav1.ObjectMeta{Annotations: ttp.annotations})
+			secretInitConfig := LoadSecretInitConfig(ttp.annotations)
 			assert.Equal(t, ttp.secretInitConfigWant, secretInitConfig)
 		})
 	}

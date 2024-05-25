@@ -20,7 +20,6 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestLoadWebhookConfig(t *testing.T) {
@@ -33,7 +32,6 @@ func TestLoadWebhookConfig(t *testing.T) {
 		{
 			name: "Handle deprecated webhook annotations all",
 			annotations: map[string]string{
-				CleanupOldAnnotationsAnnotation:                 "true",
 				MutateAnnotationDeprecated:                      "false",
 				PSPAllowPrivilegeEscalationAnnotationDeprecated: "true",
 				RunAsNonRootAnnotationDeprecated:                "true",
@@ -57,7 +55,6 @@ func TestLoadWebhookConfig(t *testing.T) {
 		{
 			name: "Should stop parsing annotations if mutate is set to skip",
 			annotations: map[string]string{
-				CleanupOldAnnotationsAnnotation:                 "true",
 				MutateAnnotationDeprecated:                      "skip",
 				PSPAllowPrivilegeEscalationAnnotationDeprecated: "true",
 				RunAsGroupAnnotation:                            "1000",
@@ -80,7 +77,7 @@ func TestLoadWebhookConfig(t *testing.T) {
 				os.Clearenv()
 			})
 
-			whConfig := LoadWebhookConfig(&metav1.ObjectMeta{Annotations: ttp.annotations})
+			whConfig := LoadWebhookConfig(ttp.annotations)
 			assert.Equal(t, ttp.webhookConfigWant, whConfig)
 		})
 	}

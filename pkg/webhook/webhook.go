@@ -45,8 +45,8 @@ type MutatingWebhook struct {
 }
 
 func (mw *MutatingWebhook) SecretsMutator(ctx context.Context, ar *model.AdmissionReview, obj metav1.Object) (*mutating.MutatorResult, error) {
-	webhookConfig := common.LoadWebhookConfig(obj)
-	secretInitConfig := common.LoadSecretInitConfig(obj)
+	webhookConfig := common.LoadWebhookConfig(obj.GetAnnotations())
+	secretInitConfig := common.LoadSecretInitConfig(obj.GetAnnotations())
 
 	if webhookConfig.Mutate || webhookConfig.Provider == "" {
 		return &mutating.MutatorResult{}, nil

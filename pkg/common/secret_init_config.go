@@ -21,7 +21,6 @@ import (
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // SecretInitConfig represents the configuration for the secret-init container
@@ -39,24 +38,15 @@ type SecretInitConfig struct {
 	MemoryLimit     resource.Quantity
 }
 
-func LoadSecretInitConfig(obj metav1.Object) SecretInitConfig {
+func LoadSecretInitConfig(annotations map[string]string) SecretInitConfig {
 	setSecretInitConfigDefaults()
 	handleDeprecatedSecretInitEnvVars()
 
 	secretInitConfig := SecretInitConfig{}
 
-	annotations := obj.GetAnnotations()
-
-	if val, ok := annotations[CleanupOldAnnotationsAnnotation]; ok {
-		ok, _ := strconv.ParseBool(val)
-		if ok {
-			annotations = handleDeprecatedSecretInitAnnotations(annotations)
-		} else {
-			annotations = handleDeprecatedSecretInitAnnotationsWithoutDelete(annotations)
-		}
-	}
-
 	if val, ok := annotations[SecretInitDaemonAnnotation]; ok {
+		secretInitConfig.Daemon, _ = strconv.ParseBool(val)
+	} else if val, ok := annotations[VaultEnvDaemonAnnotationDeprecated]; ok {
 		secretInitConfig.Daemon, _ = strconv.ParseBool(val)
 	} else {
 		secretInitConfig.Daemon, _ = strconv.ParseBool(viper.GetString(SecretInitDaemonEnvVar))
@@ -64,11 +54,15 @@ func LoadSecretInitConfig(obj metav1.Object) SecretInitConfig {
 
 	if val, ok := annotations[SecretInitDelayAnnotation]; ok {
 		secretInitConfig.Delay, _ = time.ParseDuration(val)
+	} else if val, ok := annotations[VaultEnvDelayAnnotationDeprecated]; ok {
+		secretInitConfig.Delay, _ = time.ParseDuration(val)
 	} else {
 		secretInitConfig.Delay, _ = time.ParseDuration(viper.GetString(SecretInitDelayEnvVar))
 	}
 
 	if val, ok := annotations[SecretInitJSONLogAnnotation]; ok {
+		secretInitConfig.JSONLog = val
+	} else if val, ok := annotations[VaultEnvEnableJSONLogAnnotationDeprecated]; ok {
 		secretInitConfig.JSONLog = val
 	} else {
 		secretInitConfig.JSONLog = viper.GetString(SecretInitJSONLogEnvVar)
@@ -76,19 +70,23 @@ func LoadSecretInitConfig(obj metav1.Object) SecretInitConfig {
 
 	if val, ok := annotations[SecretInitImageAnnotation]; ok {
 		secretInitConfig.Image = val
+	} else if val, ok := annotations[VaultEnvImageAnnotationDeprecated]; ok {
+		secretInitConfig.Image = val
 	} else {
 		secretInitConfig.Image = viper.GetString(SecretInitImageEnvVar)
+	}
+
+	if val, ok := annotations[SecretInitImagePullPolicyAnnotation]; ok {
+		secretInitConfig.ImagePullPolicy = GetPullPolicy(val)
+	} else if val, ok := annotations[VaultEnvImagePullPolicyAnnotationDeprecated]; ok {
+		secretInitConfig.ImagePullPolicy = GetPullPolicy(val)
+	} else {
+		secretInitConfig.ImagePullPolicy = GetPullPolicy(viper.GetString(SecretInitImagePullPolicyEnvVar))
 	}
 
 	secretInitConfig.LogServer = viper.GetString(SecretInitLogServerEnvVar)
 
 	secretInitConfig.LogLevel = viper.GetString(SecretInitLogLevelEnvVar)
-
-	if val, ok := annotations[SecretInitImagePullPolicyAnnotation]; ok {
-		secretInitConfig.ImagePullPolicy = GetPullPolicy(val)
-	} else {
-		secretInitConfig.ImagePullPolicy = GetPullPolicy(viper.GetString(SecretInitImagePullPolicyEnvVar))
-	}
 
 	if val, err := resource.ParseQuantity(viper.GetString(SecretInitCPURequestEnvVar)); err == nil {
 		secretInitConfig.CPURequest = val
@@ -130,61 +128,6 @@ func setSecretInitConfigDefaults() {
 	viper.SetDefault(SecretInitLogLevelEnvVar, "info")
 
 	viper.AutomaticEnv()
-}
-
-// This is implemented to preserve backwards compatibility with the deprecated annotations
-func handleDeprecatedSecretInitAnnotations(annotations map[string]string) map[string]string {
-	if val, ok := annotations[VaultEnvDaemonAnnotationDeprecated]; ok {
-		annotations[SecretInitDaemonAnnotation] = val
-		delete(annotations, VaultEnvDaemonAnnotationDeprecated)
-	}
-
-	if val, ok := annotations[VaultEnvDelayAnnotationDeprecated]; ok {
-		annotations[SecretInitDelayAnnotation] = val
-		delete(annotations, VaultEnvDelayAnnotationDeprecated)
-	}
-
-	if val, ok := annotations[VaultEnvEnableJSONLogAnnotationDeprecated]; ok {
-		annotations[SecretInitJSONLogAnnotation] = val
-		delete(annotations, VaultEnvEnableJSONLogAnnotationDeprecated)
-	}
-
-	if val, ok := annotations[VaultEnvImageAnnotationDeprecated]; ok {
-		annotations[SecretInitImageAnnotation] = val
-		delete(annotations, VaultEnvImageAnnotationDeprecated)
-	}
-
-	if val, ok := annotations[VaultEnvImagePullPolicyAnnotationDeprecated]; ok {
-		annotations[SecretInitImagePullPolicyAnnotation] = val
-		delete(annotations, VaultEnvImagePullPolicyAnnotationDeprecated)
-	}
-
-	return annotations
-}
-
-// This is implemented to preserve backwards compatibility with the deprecated annotations
-func handleDeprecatedSecretInitAnnotationsWithoutDelete(annotations map[string]string) map[string]string {
-	if val, ok := annotations[VaultEnvDaemonAnnotationDeprecated]; ok {
-		annotations[SecretInitDaemonAnnotation] = val
-	}
-
-	if val, ok := annotations[VaultEnvDelayAnnotationDeprecated]; ok {
-		annotations[SecretInitDelayAnnotation] = val
-	}
-
-	if val, ok := annotations[VaultEnvEnableJSONLogAnnotationDeprecated]; ok {
-		annotations[SecretInitJSONLogAnnotation] = val
-	}
-
-	if val, ok := annotations[VaultEnvImageAnnotationDeprecated]; ok {
-		annotations[SecretInitImageAnnotation] = val
-	}
-
-	if val, ok := annotations[VaultEnvImagePullPolicyAnnotationDeprecated]; ok {
-		annotations[SecretInitImagePullPolicyAnnotation] = val
-	}
-
-	return annotations
 }
 
 func handleDeprecatedSecretInitEnvVars() {
