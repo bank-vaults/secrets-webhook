@@ -28,6 +28,7 @@ import (
 	fake "k8s.io/client-go/kubernetes/fake"
 
 	appCommon "github.com/bank-vaults/secrets-webhook/pkg/common"
+	"github.com/bank-vaults/secrets-webhook/pkg/provider"
 	"github.com/bank-vaults/secrets-webhook/pkg/registry"
 )
 
@@ -1702,7 +1703,15 @@ func Test_mutator_mutatePod(t *testing.T) {
 		t.Run(ttp.name, func(t *testing.T) {
 			mutator := mutator{client: nil, config: &ttp.args.vaultConfig, logger: slog.Default()}
 
-			err := mutator.MutatePod(context.Background(), ttp.args.pod, ttp.args.webhookConfig, ttp.args.secretInitConfig, ttp.fields.k8sClient, ttp.fields.registry, false)
+			err := mutator.MutatePod(context.Background(),
+				provider.PodMutateRequest{
+					Pod:              ttp.args.pod,
+					WebhookConfig:    ttp.args.webhookConfig,
+					SecretInitConfig: ttp.args.secretInitConfig,
+					K8sClient:        ttp.fields.k8sClient,
+					Registry:         ttp.fields.registry,
+					DryRun:           false,
+				})
 			if (err != nil) != ttp.wantErr {
 				t.Errorf("MutatingWebhook.MutatePod() error = %v, wantErr %v", err, ttp.wantErr)
 				return

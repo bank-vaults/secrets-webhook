@@ -31,19 +31,20 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	appCommon "github.com/bank-vaults/secrets-webhook/pkg/common"
+	"github.com/bank-vaults/secrets-webhook/pkg/provider"
 	"github.com/bank-vaults/secrets-webhook/pkg/provider/common"
 	"github.com/bank-vaults/secrets-webhook/pkg/registry"
 )
 
-func (m *mutator) MutatePod(ctx context.Context, pod *corev1.Pod, webhookConfig appCommon.Config, secretInitConfig appCommon.SecretInitConfig, k8sClient kubernetes.Interface, registry registry.ImageRegistry, dryRun bool) error {
+func (m *mutator) MutatePod(ctx context.Context, mutateRequest provider.PodMutateRequest) error {
 	m.logger.Debug("Successfully connected to the API")
 
-	if common.IsPodAlreadyMutated(pod) {
-		m.logger.Info(fmt.Sprintf("Pod %s is already mutated, skipping mutation.", pod.Name))
+	if common.IsPodAlreadyMutated(mutateRequest.Pod) {
+		m.logger.Info(fmt.Sprintf("Pod %s is already mutated, skipping mutation.", mutateRequest.Pod.Name))
 		return nil
 	}
 
-	initContainersMutated, err := m.MutateContainers(ctx, pod.Spec.InitContainers, &pod.Spec, webhookConfig, secretInitConfig, k8sClient, registry)
+	initContainersMutated, err := m.MutateContainers(ctx, mutateRequest.Pod.Spec.InitContainers, &mutateRequest.Pod.Spec, mutateRequest.WebhookConfig, mutateRequest.SecretInitConfig, mutateRequest.K8sClient, mutateRequest.Registry)
 	if err != nil {
 		return err
 	}
@@ -54,7 +55,7 @@ func (m *mutator) MutatePod(ctx context.Context, pod *corev1.Pod, webhookConfig 
 		m.logger.Debug("No pod init containers were mutated")
 	}
 
-	containersMutated, err := m.MutateContainers(ctx, pod.Spec.Containers, &pod.Spec, webhookConfig, secretInitConfig, k8sClient, registry)
+	containersMutated, err := m.MutateContainers(ctx, mutateRequest.Pod.Spec.InitContainers, &mutateRequest.Pod.Spec, mutateRequest.WebhookConfig, mutateRequest.SecretInitConfig, mutateRequest.K8sClient, mutateRequest.Registry)
 	if err != nil {
 		return err
 	}
@@ -92,7 +93,7 @@ func (m *mutator) MutatePod(ctx context.Context, pod *corev1.Pod, webhookConfig 
 	if m.config.TLSSecret != "" {
 		mountPath := "/bao/tls/"
 		volumeName := "bao-tls"
-		if common.HasTLSVolume(pod.Spec.Volumes, volumeName) {
+		if common.HasTLSVolume(mutateRequest.Pod.Spec.Volumes, volumeName) {
 			mountPath = "/secret-init/tls/"
 			volumeName = "secret-init-tls"
 		}
@@ -110,11 +111,11 @@ func (m *mutator) MutatePod(ctx context.Context, pod *corev1.Pod, webhookConfig 
 	if m.config.CtConfigMap != "" {
 		m.logger.Debug("Consul Template config found")
 
-		m.addSecretsVolToContainers(pod.Spec.Containers)
+		m.addSecretsVolToContainers(mutateRequest.Pod.Spec.Containers)
 
 		if m.config.CtShareProcessDefault == "empty" {
 			m.logger.Debug("Test our Kubernetes API Version and make the final decision on enabling ShareProcessNamespace")
-			apiVersion, _ := k8sClient.Discovery().ServerVersion()
+			apiVersion, _ := mutateRequest.K8sClient.Discovery().ServerVersion()
 			versionCompared := kubeVer.CompareKubeAwareVersionStrings("v1.12.0", apiVersion.String())
 			m.logger.Debug(fmt.Sprintf("Kubernetes API version detected: %s", apiVersion.String()))
 
@@ -128,16 +129,16 @@ func (m *mutator) MutatePod(ctx context.Context, pod *corev1.Pod, webhookConfig 
 		if m.config.CtShareProcess {
 			m.logger.Debug("Detected shared process namespace")
 			shareProcessNamespace := true
-			pod.Spec.ShareProcessNamespace = &shareProcessNamespace
+			mutateRequest.Pod.Spec.ShareProcessNamespace = &shareProcessNamespace
 		}
 		if !m.config.CtOnce {
-			pod.Spec.Containers = append(m.getContainers(pod.Spec.SecurityContext, webhookConfig, containerEnvVars, containerVolMounts), pod.Spec.Containers...)
+			mutateRequest.Pod.Spec.Containers = append(m.getContainers(mutateRequest.Pod.Spec.SecurityContext, mutateRequest.WebhookConfig, containerEnvVars, containerVolMounts), mutateRequest.Pod.Spec.Containers...)
 		} else {
 			if m.config.CtInjectInInitcontainers {
-				m.addSecretsVolToContainers(pod.Spec.InitContainers)
+				m.addSecretsVolToContainers(mutateRequest.Pod.Spec.InitContainers)
 			}
 
-			pod.Spec.InitContainers = append(m.getContainers(pod.Spec.SecurityContext, webhookConfig, containerEnvVars, containerVolMounts), pod.Spec.InitContainers...)
+			mutateRequest.Pod.Spec.InitContainers = append(m.getContainers(mutateRequest.Pod.Spec.SecurityContext, mutateRequest.WebhookConfig, containerEnvVars, containerVolMounts), mutateRequest.Pod.Spec.InitContainers...)
 		}
 
 		m.logger.Debug("Successfully appended pod containers to spec")
@@ -150,13 +151,13 @@ func (m *mutator) MutatePod(ctx context.Context, pod *corev1.Pod, webhookConfig 
 			if m.config.AgentConfigMap != "" {
 				agentConfigMapName = m.config.AgentConfigMap
 			} else {
-				configMap := m.getConfigMapForBaoAgent(pod)
+				configMap := m.getConfigMapForBaoAgent(mutateRequest.Pod)
 				agentConfigMapName = configMap.Name
-				if !dryRun {
-					_, err := k8sClient.CoreV1().ConfigMaps(m.config.ObjectNamespace).Create(ctx, configMap, metav1.CreateOptions{})
+				if !mutateRequest.DryRun {
+					_, err := mutateRequest.K8sClient.CoreV1().ConfigMaps(m.config.ObjectNamespace).Create(ctx, configMap, metav1.CreateOptions{})
 					if err != nil {
 						if apierrors.IsAlreadyExists(err) {
-							_, err = k8sClient.CoreV1().ConfigMaps(m.config.ObjectNamespace).Update(ctx, configMap, metav1.UpdateOptions{})
+							_, err = mutateRequest.K8sClient.CoreV1().ConfigMaps(m.config.ObjectNamespace).Update(ctx, configMap, metav1.UpdateOptions{})
 							if err != nil {
 								return errors.WrapIf(err, "failed to update ConfigMap for config")
 							}
@@ -168,21 +169,21 @@ func (m *mutator) MutatePod(ctx context.Context, pod *corev1.Pod, webhookConfig 
 			}
 		}
 
-		pod.Spec.InitContainers = append(m.getInitContainers(pod.Spec.Containers, pod.Spec.SecurityContext, webhookConfig, secretInitConfig, initContainersMutated, containersMutated, containerEnvVars, containerVolMounts), pod.Spec.InitContainers...)
+		mutateRequest.Pod.Spec.InitContainers = append(m.getInitContainers(mutateRequest.Pod.Spec.Containers, mutateRequest.Pod.Spec.SecurityContext, mutateRequest.WebhookConfig, mutateRequest.SecretInitConfig, initContainersMutated, containersMutated, containerEnvVars, containerVolMounts), mutateRequest.Pod.Spec.InitContainers...)
 		m.logger.Debug("Successfully appended pod init containers to spec")
 
-		pod.Spec.Volumes = append(pod.Spec.Volumes, m.getVolumes(pod.Spec.Volumes, agentConfigMapName)...)
+		mutateRequest.Pod.Spec.Volumes = append(mutateRequest.Pod.Spec.Volumes, m.getVolumes(mutateRequest.Pod.Spec.Volumes, agentConfigMapName)...)
 		m.logger.Debug("Successfully appended pod spec volumes")
 	}
 
 	if m.config.AgentConfigMap != "" && !m.config.UseAgent {
 		m.logger.Debug("Bao Agent config found")
 
-		m.addAgentSecretsVolToContainers(pod.Spec.Containers)
+		m.addAgentSecretsVolToContainers(mutateRequest.Pod.Spec.Containers)
 
 		if m.config.AgentShareProcessDefault == "empty" {
 			m.logger.Debug("Test our Kubernetes API Version and make the final decision on enabling ShareProcessNamespace")
-			apiVersion, _ := k8sClient.Discovery().ServerVersion()
+			apiVersion, _ := mutateRequest.K8sClient.Discovery().ServerVersion()
 			versionCompared := kubeVer.CompareKubeAwareVersionStrings("v1.12.0", apiVersion.String())
 			m.logger.Debug(fmt.Sprintf("Kubernetes API version detected: %s", apiVersion.String()))
 
@@ -196,9 +197,9 @@ func (m *mutator) MutatePod(ctx context.Context, pod *corev1.Pod, webhookConfig 
 		if m.config.AgentShareProcess {
 			m.logger.Debug("Detected shared process namespace")
 			shareProcessNamespace := true
-			pod.Spec.ShareProcessNamespace = &shareProcessNamespace
+			mutateRequest.Pod.Spec.ShareProcessNamespace = &shareProcessNamespace
 		}
-		pod.Spec.Containers = append(m.getAgentContainers(pod.Spec.Containers, pod.Spec.SecurityContext, webhookConfig, containerEnvVars, containerVolMounts), pod.Spec.Containers...)
+		mutateRequest.Pod.Spec.Containers = append(m.getAgentContainers(mutateRequest.Pod.Spec.Containers, mutateRequest.Pod.Spec.SecurityContext, mutateRequest.WebhookConfig, containerEnvVars, containerVolMounts), mutateRequest.Pod.Spec.Containers...)
 
 		m.logger.Debug("Successfully appended pod containers to spec")
 	}

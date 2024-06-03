@@ -24,14 +24,14 @@ import (
 	"emperror.dev/errors"
 	"github.com/bank-vaults/internal/pkg/vaultinjector"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
 
+	"github.com/bank-vaults/secrets-webhook/pkg/provider"
 	"github.com/bank-vaults/secrets-webhook/pkg/provider/common"
 )
 
-func (m *mutator) MutateSecret(ctx context.Context, secret *corev1.Secret, k8sClient kubernetes.Interface, k8sNamespace string) error {
+func (m *mutator) MutateSecret(ctx context.Context, mutateRequest provider.SecretMutateRequest) error {
 	// do an early exit if no mutation is needed
-	requiredToMutate, err := secretNeedsMutation(secret)
+	requiredToMutate, err := secretNeedsMutation(mutateRequest.Secret)
 	if err != nil {
 		return errors.Wrap(err, "failed to check if secret needs to be mutated")
 	}
@@ -40,7 +40,7 @@ func (m *mutator) MutateSecret(ctx context.Context, secret *corev1.Secret, k8sCl
 		return nil
 	}
 
-	err = m.newClient(ctx, k8sClient, k8sNamespace)
+	err = m.newClient(ctx, mutateRequest.K8sClient, mutateRequest.K8sNamespace)
 	if err != nil {
 		return err
 	}
@@ -53,20 +53,20 @@ func (m *mutator) MutateSecret(ctx context.Context, secret *corev1.Secret, k8sCl
 	}
 	injector := vaultinjector.NewSecretInjector(injectorConfig, m.client, nil, m.logger)
 
-	if value, ok := secret.Data[corev1.DockerConfigJsonKey]; ok {
+	if value, ok := mutateRequest.Secret.Data[corev1.DockerConfigJsonKey]; ok {
 		var dc common.DockerCredentials
 		err := json.Unmarshal(value, &dc)
 		if err != nil {
 			return errors.Wrap(err, "unmarshal dockerconfig json failed")
 		}
 
-		err = mutateDockerCreds(secret, &dc, &injector)
+		err = mutateDockerCreds(mutateRequest.Secret, &dc, &injector)
 		if err != nil {
 			return errors.Wrap(err, "mutate dockerconfig json failed")
 		}
 	}
 
-	err = mutateSecretData(secret, &injector)
+	err = mutateSecretData(mutateRequest.Secret, &injector)
 	if err != nil {
 		return errors.Wrap(err, "mutate generic secret failed")
 	}

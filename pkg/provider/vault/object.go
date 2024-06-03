@@ -20,16 +20,15 @@ import (
 	"strings"
 
 	"github.com/bank-vaults/internal/pkg/vaultinjector"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/kubernetes"
 
+	"github.com/bank-vaults/secrets-webhook/pkg/provider"
 	"github.com/bank-vaults/secrets-webhook/pkg/provider/common"
 )
 
-func (m *mutator) MutateObject(ctx context.Context, object *unstructured.Unstructured, k8sClient kubernetes.Interface, k8sNamespace string) error {
-	m.logger.Debug(fmt.Sprintf("mutating object: %s.%s", object.GetNamespace(), object.GetName()))
+func (m *mutator) MutateObject(ctx context.Context, mutateRequest provider.ObjectMutateRequest) error {
+	m.logger.Debug(fmt.Sprintf("mutating object: %s.%s", mutateRequest.Object.GetNamespace(), mutateRequest.Object.GetName()))
 
-	err := m.newClient(ctx, k8sClient, k8sNamespace)
+	err := m.newClient(ctx, mutateRequest.K8sClient, mutateRequest.K8sNamespace)
 	if err != nil {
 		return err
 	}
@@ -42,7 +41,7 @@ func (m *mutator) MutateObject(ctx context.Context, object *unstructured.Unstruc
 	}
 	injector := vaultinjector.NewSecretInjector(injectorConfig, m.client, nil, m.logger)
 
-	return traverseObject(object.Object, &injector)
+	return traverseObject(mutateRequest.Object.Object, &injector)
 }
 
 func traverseObject(o interface{}, injector *vaultinjector.SecretInjector) error {

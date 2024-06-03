@@ -19,18 +19,18 @@ import (
 
 	"github.com/bank-vaults/internal/pkg/baoinjector"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
 
+	"github.com/bank-vaults/secrets-webhook/pkg/provider"
 	"github.com/bank-vaults/secrets-webhook/pkg/provider/common"
 )
 
-func (m *mutator) MutateConfigMap(ctx context.Context, configMap *corev1.ConfigMap, k8sClient kubernetes.Interface, k8sNamespace string) error {
+func (m *mutator) MutateConfigMap(ctx context.Context, mutateRequest provider.ConfigMapMutateRequest) error {
 	// do an early exit if no mutation is needed
-	if !configMapNeedsMutation(configMap) {
+	if !configMapNeedsMutation(mutateRequest.ConfigMap) {
 		return nil
 	}
 
-	err := m.newClient(ctx, k8sClient, k8sNamespace)
+	err := m.newClient(ctx, mutateRequest.K8sClient, mutateRequest.K8sNamespace)
 	if err != nil {
 		return err
 	}
@@ -43,12 +43,12 @@ func (m *mutator) MutateConfigMap(ctx context.Context, configMap *corev1.ConfigM
 	}
 	injector := baoinjector.NewSecretInjector(config, m.client, nil, m.logger)
 
-	configMap.Data, err = injector.GetDataFromBao(configMap.Data)
+	mutateRequest.ConfigMap.Data, err = injector.GetDataFromBao(mutateRequest.ConfigMap.Data)
 	if err != nil {
 		return err
 	}
 
-	for key, value := range configMap.BinaryData {
+	for key, value := range mutateRequest.ConfigMap.BinaryData {
 		if isValidPrefix(string(value)) {
 			binaryData := map[string]string{
 				key: string(value),
@@ -59,7 +59,7 @@ func (m *mutator) MutateConfigMap(ctx context.Context, configMap *corev1.ConfigM
 				return err
 			}
 
-			err = common.MutateConfigMapBinaryData(configMap, mapData)
+			err = common.MutateConfigMapBinaryData(mutateRequest.ConfigMap, mapData)
 			if err != nil {
 				return err
 			}

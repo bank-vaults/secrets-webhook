@@ -75,16 +75,40 @@ func (mw *MutatingWebhook) SecretsMutator(ctx context.Context, ar *model.Admissi
 
 	switch v := obj.(type) {
 	case *corev1.Pod:
-		return &mutating.MutatorResult{MutatedObject: v}, mutator.MutatePod(ctx, v, webhookConfig, secretInitConfig, mw.k8sClient, mw.registry, ar.DryRun)
+		return &mutating.MutatorResult{MutatedObject: v}, mutator.MutatePod(
+			ctx,
+			provider.PodMutateRequest{
+				Pod:              v,
+				WebhookConfig:    webhookConfig,
+				SecretInitConfig: secretInitConfig,
+				K8sClient:        mw.k8sClient,
+				Registry:         mw.registry,
+				DryRun:           false,
+			})
 
 	case *corev1.Secret:
-		return &mutating.MutatorResult{MutatedObject: v}, mutator.MutateSecret(ctx, v, mw.k8sClient, mw.namespace)
+		return &mutating.MutatorResult{MutatedObject: v}, mutator.MutateSecret(ctx,
+			provider.SecretMutateRequest{
+				Secret:       v,
+				K8sClient:    mw.k8sClient,
+				K8sNamespace: mw.namespace,
+			})
 
 	case *corev1.ConfigMap:
-		return &mutating.MutatorResult{MutatedObject: v}, mutator.MutateConfigMap(ctx, v, mw.k8sClient, mw.namespace)
+		return &mutating.MutatorResult{MutatedObject: v}, mutator.MutateConfigMap(ctx,
+			provider.ConfigMapMutateRequest{
+				ConfigMap:    v,
+				K8sClient:    mw.k8sClient,
+				K8sNamespace: mw.namespace,
+			})
 
 	case *unstructured.Unstructured:
-		return &mutating.MutatorResult{MutatedObject: v}, mutator.MutateObject(ctx, v, mw.k8sClient, mw.namespace)
+		return &mutating.MutatorResult{MutatedObject: v}, mutator.MutateObject(ctx,
+			provider.ObjectMutateRequest{
+				Object:       v,
+				K8sClient:    mw.k8sClient,
+				K8sNamespace: mw.namespace,
+			})
 
 	default:
 		return &mutating.MutatorResult{}, nil

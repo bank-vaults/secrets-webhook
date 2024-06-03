@@ -27,15 +27,48 @@ import (
 	"github.com/bank-vaults/secrets-webhook/pkg/registry"
 )
 
+// Mutator is the interface that must be implemented by a mutator
 type Mutator interface {
-	MutateConfigMap(ctx context.Context, configMap *corev1.ConfigMap, k8sClient kubernetes.Interface, k8sNamespace string) error
-	MutateSecret(ctx context.Context, secret *corev1.Secret, k8sClient kubernetes.Interface, k8sNamespace string) error
-	MutateObject(ctx context.Context, object *unstructured.Unstructured, k8sClient kubernetes.Interface, k8sNamespace string) error
-	MutatePod(ctx context.Context, pod *corev1.Pod, webhookConfig appCommon.Config, secretInitConfig appCommon.SecretInitConfig, k8sClient kubernetes.Interface, registry registry.ImageRegistry, dryRun bool) error
+	MutateConfigMap(ctx context.Context, configMapMutateRequest ConfigMapMutateRequest) error
+	MutateSecret(ctx context.Context, secretMutateRequest SecretMutateRequest) error
+	MutateObject(ctx context.Context, objectMutateRequest ObjectMutateRequest) error
+	MutatePod(ctx context.Context, podMutateRequest PodMutateRequest) error
 	// For testing purposes
 	MutateContainers(ctx context.Context, containers []corev1.Container, podSpec *corev1.PodSpec, webhookConfig appCommon.Config, secretInitConfig appCommon.SecretInitConfig, k8sClient kubernetes.Interface, registry registry.ImageRegistry) (bool, error)
 }
 
+// ConfigMapMutateRequest is the request object for mutating a ConfigMap
+type ConfigMapMutateRequest struct {
+	ConfigMap    *corev1.ConfigMap
+	K8sClient    kubernetes.Interface
+	K8sNamespace string
+}
+
+// SecretMutateRequest is the request object for mutating a Secret
+type SecretMutateRequest struct {
+	Secret       *corev1.Secret
+	K8sClient    kubernetes.Interface
+	K8sNamespace string
+}
+
+// ObjectMutateRequest is the request object for mutating an Object
+type ObjectMutateRequest struct {
+	Object       *unstructured.Unstructured
+	K8sClient    kubernetes.Interface
+	K8sNamespace string
+}
+
+// PodMutateRequest is the request object for mutating a Pod
+type PodMutateRequest struct {
+	Pod              *corev1.Pod
+	WebhookConfig    appCommon.Config
+	SecretInitConfig appCommon.SecretInitConfig
+	K8sClient        kubernetes.Interface
+	Registry         registry.ImageRegistry
+	DryRun           bool
+}
+
+// Provider is the interface that must be implemented by a provider
 type Provider interface {
 	NewMutator(obj metav1.Object, arNamespace string, logger *slog.Logger) (*Mutator, error)
 }
