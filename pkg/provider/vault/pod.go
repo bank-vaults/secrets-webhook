@@ -56,7 +56,7 @@ func (m *mutator) MutatePod(ctx context.Context, mutateRequest provider.PodMutat
 		m.logger.Debug("No pod init containers were mutated")
 	}
 
-	containersMutated, err := m.MutateContainers(ctx, mutateRequest.Pod.Spec.InitContainers, &mutateRequest.Pod.Spec, mutateRequest.WebhookConfig, mutateRequest.SecretInitConfig, mutateRequest.K8sClient, mutateRequest.Registry)
+	containersMutated, err := m.MutateContainers(ctx, mutateRequest.Pod.Spec.Containers, &mutateRequest.Pod.Spec, mutateRequest.WebhookConfig, mutateRequest.SecretInitConfig, mutateRequest.K8sClient, mutateRequest.Registry)
 	if err != nil {
 		return err
 	}
