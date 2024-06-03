@@ -30,6 +30,7 @@ import (
 	kubeVer "k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/kubernetes"
 
+	secretInitCommon "github.com/bank-vaults/secret-init/common"
 	appCommon "github.com/bank-vaults/secrets-webhook/pkg/common"
 	"github.com/bank-vaults/secrets-webhook/pkg/provider"
 	"github.com/bank-vaults/secrets-webhook/pkg/provider/common"
@@ -326,7 +327,7 @@ func (m *mutator) MutateContainers(ctx context.Context, containers []corev1.Cont
 				Value: m.config.Passthrough,
 			},
 			{
-				Name:  "SECRET_INIT_JSON_LOG",
+				Name:  secretInitCommon.JSONLogEnv,
 				Value: secretInitConfig.JSONLog,
 			},
 			{
@@ -345,7 +346,7 @@ func (m *mutator) MutateContainers(ctx context.Context, containers []corev1.Cont
 		if !common.IsLogLevelSet(container.Env) && secretInitConfig.LogLevel != "" {
 			container.Env = append(container.Env, []corev1.EnvVar{
 				{
-					Name:  "SECRET_INIT_LOG_LEVEL",
+					Name:  secretInitCommon.LogLevelEnv,
 					Value: secretInitConfig.LogLevel,
 				},
 			}...)
@@ -414,14 +415,14 @@ func (m *mutator) MutateContainers(ctx context.Context, containers []corev1.Cont
 
 		if secretInitConfig.Daemon {
 			container.Env = append(container.Env, corev1.EnvVar{
-				Name:  "SECRET_INIT_DAEMON",
+				Name:  secretInitCommon.DaemonEnv,
 				Value: "true",
 			})
 		}
 
 		if secretInitConfig.Delay > 0 {
 			container.Env = append(container.Env, corev1.EnvVar{
-				Name:  "SECRET_INIT_DELAY",
+				Name:  secretInitCommon.DelayEnv,
 				Value: secretInitConfig.Delay.String(),
 			})
 		}
@@ -435,7 +436,7 @@ func (m *mutator) MutateContainers(ctx context.Context, containers []corev1.Cont
 
 		if secretInitConfig.LogServer != "" {
 			container.Env = append(container.Env, corev1.EnvVar{
-				Name:  "SECRET_INIT_LOG_SERVER",
+				Name:  secretInitCommon.LogServerEnv,
 				Value: secretInitConfig.LogServer,
 			})
 		}

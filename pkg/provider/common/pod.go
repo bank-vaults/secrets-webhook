@@ -21,6 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
+	secretInitCommon "github.com/bank-vaults/secret-init/common"
 	appCommon "github.com/bank-vaults/secrets-webhook/pkg/common"
 )
 
@@ -52,7 +53,7 @@ func HasTLSVolume(volumes []corev1.Volume, tlsVolumeName string) bool {
 // has already been set in the container, so it doesn't get overridden.
 func IsLogLevelSet(envVars []corev1.EnvVar) bool {
 	for _, envVar := range envVars {
-		if envVar.Name == "SECRET_INIT_LOG_LEVEL" {
+		if envVar.Name == secretInitCommon.LogLevelEnv {
 			return true
 		}
 	}

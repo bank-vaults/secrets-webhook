@@ -115,6 +115,8 @@ github.com/awslabs/amazon-ecr-credential-helper/ecr-login v0.0.0-20240525144225-
 github.com/awslabs/amazon-ecr-credential-helper/ecr-login v0.0.0-20240525144225-0fe7eafab216/go.mod h1:ljp+ffaGYcWgnmfCTSZSa7MFXsa73OedwZvknFUSq2Q=
 github.com/bank-vaults/internal v0.3.0 h1:d6pbp06PUv9N2rfUa2Ce/r7cavGTsNTw4PULIaqVDS4=
 github.com/bank-vaults/internal v0.3.0/go.mod h1:by7oApN4m8RMEvMT26AtOTdrnpQ2eJJ11ghLxozSVqA=
+github.com/bank-vaults/secret-init v0.1.0 h1:N76L5lS4BtagCeD+5SFYwKWBjxyhy0ELCAQLzJtdpzw=
+github.com/bank-vaults/secret-init v0.1.0/go.mod h1:GxCXNmN+FRTrqMsnBeuP9GWy6pSlq0eyO3UsgZi9M4c=
 github.com/bank-vaults/vault-sdk v0.9.3 h1:AARj/zQmj2lfEibLn4b7sFYzdUaR8kRArQyl0+N5jqk=
 github.com/bank-vaults/vault-sdk v0.9.3/go.mod h1:Q0PupekdXBlnszegJvP8w73cJDwalSDI1fS4ILpy+uA=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
