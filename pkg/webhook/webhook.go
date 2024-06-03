@@ -83,7 +83,7 @@ func (mw *MutatingWebhook) SecretsMutator(ctx context.Context, ar *model.Admissi
 				SecretInitConfig: secretInitConfig,
 				K8sClient:        mw.k8sClient,
 				Registry:         mw.registry,
-				DryRun:           false,
+				DryRun:           ar.DryRun,
 			})
 
 	case *corev1.Secret:

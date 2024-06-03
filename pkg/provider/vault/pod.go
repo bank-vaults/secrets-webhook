@@ -23,6 +23,7 @@ import (
 
 	"emperror.dev/errors"
 	"github.com/bank-vaults/internal/pkg/vaultinjector"
+	secretInitCommon "github.com/bank-vaults/secret-init/common"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -30,7 +31,6 @@ import (
 	kubeVer "k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/kubernetes"
 
-	secretInitCommon "github.com/bank-vaults/secret-init/common"
 	appCommon "github.com/bank-vaults/secrets-webhook/pkg/common"
 	"github.com/bank-vaults/secrets-webhook/pkg/provider"
 	"github.com/bank-vaults/secrets-webhook/pkg/provider/common"
