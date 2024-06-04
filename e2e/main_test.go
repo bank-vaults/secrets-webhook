@@ -43,8 +43,9 @@ import (
 	"sigs.k8s.io/e2e-framework/third_party/helm"
 )
 
-// Upgrade this when a new version is released
-const vaultOperatorVersion = "1.22.0"
+const (
+	defaultTimeout = 2 * time.Minute
+)
 
 var testenv env.Environment
 
@@ -102,8 +103,8 @@ func TestMain(m *testing.M) {
 		testenv.Setup(installVaultOperator)
 		testenv.Finish(uninstallVaultOperator, envfuncs.DeleteNamespace("vault-operator"))
 
-		testenv.Setup(envfuncs.CreateNamespace("secrets-webhook"), installVaultSecretsWebhook)
-		testenv.Finish(uninstallVaultSecretsWebhook, envfuncs.DeleteNamespace("secrets-webhook"))
+		testenv.Setup(envfuncs.CreateNamespace("secrets-webhook"), installSecretsWebhook)
+		testenv.Finish(uninstallSecretsWebhook, envfuncs.DeleteNamespace("secrets-webhook"))
 
 		// Set up test namespace
 		// ns := envconf.RandomName("webhook-test", 16)
@@ -126,14 +127,18 @@ func TestMain(m *testing.M) {
 func installVaultOperator(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
 	manager := helm.New(cfg.KubeconfigFile())
 
+	version := "latest"
+	if v := os.Getenv("OPERATOR_VERSION"); v != "" {
+		version = v
+	}
+
 	err := manager.RunInstall(
 		helm.WithName("vault-operator"), // This is weird that ReleaseName works differently, but it is what it is
 		helm.WithChart("oci://ghcr.io/bank-vaults/helm-charts/vault-operator"),
 		helm.WithNamespace("vault-operator"),
-		helm.WithArgs("--create-namespace"),
-		helm.WithVersion(vaultOperatorVersion),
+		helm.WithArgs("--create-namespace", "--set", "image.tag="+version),
 		helm.WithWait(),
-		helm.WithTimeout("2m"),
+		helm.WithTimeout(defaultTimeout.String()),
 	)
 	if err != nil {
 		return ctx, fmt.Errorf("installing vault-operator: %w", err)
@@ -149,7 +154,7 @@ func uninstallVaultOperator(ctx context.Context, cfg *envconf.Config) (context.C
 		helm.WithName("vault-operator"),
 		helm.WithNamespace("vault-operator"),
 		helm.WithWait(),
-		helm.WithTimeout("2m"),
+		helm.WithTimeout(defaultTimeout.String()),
 	)
 	if err != nil {
 		return ctx, fmt.Errorf("uninstalling vault-operator: %w", err)
@@ -158,7 +163,7 @@ func uninstallVaultOperator(ctx context.Context, cfg *envconf.Config) (context.C
 	return ctx, nil
 }
 
-func installVaultSecretsWebhook(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+func installSecretsWebhook(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
 	manager := helm.New(cfg.KubeconfigFile())
 
 	version := "latest"
@@ -177,7 +182,7 @@ func installVaultSecretsWebhook(ctx context.Context, cfg *envconf.Config) (conte
 		helm.WithNamespace("secrets-webhook"),
 		helm.WithArgs("-f", "deploy/secrets-webhook/values.yaml", "--set", "image.tag="+version),
 		helm.WithWait(),
-		helm.WithTimeout("2m"),
+		helm.WithTimeout(defaultTimeout.String()),
 	)
 	if err != nil {
 		return ctx, fmt.Errorf("installing secrets-webhook: %w", err)
@@ -186,14 +191,14 @@ func installVaultSecretsWebhook(ctx context.Context, cfg *envconf.Config) (conte
 	return ctx, nil
 }
 
-func uninstallVaultSecretsWebhook(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+func uninstallSecretsWebhook(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
 	manager := helm.New(cfg.KubeconfigFile())
 
 	err := manager.RunUninstall(
 		helm.WithName("secrets-webhook"),
 		helm.WithNamespace("secrets-webhook"),
 		helm.WithWait(),
-		helm.WithTimeout("2m"),
+		helm.WithTimeout(defaultTimeout.String()),
 	)
 	if err != nil {
 		return ctx, fmt.Errorf("uninstalling secrets-webhook: %w", err)
@@ -209,6 +214,28 @@ func useNamespace(ns string) env.Func {
 		return ctx, nil
 	}
 }
+
+type reverseFinishEnvironment struct {
+	env.Environment
+
+	finishFuncs []env.Func
+}
+
+// Finish registers funcs that are executed at the end of the test suite in a reverse order.
+func (e *reverseFinishEnvironment) Finish(f ...env.Func) env.Environment {
+	e.finishFuncs = append(f[:], e.finishFuncs...)
+
+	return e
+}
+
+// Run launches the test suite from within a TestMain.
+func (e *reverseFinishEnvironment) Run(m *testing.M) int {
+	e.Environment.Finish(e.finishFuncs...)
+
+	return e.Environment.Run(m)
+}
+
+// ======== VAULT ========
 
 func installVault(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
 	r, err := resources.New(cfg.Client().RESTConfig())
@@ -234,7 +261,7 @@ func installVault(ctx context.Context, cfg *envconf.Config) (context.Context, er
 	}
 
 	// wait for the statefulSet to become available
-	err = wait.For(conditions.New(r).ResourcesFound(statefulSets), wait.WithTimeout(1*time.Minute))
+	err = wait.For(conditions.New(r).ResourcesFound(statefulSets), wait.WithTimeout(defaultTimeout))
 	if err != nil {
 		return ctx, err
 	}
@@ -246,7 +273,7 @@ func installVault(ctx context.Context, cfg *envconf.Config) (context.Context, er
 	}
 
 	// wait for the pod to become available
-	err = wait.For(conditions.New(r).PodReady(&pod), wait.WithTimeout(1*time.Minute))
+	err = wait.For(conditions.New(r).PodReady(&pod), wait.WithTimeout(defaultTimeout))
 	if err != nil {
 		return ctx, err
 	}
@@ -264,7 +291,7 @@ func waitForVaultTLS(ctx context.Context, cfg *envconf.Config) (context.Context,
 	}
 
 	// wait for the vault-tls secret to become available
-	err := wait.For(conditions.New(cfg.Client().Resources()).ResourcesFound(vaultTLSSecrets), wait.WithTimeout(1*time.Minute))
+	err := wait.For(conditions.New(cfg.Client().Resources()).ResourcesFound(vaultTLSSecrets), wait.WithTimeout(defaultTimeout))
 	if err != nil {
 		return ctx, err
 	}
@@ -289,24 +316,4 @@ func uninstallVault(ctx context.Context, cfg *envconf.Config) (context.Context, 
 	}
 
 	return ctx, nil
-}
-
-type reverseFinishEnvironment struct {
-	env.Environment
-
-	finishFuncs []env.Func
-}
-
-// Finish registers funcs that are executed at the end of the test suite in a reverse order.
-func (e *reverseFinishEnvironment) Finish(f ...env.Func) env.Environment {
-	e.finishFuncs = append(f[:], e.finishFuncs...)
-
-	return e
-}
-
-// Run launches the test suite from within a TestMain.
-func (e *reverseFinishEnvironment) Run(m *testing.M) int {
-	e.Environment.Finish(e.finishFuncs...)
-
-	return e.Environment.Run(m)
 }

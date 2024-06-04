@@ -12,41 +12,41 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package webhook
+package vault
 
 import (
 	"log/slog"
 
-	"github.com/bank-vaults/vault-sdk/vault"
+	vaultsdk "github.com/bank-vaults/vault-sdk/vault"
 )
 
-var _ vault.Logger = &clientLogger{}
+var _ vaultsdk.Logger = &ClientLogger{}
 
-type clientLogger struct {
-	logger *slog.Logger
+type ClientLogger struct {
+	Logger *slog.Logger
 }
 
-func (l clientLogger) Trace(msg string, args ...map[string]interface{}) {
+func (l ClientLogger) Trace(msg string, args ...map[string]interface{}) {
 	l.Debug(msg, args...)
 }
 
-func (l clientLogger) Debug(msg string, args ...map[string]interface{}) {
-	l.logger.Debug(msg, l.argsToAttrs(args...)...)
+func (l ClientLogger) Debug(msg string, args ...map[string]interface{}) {
+	l.Logger.Debug(msg, l.argsToAttrs(args...)...)
 }
 
-func (l clientLogger) Info(msg string, args ...map[string]interface{}) {
-	l.logger.Info(msg, l.argsToAttrs(args...)...)
+func (l ClientLogger) Info(msg string, args ...map[string]interface{}) {
+	l.Logger.Info(msg, l.argsToAttrs(args...)...)
 }
 
-func (l clientLogger) Warn(msg string, args ...map[string]interface{}) {
-	l.logger.Warn(msg, l.argsToAttrs(args...)...)
+func (l ClientLogger) Warn(msg string, args ...map[string]interface{}) {
+	l.Logger.Warn(msg, l.argsToAttrs(args...)...)
 }
 
-func (l clientLogger) Error(msg string, args ...map[string]interface{}) {
-	l.logger.Error(msg, l.argsToAttrs(args...)...)
+func (l ClientLogger) Error(msg string, args ...map[string]interface{}) {
+	l.Logger.Error(msg, l.argsToAttrs(args...)...)
 }
 
-func (clientLogger) argsToAttrs(args ...map[string]interface{}) []any {
+func (ClientLogger) argsToAttrs(args ...map[string]interface{}) []any {
 	var attrs []any
 
 	for _, arg := range args {

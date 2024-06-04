@@ -1,4 +1,4 @@
-// Copyright © 2021 Banzai Cloud
+// Copyright © 2024 Bank-Vaults Maintainers
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,15 +15,19 @@
 //go:build integration
 // +build integration
 
-package webhook
+package vault
 
 import (
+	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/bank-vaults/vault-sdk/vault"
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
+	kubernetesConfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 func TestMutateConfigMap(t *testing.T) {
@@ -44,8 +48,6 @@ func TestMutateConfigMap(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	mw := MutatingWebhook{}
-
 	configMap := corev1.ConfigMap{
 		Data: map[string]string{
 			"aws-access-key-id": "vault:secret/data/account#access_key",
@@ -57,8 +59,15 @@ func TestMutateConfigMap(t *testing.T) {
 			}`,
 		},
 	}
+	kubeConfig, err := kubernetesConfig.GetConfig()
+	assert.NoError(t, err)
 
-	err = mw.MutateConfigMap(&configMap, VaultConfig{Addr: config.Address})
+	k8sClient, err := kubernetes.NewForConfig(kubeConfig)
+	assert.NoError(t, err)
+
+	mutator := mutator{client: client, config: &Config{}, logger: slog.Default()}
+	err = mutator.MutateConfigMap(context.Background(), &configMap, k8sClient, "default")
+
 	assert.NoError(t, err)
 
 	assert.Equal(t, map[string]string{

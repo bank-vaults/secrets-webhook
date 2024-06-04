@@ -1,4 +1,4 @@
-// Copyright © 2020 Banzai Cloud
+// Copyright © 2024 Bank-Vaults Maintainers
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,11 +37,12 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	kubernetesConfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 
+	"github.com/bank-vaults/secrets-webhook/pkg/common"
 	"github.com/bank-vaults/secrets-webhook/pkg/webhook"
 )
 
 func init() {
-	webhook.SetConfigDefaults()
+	common.SetConfigDefaults()
 }
 
 func newK8SClient() (kubernetes.Interface, error) {
@@ -73,6 +74,7 @@ func newHTTPServer(tlsCertFile string, tlsPrivateKeyFile string, listenAddress s
 	if err != nil {
 		panic("error loading tls certificate: " + err.Error())
 	}
+
 	srv := &http.Server{
 		Addr:    listenAddress,
 		Handler: mux,
@@ -80,6 +82,7 @@ func newHTTPServer(tlsCertFile string, tlsPrivateKeyFile string, listenAddress s
 			GetCertificate: reloader.GetCertificateFunc(),
 		},
 	}
+
 	return srv
 }
 
@@ -94,7 +97,7 @@ func main() {
 		}
 
 		levelFilter := func(levels ...slog.Level) func(ctx context.Context, r slog.Record) bool {
-			return func(ctx context.Context, r slog.Record) bool {
+			return func(_ context.Context, r slog.Record) bool {
 				return slices.Contains(levels, r.Level)
 			}
 		}
@@ -148,7 +151,7 @@ func main() {
 
 	whLogger := webhook.NewWhLogger(logger)
 
-	mutator := webhook.ErrorLoggerMutator(mutatingWebhook.VaultSecretsMutator, whLogger)
+	mutator := webhook.ErrorLoggerMutator(mutatingWebhook.SecretsMutator, whLogger)
 
 	promRegistry := prometheus.NewRegistry()
 	metricsRecorder, err := whmetrics.NewRecorder(whmetrics.RecorderConfig{Registry: promRegistry})

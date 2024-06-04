@@ -248,7 +248,7 @@ namespaceSelector:
 # -- Object selector to use, will limit webhook scope (K8s version 1.15+)
 objectSelector: {}
   # matchExpressions:
-  # - key: security.banzaicloud.io/mutate
+  # - key: security.bank-vaults.io/mutate
   #   operator: NotIn
   #   values:
   #   - skip
