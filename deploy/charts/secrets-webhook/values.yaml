@@ -73,7 +73,7 @@ secretInit:
   # -- Container image repo that contains the secret-init container
   repository: ghcr.io/bank-vaults/secret-init
   # -- Container image tag for the secret-init container
-  tag: "v0.1.0"
+  tag: "v0.2.0"
 
 # -- Custom environment variables available to webhook
 env: {}

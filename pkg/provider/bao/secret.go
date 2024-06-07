@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"emperror.dev/errors"
-	"github.com/bank-vaults/internal/pkg/baoinjector"
+	baoinjector "github.com/bank-vaults/internal/pkg/injector/bao"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/provider"
