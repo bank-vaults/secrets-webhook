@@ -17,7 +17,7 @@ package vault
 import (
 	"context"
 
-	"github.com/bank-vaults/internal/pkg/vaultinjector"
+	vaultinjector "github.com/bank-vaults/internal/pkg/injector/vault"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/provider"

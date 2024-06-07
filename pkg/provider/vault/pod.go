@@ -22,8 +22,8 @@ import (
 	"strings"
 
 	"emperror.dev/errors"
-	"github.com/bank-vaults/internal/pkg/vaultinjector"
-	secretInitCommon "github.com/bank-vaults/secret-init/common"
+	vaultinjector "github.com/bank-vaults/internal/pkg/injector/vault"
+	secretInitCommon "github.com/bank-vaults/secret-init/pkg/common"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"

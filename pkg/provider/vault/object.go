@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bank-vaults/internal/pkg/vaultinjector"
+	vaultinjector "github.com/bank-vaults/internal/pkg/injector/vault"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/provider"
 	"github.com/bank-vaults/secrets-webhook/pkg/provider/common"
