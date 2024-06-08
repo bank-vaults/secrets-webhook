@@ -43,9 +43,7 @@ import (
 	"sigs.k8s.io/e2e-framework/third_party/helm"
 )
 
-const (
-	defaultTimeout = 2 * time.Minute
-)
+const defaultTimeout = 2 * time.Minute
 
 var testenv env.Environment
 
@@ -113,13 +111,13 @@ func TestMain(m *testing.M) {
 
 		// Unsealing and Vault access only works in the default namespace at the moment
 		testenv.Setup(useNamespace("default"))
-
-		testenv.Setup(installVault, waitForVaultTLS)
-		testenv.Finish(uninstallVault)
 	} else {
 		// Unsealing and Vault access only works in the default namespace at the moment
 		testenv.Setup(useNamespace("default"))
 	}
+
+	testenv.Setup(installVault, waitForVaultTLS)
+	testenv.Finish(uninstallVault)
 
 	os.Exit(testenv.Run(m))
 }
