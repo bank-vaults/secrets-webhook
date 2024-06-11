@@ -78,41 +78,28 @@ func mutateDockerCreds(secret *corev1.Secret, dc *common.DockerCredentials, inje
 	assembled := common.DockerCredentials{Auths: map[string]common.DockerAuthConfig{}}
 
 	for key, creds := range dc.Auths {
-		authBytes, err := base64.StdEncoding.DecodeString(creds.Auth)
+		authBytes, err := base64.StdEncoding.DecodeString(creds.Auth.(string))
 		if err != nil {
 			return errors.Wrap(err, "auth base64 decoding failed")
 		}
 
-		auth := string(authBytes)
-		if isValidPrefix(auth) {
-			split := strings.Split(auth, ":")
-			if len(split) != 4 {
-				return errors.New("splitting auth credentials failed")
+		if isValidPrefix(string(authBytes)) {
+			authCreds, err := determineAuthType(authBytes)
+			if err != nil {
+				return errors.Wrap(err, "handling auth failed")
 			}
 
-			username := fmt.Sprintf("%s:%s", split[0], split[1])
-			password := fmt.Sprintf("%s:%s", split[2], split[3])
-			credentialData := map[string]string{
-				"username": username,
-				"password": password,
+			credentialData, err := common.AssembleCredentialData(authCreds)
+			if err != nil {
+				return errors.Wrap(err, "assembling credential data failed")
 			}
 
 			dcCreds, err := injector.GetDataFromVault(credentialData)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "retrieving data from vault failed")
 			}
 
-			auth = fmt.Sprintf("%s:%s", dcCreds["username"], dcCreds["password"])
-			dockerAuth := common.DockerAuthConfig{
-				Auth: base64.StdEncoding.EncodeToString([]byte(auth)),
-			}
-
-			if creds.Username != "" && creds.Password != "" {
-				dockerAuth.Username = dcCreds["username"]
-				dockerAuth.Password = dcCreds["password"]
-			}
-
-			assembled.Auths[key] = dockerAuth
+			assembled.Auths[key] = common.AssembleDockerAuthConfig(dcCreds, creds)
 		}
 	}
 
@@ -154,14 +141,35 @@ func secretNeedsMutation(secret *corev1.Secret) (bool, error) {
 			}
 
 			for _, creds := range dc.Auths {
-				authBytes, err := base64.StdEncoding.DecodeString(creds.Auth)
-				if err != nil {
-					return false, errors.Wrap(err, "auth base64 decoding failed")
-				}
+				switch creds.Auth.(type) {
+				case string:
+					authBytes, err := base64.StdEncoding.DecodeString(creds.Auth.(string))
+					if err != nil {
+						return false, errors.Wrap(err, "auth base64 decoding failed")
+					}
 
-				auth := string(authBytes)
-				if isValidPrefix(auth) {
-					return true, nil
+					auth := string(authBytes)
+					if isValidPrefix(auth) {
+						return true, nil
+					}
+
+				case map[string]interface{}:
+					// get sub-keys from the auth field
+					authMap, ok := creds.Auth.(map[string]interface{})
+					if !ok {
+						return false, errors.New("invalid auth type")
+					}
+
+					// check if any of the sub-keys have a vault prefix
+					for _, v := range authMap {
+						if isValidPrefix(v.(string)) {
+							return true, nil
+						}
+					}
+					return false, nil
+
+				default:
+					return false, errors.New("invalid auth type")
 				}
 			}
 
@@ -173,4 +181,34 @@ func secretNeedsMutation(secret *corev1.Secret) (bool, error) {
 	}
 
 	return false, nil
+}
+
+// determineAuthType takes a byte slice of authentication data and determines its type.
+// It supports three formats: "username:usr:password:pass", JSON keys, and valid vault paths.
+func determineAuthType(auth []byte) (map[string]string, error) {
+	creds := make(map[string]string)
+
+	// if the auth string is formatted as "username:usr:password:pass",
+	// split the string into username and password
+	split := strings.Split(string(auth), ":")
+	if len(split) == 4 {
+		creds["username"] = fmt.Sprintf("%s:%s", split[0], split[1])
+		creds["password"] = fmt.Sprintf("%s:%s", split[2], split[3])
+
+		return creds, nil
+	}
+
+	// if the auth string is a JSON key, don't split and use it as is
+	if json.Valid(auth) {
+		creds["auth"] = string(auth)
+		return creds, nil
+	}
+
+	// if none of the above, the auth string can still be a valid vault path
+	if isValidPrefix(string(auth)) {
+		creds["auth"] = string(auth)
+		return creds, nil
+	}
+
+	return nil, errors.New("invalid auth string")
 }
