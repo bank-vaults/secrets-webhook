@@ -14,15 +14,20 @@
 
 package common
 
+import (
+	"encoding/base64"
+	"fmt"
+)
+
 type DockerCredentials struct {
 	Auths map[string]DockerAuthConfig `json:"auths"`
 }
 
 // DockerAuthConfig contains authorization information for connecting to a Registry
 type DockerAuthConfig struct {
-	Username string `json:"username,omitempty"`
-	Password string `json:"password,omitempty"`
-	Auth     string `json:"auth,omitempty"`
+	Username string      `json:"username,omitempty"`
+	Password string      `json:"password,omitempty"`
+	Auth     interface{} `json:"auth,omitempty"`
 
 	// Email is an optional value associated with the username.
 	// This field is deprecated and will be removed in a later
@@ -37,4 +42,62 @@ type DockerAuthConfig struct {
 
 	// RegistryToken is a bearer token to be sent to a registry
 	RegistryToken string `json:"registrytoken,omitempty"`
+}
+
+// assembleCredentialData assembles the credential data that will be retrieved from Vault
+func AssembleCredentialData(authCreds map[string]string) (map[string]string, error) {
+	if username, ok := authCreds["username"]; ok {
+		if password, ok := authCreds["password"]; ok {
+			credentialData := map[string]string{
+				"username": username,
+				"password": password,
+			}
+
+			return credentialData, nil
+		}
+	}
+
+	if auth, ok := authCreds["auth"]; ok {
+		credentialData := map[string]string{
+			"auth": auth,
+		}
+
+		return credentialData, nil
+	}
+
+	return nil, fmt.Errorf("no valid credentials found")
+}
+
+// assembleDockerAuthConfig assembles the DockerAuthConfig from the retrieved data from Vault
+func AssembleDockerAuthConfig(dcCreds map[string]string, creds DockerAuthConfig) DockerAuthConfig {
+	if username, ok := dcCreds["username"]; ok {
+		if password, ok := dcCreds["password"]; ok {
+			auth := fmt.Sprintf("%s:%s", username, password)
+
+			dockerAuth := DockerAuthConfig{
+				Auth: base64.StdEncoding.EncodeToString([]byte(auth)),
+			}
+
+			if creds.Username != "" && creds.Password != "" {
+				dockerAuth.Username = dcCreds["username"]
+				dockerAuth.Password = dcCreds["password"]
+			}
+
+			return dockerAuth
+		}
+	}
+
+	if auth, ok := dcCreds["auth"]; ok {
+		dockerAuth := DockerAuthConfig{
+			Auth: base64.StdEncoding.EncodeToString([]byte(auth)),
+		}
+
+		if creds.Auth != "" {
+			dockerAuth.Auth = auth
+		}
+
+		return dockerAuth
+	}
+
+	return DockerAuthConfig{}
 }
