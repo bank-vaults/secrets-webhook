@@ -8,36 +8,23 @@ spec:
     version: "1.22.2"
 
 ---
-kind: Deploy
-type: kubernetes
-name: vault
-dependencies:
-  - deploy.vault-operator
-spec:
-  namespace: default
-  files:
-    - ./e2e/deploy/vault/rbac.yaml
-    - ./e2e/deploy/vault/vault.yaml
-
----
 kind: Build
 type: container
-name: secrets-webhook
+name: secrets-webhook-image
 exclude:
   - .direnv/**/*
   - .devenv/**/*
   - build/**/*
   - e2e/**/*
+  - examples/**/*
 
 ---
 kind: Deploy
 type: helm
 name: secrets-webhook
 dependencies:
-  - deploy.vault
-variables:
-  repository: ${actions.build.secrets-webhook.outputs.deployment-image-name}
-  tag: ${actions.build.secrets-webhook.version}
+  - build.secrets-webhook-image
+  - deploy.vault-operator
 spec:
   namespace: secrets-webhook
   chart:
@@ -46,5 +33,5 @@ spec:
     - ./e2e/deploy/secrets-webhook/values.yaml
   values:
     image:
-      repository: ${var.repository}
-      tag: ${var.tag}
+      repository: ${actions.build.secrets-webhook-image.outputs.deployment-image-name}
+      tag: ${actions.build.secrets-webhook-image.version}
