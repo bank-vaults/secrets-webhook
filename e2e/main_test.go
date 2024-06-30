@@ -64,8 +64,7 @@ func TestMain(m *testing.M) {
 
 	// Set up cluster
 	if useRealCluster {
-		path := conf.ResolveKubeConfigFile()
-		cfg := envconf.NewWithKubeConfig(path)
+		cfg := envconf.NewWithKubeConfig(conf.ResolveKubeConfigFile())
 
 		if context := os.Getenv("USE_CONTEXT"); context != "" {
 			cfg.WithKubeContext(context)
@@ -232,8 +231,6 @@ func (e *reverseFinishEnvironment) Run(m *testing.M) int {
 
 	return e.Environment.Run(m)
 }
-
-// ======== VAULT ========
 
 func installVault(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
 	r, err := resources.New(cfg.Client().RESTConfig())

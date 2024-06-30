@@ -22,7 +22,7 @@ spec:
       initContainers:
       - name: init-ubuntu
         image: ubuntu
-        command: ["sh", "-c", "echo $AWS_SECRET_ACCESS_KEY && echo initContainers ready"]
+        command: ["sh", "-c", "echo AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY && echo initContainers ready"]
         env:
         - name: AWS_SECRET_ACCESS_KEY
           value: vault:secret/data/accounts/aws#${.AWS_SECRET_ACCESS_KEY} # Go templates are also supported with ${} delimiters
@@ -33,7 +33,7 @@ spec:
       containers:
       - name: alpine
         image: alpine
-        command: ["sh", "-c", "echo $AWS_SECRET_ACCESS_KEY && echo going to sleep... && sleep 10000"]
+        command: ["sh", "-c", "echo AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY && echo going to sleep... && sleep 10000"]
         env:
         - name: AWS_SECRET_ACCESS_KEY
           value: vault:secret/data/accounts/aws#AWS_SECRET_ACCESS_KEY

@@ -30,6 +30,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/e2e-framework/klient/decoder"
 	"sigs.k8s.io/e2e-framework/klient/k8s/resources"
 	"sigs.k8s.io/e2e-framework/klient/wait"
@@ -137,21 +138,38 @@ func TestPodMutation(t *testing.T) {
 		}).
 		Assess("security context defaults are correct", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 			r := cfg.Client().Resources()
-
 			pods := &v1.PodList{}
 
 			err := r.List(ctx, pods, resources.WithLabelSelector("app.kubernetes.io/name=test-deployment-vault"))
 			require.NoError(t, err)
 
-			if len(pods.Items) == 0 {
-				t.Fatal("no pods found")
-			}
+			assert.NotEmpty(t, pods.Items, "no pods found")
 
 			securityContext := pods.Items[0].Spec.InitContainers[0].SecurityContext
-
 			assert.Nil(t, securityContext.RunAsNonRoot)
 			assert.Nil(t, securityContext.RunAsUser)
 			assert.Nil(t, securityContext.RunAsGroup)
+
+			return ctx
+		}).
+		Assess("secret values are injected", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+			r := cfg.Client().Resources()
+			pods := &v1.PodList{}
+
+			err := r.List(ctx, pods, resources.WithLabelSelector("app.kubernetes.io/name=test-deployment-vault"))
+			require.NoError(t, err)
+
+			assert.NotEmpty(t, pods.Items, "no pods found")
+
+			// wait for the container to become available
+			err = wait.For(conditions.New(r).ContainersReady(&pods.Items[0]), wait.WithTimeout(defaultTimeout))
+			require.NoError(t, err)
+
+			initContainerLogs := getLogsFromContainer(t, ctx, cfg, pods.Items[0].Name, pods.Items[0].Spec.InitContainers[1].Name)
+			assert.Contains(t, initContainerLogs, "AWS_SECRET_ACCESS_KEY=s3cr3t")
+
+			containerLogs := getLogsFromContainer(t, ctx, cfg, pods.Items[0].Name, pods.Items[0].Spec.Containers[0].Name)
+			assert.Contains(t, containerLogs, "AWS_SECRET_ACCESS_KEY=s3cr3t")
 
 			return ctx
 		}).
@@ -166,6 +184,27 @@ func TestPodMutation(t *testing.T) {
 			// wait for the deployment to become available
 			err := wait.For(conditions.New(cfg.Client().Resources()).DeploymentConditionMatch(deployment, appsv1.DeploymentAvailable, v1.ConditionTrue), wait.WithTimeout(defaultTimeout))
 			require.NoError(t, err)
+
+			return ctx
+		}).
+		Assess("secret values are injected", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+			r := cfg.Client().Resources()
+			pods := &v1.PodList{}
+
+			err := r.List(ctx, pods, resources.WithLabelSelector("app.kubernetes.io/name=test-deployment-vault"))
+			require.NoError(t, err)
+
+			assert.NotEmpty(t, pods.Items, "no pods found")
+
+			// wait for the container to become available
+			err = wait.For(conditions.New(r).ContainersReady(&pods.Items[0]), wait.WithTimeout(defaultTimeout))
+			require.NoError(t, err)
+
+			initContainerLogs := getLogsFromContainer(t, ctx, cfg, pods.Items[0].Name, pods.Items[0].Spec.InitContainers[1].Name)
+			assert.Contains(t, initContainerLogs, "AWS_SECRET_ACCESS_KEY=s3cr3t")
+
+			containerLogs := getLogsFromContainer(t, ctx, cfg, pods.Items[0].Name, pods.Items[0].Spec.Containers[0].Name)
+			assert.Contains(t, containerLogs, "AWS_SECRET_ACCESS_KEY=s3cr3t")
 
 			return ctx
 		}).
@@ -187,29 +226,23 @@ func TestPodMutation(t *testing.T) {
 		}).
 		Assess("config template", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 			r := cfg.Client().Resources()
-
 			pods := &v1.PodList{}
 
 			err := r.List(ctx, pods, resources.WithLabelSelector("app.kubernetes.io/name=test-deployment-template-vault"))
 			require.NoError(t, err)
 
-			if len(pods.Items) == 0 {
-				t.Fatal("no pods found")
-			}
+			assert.NotEmpty(t, pods.Items, "no pods found")
 
 			// wait for the container to become available
 			err = wait.For(conditions.New(r).ContainersReady(&pods.Items[0]), wait.WithTimeout(defaultTimeout))
 			require.NoError(t, err)
 
 			var stdout, stderr bytes.Buffer
-			podName := pods.Items[0].Name
 			command := []string{"cat", "/vault/secrets/config.yaml"}
-
-			if err := r.ExecInPod(context.TODO(), cfg.Namespace(), podName, "alpine", command, &stdout, &stderr); err != nil {
+			if err := r.ExecInPod(ctx, cfg.Namespace(), pods.Items[0].Name, pods.Items[0].Spec.Containers[0].Name, command, &stdout, &stderr); err != nil {
 				t.Log(stderr.String())
 				t.Fatal(err)
 			}
-
 			assert.Equal(t, "\n    {\n      \"id\": \"secretId\",\n      \"key\": \"s3cr3t\"\n    }\n    \n  ", stdout.String())
 
 			return ctx
@@ -230,28 +263,42 @@ func TestPodMutation(t *testing.T) {
 		}).
 		Assess("security context is correct", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 			r := cfg.Client().Resources()
-
 			pods := &v1.PodList{}
 
 			err := r.List(ctx, pods, resources.WithLabelSelector("app.kubernetes.io/name=test-deployment-init-seccontext-vault"))
 			require.NoError(t, err)
 
-			if len(pods.Items) == 0 {
-				t.Fatal("no pods found")
-			}
+			assert.NotEmpty(t, pods.Items, "no pods found")
 
 			// wait for the container to become available
 			err = wait.For(conditions.New(r).ContainersReady(&pods.Items[0]), wait.WithTimeout(defaultTimeout))
 			require.NoError(t, err)
 
 			securityContext := pods.Items[0].Spec.InitContainers[0].SecurityContext
-
 			require.NotNil(t, securityContext.RunAsNonRoot)
 			assert.Equal(t, true, *securityContext.RunAsNonRoot)
 			require.NotNil(t, securityContext.RunAsUser)
 			assert.Equal(t, int64(1000), *securityContext.RunAsUser)
 			require.NotNil(t, securityContext.RunAsGroup)
 			assert.Equal(t, int64(1000), *securityContext.RunAsGroup)
+
+			return ctx
+		}).
+		Assess("secret value is injected", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+			r := cfg.Client().Resources()
+			pods := &v1.PodList{}
+
+			err := r.List(ctx, pods, resources.WithLabelSelector("app.kubernetes.io/name=test-deployment-init-seccontext-vault"))
+			require.NoError(t, err)
+
+			assert.NotEmpty(t, pods.Items, "no pods found")
+
+			// wait for the container to become available
+			err = wait.For(conditions.New(r).ContainersReady(&pods.Items[0]), wait.WithTimeout(defaultTimeout))
+			require.NoError(t, err)
+
+			containerLogs := getLogsFromContainer(t, ctx, cfg, pods.Items[0].Name, pods.Items[0].Spec.Containers[0].Name)
+			assert.Contains(t, containerLogs, "AWS_SECRET_ACCESS_KEY=s3cr3t")
 
 			return ctx
 		}).
@@ -282,4 +329,25 @@ func applyResource(builder *features.FeatureBuilder, file string) *features.Feat
 
 			return ctx
 		})
+}
+
+func getLogsFromContainer(t *testing.T, ctx context.Context, cfg *envconf.Config, podName string, containerName string) string {
+	clientset, err := kubernetes.NewForConfig(cfg.Client().RESTConfig())
+	require.NoError(t, err)
+
+	req := clientset.CoreV1().Pods(cfg.Namespace()).GetLogs(
+		podName,
+		&v1.PodLogOptions{
+			Container: containerName,
+		})
+
+	podLogs, err := req.Stream(ctx)
+	require.NoError(t, err)
+	defer podLogs.Close()
+
+	var buf bytes.Buffer
+	_, err = buf.ReadFrom(podLogs)
+	require.NoError(t, err)
+
+	return buf.String()
 }
