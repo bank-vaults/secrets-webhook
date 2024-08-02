@@ -53,6 +53,7 @@ func TestSecretValueInjection(t *testing.T) {
 	type dockerconfig struct {
 		Auths auths `json:"auths"`
 	}
+
 	secretVault := applyResource(features.New("secret-vault"), "secret-vault.yaml").
 		Assess("object created", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 			secrets := &v1.SecretList{
