@@ -44,7 +44,7 @@ type DockerAuthConfig struct {
 	RegistryToken string `json:"registrytoken,omitempty"`
 }
 
-// assembleCredentialData assembles the credential data that will be retrieved from Vault
+// assembleCredentialData assembles the credential data that will be retrieved
 func AssembleCredentialData(authCreds map[string]string) (map[string]string, error) {
 	if username, ok := authCreds["username"]; ok {
 		if password, ok := authCreds["password"]; ok {
@@ -64,8 +64,8 @@ func AssembleCredentialData(authCreds map[string]string) (map[string]string, err
 	return nil, fmt.Errorf("no valid credentials found")
 }
 
-// assembleDockerAuthConfig assembles the DockerAuthConfig from the retrieved data from Vault
-func AssembleDockerAuthConfig(dcCreds map[string]string) DockerAuthConfig {
+// assembleDockerAuthConfig assembles the DockerAuthConfig from the retrieved data
+func AssembleDockerAuthConfig(dcCreds map[string]string, creds DockerAuthConfig) DockerAuthConfig {
 	if username, ok := dcCreds["username"]; ok {
 		if password, ok := dcCreds["password"]; ok {
 			return DockerAuthConfig{
