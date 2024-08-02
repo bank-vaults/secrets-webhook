@@ -62,7 +62,7 @@ jobs:
         ports:
           - 8200:8200
       bao:
-        image: quay.io/openbao/openbao@sha256:a015ae0adb1af5b45b33632e29879ff87063d0878e9359584a50b2706e500e9a # 2.0.0-alpha20240329
+        image: openbao/openbao:latest
         env:
           SKIP_SETCAP: true
           BAO_ADDR: http://127.0.0.1:8200
