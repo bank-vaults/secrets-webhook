@@ -99,7 +99,7 @@ func mutateDockerCreds(secret *corev1.Secret, dc *common.DockerCredentials, inje
 				return errors.Wrap(err, "retrieving data from bao failed")
 			}
 
-			assembled.Auths[key] = common.AssembleDockerAuthConfig(dcCreds, creds)
+			assembled.Auths[key] = common.AssembleDockerAuthConfig(dcCreds)
 		}
 	}
 

@@ -48,55 +48,38 @@ type DockerAuthConfig struct {
 func AssembleCredentialData(authCreds map[string]string) (map[string]string, error) {
 	if username, ok := authCreds["username"]; ok {
 		if password, ok := authCreds["password"]; ok {
-			credentialData := map[string]string{
+			return map[string]string{
 				"username": username,
 				"password": password,
-			}
-
-			return credentialData, nil
+			}, nil
 		}
 	}
 
 	if auth, ok := authCreds["auth"]; ok {
-		credentialData := map[string]string{
+		return map[string]string{
 			"auth": auth,
-		}
-
-		return credentialData, nil
+		}, nil
 	}
 
 	return nil, fmt.Errorf("no valid credentials found")
 }
 
 // assembleDockerAuthConfig assembles the DockerAuthConfig from the retrieved data from Vault
-func AssembleDockerAuthConfig(dcCreds map[string]string, creds DockerAuthConfig) DockerAuthConfig {
+func AssembleDockerAuthConfig(dcCreds map[string]string) DockerAuthConfig {
 	if username, ok := dcCreds["username"]; ok {
 		if password, ok := dcCreds["password"]; ok {
-			auth := fmt.Sprintf("%s:%s", username, password)
-
-			dockerAuth := DockerAuthConfig{
-				Auth: base64.StdEncoding.EncodeToString([]byte(auth)),
+			return DockerAuthConfig{
+				Username: username,
+				Password: password,
+				Auth:     base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", username, password))),
 			}
-
-			if creds.Username != "" && creds.Password != "" {
-				dockerAuth.Username = dcCreds["username"]
-				dockerAuth.Password = dcCreds["password"]
-			}
-
-			return dockerAuth
 		}
 	}
 
 	if auth, ok := dcCreds["auth"]; ok {
-		dockerAuth := DockerAuthConfig{
+		return DockerAuthConfig{
 			Auth: base64.StdEncoding.EncodeToString([]byte(auth)),
 		}
-
-		if creds.Auth != "" {
-			dockerAuth.Auth = auth
-		}
-
-		return dockerAuth
 	}
 
 	return DockerAuthConfig{}
