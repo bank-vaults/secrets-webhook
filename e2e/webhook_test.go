@@ -39,6 +39,19 @@ import (
 )
 
 func TestSecretValueInjection(t *testing.T) {
+	type dockerAuth struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+		Auth     string `json:"auth"`
+	}
+
+	type auths struct {
+		DockerAuth dockerAuth `json:"https://index.docker.io/v1/"`
+	}
+
+	type dockerconfig struct {
+		Auths auths `json:"auths"`
+	}
 	secretVault := applyResource(features.New("secret-vault"), "secret-vault.yaml").
 		Assess("object created", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 			secrets := &v1.SecretList{
@@ -61,28 +74,50 @@ func TestSecretValueInjection(t *testing.T) {
 			err := cfg.Client().Resources(cfg.Namespace()).Get(ctx, "test-secret-vault", cfg.Namespace(), &secret)
 			require.NoError(t, err)
 
-			type v1 struct {
-				Username string `json:"username"`
-				Password string `json:"password"`
-				Auth     string `json:"auth"`
+			var dockerconfigjson dockerconfig
+
+			err = json.Unmarshal(secret.Data[".dockerconfigjson"], &dockerconfigjson)
+			require.NoError(t, err)
+
+			dockerrepoauth := base64.StdEncoding.EncodeToString([]byte("dockerrepouser:dockerrepopassword"))
+			assert.Equal(t, "dockerrepouser", dockerconfigjson.Auths.DockerAuth.Username)
+			assert.Equal(t, "dockerrepopassword", dockerconfigjson.Auths.DockerAuth.Password)
+			assert.Equal(t, dockerrepoauth, dockerconfigjson.Auths.DockerAuth.Auth)
+			assert.Equal(t, "Inline: secretId AWS_ACCESS_KEY_ID", string(secret.Data["inline"]))
+
+			return ctx
+		}).
+		Feature()
+
+	secretDockerJsonKey := applyResource(features.New("secret-docker-json-key-vault"), "secret-docker-json-key-vault.yaml").
+		Assess("object created", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+			secrets := &v1.SecretList{
+				Items: []v1.Secret{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "test-secret-docker-json-key-vault", Namespace: cfg.Namespace()},
+					},
+				},
 			}
 
-			type auths struct {
-				V1 v1 `json:"https://index.docker.io/v1/"`
-			}
+			// wait for the secret to become available
+			err := wait.For(conditions.New(cfg.Client().Resources()).ResourcesFound(secrets), wait.WithTimeout(defaultTimeout))
+			require.NoError(t, err)
 
-			type dockerconfig struct {
-				Auths auths `json:"auths"`
-			}
+			return ctx
+		}).
+		Assess("secret values are injected", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+			var secret v1.Secret
+
+			err := cfg.Client().Resources(cfg.Namespace()).Get(ctx, "test-secret-docker-json-key-vault", cfg.Namespace(), &secret)
+			require.NoError(t, err)
 
 			var dockerconfigjson dockerconfig
 
 			err = json.Unmarshal(secret.Data[".dockerconfigjson"], &dockerconfigjson)
 			require.NoError(t, err)
 
-			assert.Equal(t, "dockerrepouser", dockerconfigjson.Auths.V1.Username)
-			assert.Equal(t, "dockerrepopassword", dockerconfigjson.Auths.V1.Password)
-			assert.Equal(t, "Inline: secretId AWS_ACCESS_KEY_ID", string(secret.Data["inline"]))
+			dockerrepoauth := base64.StdEncoding.EncodeToString([]byte("_json_key: {\n  \"type\": \"service_account\",\n  \"project_id\": \"test\"\n}\n"))
+			assert.Equal(t, dockerrepoauth, dockerconfigjson.Auths.DockerAuth.Auth)
 
 			return ctx
 		}).
@@ -119,7 +154,7 @@ func TestSecretValueInjection(t *testing.T) {
 		}).
 		Feature()
 
-	testenv.Test(t, secretVault, configMapVault)
+	testenv.Test(t, secretVault, secretDockerJsonKey, configMapVault)
 }
 
 func TestPodMutation(t *testing.T) {
