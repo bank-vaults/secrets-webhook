@@ -16,10 +16,55 @@ package aws
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/provider"
+	"github.com/bank-vaults/secrets-webhook/pkg/provider/common"
 )
 
-func (m *mutator) MutateObject(_ context.Context, _ provider.ObjectMutateRequest) error {
+func (m *mutator) MutateObject(ctx context.Context, mutateRequest provider.ObjectMutateRequest) error {
+	m.logger.Debug(fmt.Sprintf("mutating object: %s.%s", mutateRequest.Object.GetNamespace(), mutateRequest.Object.GetName()))
+
+	err := m.newClient(ctx, mutateRequest.K8sClient)
+	if err != nil {
+		return fmt.Errorf("creating AWS clients failed: %w", err)
+	}
+
+	return traverseObject(ctx, mutateRequest.Object.Object, *m.client)
+}
+
+func traverseObject(ctx context.Context, o interface{}, client client) error {
+	var iterator common.Iterator
+	switch value := o.(type) {
+	case map[string]interface{}:
+		iterator = common.MapIterator(value)
+
+	case []interface{}:
+		iterator = common.SliceIterator(value)
+
+	default:
+		return nil
+	}
+
+	for e := range iterator {
+		switch s := e.Get().(type) {
+		case string:
+			if valid, storeType := isValidPrefixWithStoreType(s); valid {
+				dataFromStore, err := getDataFromStore(ctx, client, storeType, map[string]string{"data": s})
+				if err != nil {
+					return fmt.Errorf("failed to get data from store: %w", err)
+				}
+
+				e.Set(dataFromStore["data"])
+			}
+
+		case map[string]interface{}, []interface{}:
+			err := traverseObject(ctx, e.Get(), client)
+			if err != nil {
+				return fmt.Errorf("failed to traverse object: %w", err)
+			}
+		}
+	}
+
 	return nil
 }
