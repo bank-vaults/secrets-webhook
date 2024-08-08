@@ -136,12 +136,10 @@ const (
 	BaoConsulTemplateInjectInInitcontainersAnnotation = WebhookAnnotationPrefix + "bao-ct-inject-in-initcontainers"
 
 	// AWS annotations
-	AWSRegionAnnotation               = WebhookAnnotationPrefix + "aws-region"
-	AWSLoadFromSharedConfigAnnotation = WebhookAnnotationPrefix + "aws-load-from-shared-config"
-
-	// AWS environment variables
-	AWSRegionEnvVar               = "AWS_REGION"
-	AWSLoadFromSharedConfigEnvVar = "AWS_LOAD_FROM_SHARED_CONFIG"
+	AWSRegionAnnotation                = WebhookAnnotationPrefix + "aws-region"
+	AWSLoadFromSharedConfigAnnotation  = WebhookAnnotationPrefix + "aws-load-from-shared-config"
+	AWSCredentialsNamespaceAnnotation  = WebhookAnnotationPrefix + "credentials-namespace"
+	AWSCredentialsSecretNameAnnotation = WebhookAnnotationPrefix + "credentials-secret-name"
 )
 
 // ENVIRONMENT VARIABLES
@@ -227,6 +225,12 @@ const (
 	BaoTokenEnvVar                      = "bao_token"
 	BaoSAEnvVar                         = "bao_serviceaccount"
 	BaoSATokenVolumeNameEnvVar          = "bao_service_account_token_volume_name"
+
+	// AWS environment variables
+	AWSRegionEnvVar                = "AWS_REGION"
+	AWSLoadFromSharedConfigEnvVar  = "AWS_LOAD_FROM_SHARED_CONFIG"
+	AWSCredentialsNamespaceEnvVar  = "AWS_CREDENTIALS_NAMESPACE"
+	AWSCredentialsSecretNameEnvVar = "AWS_CREDENTIALS_SECRET_NAME"
 )
 
 // DEPRECATED ANNOTATIONS AND ENVIRONMENT VARIABLES

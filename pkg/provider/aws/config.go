@@ -23,10 +23,17 @@ import (
 	"github.com/bank-vaults/secrets-webhook/pkg/common"
 )
 
+const (
+	defaultCredentialsNamespace  = "default"
+	defaultCredentialsSecretName = "aws-credentials"
+)
+
 type Config struct {
-	ObjectNamespace      string
-	Region               string
-	LoadFromSharedConfig bool
+	ObjectNamespace       string
+	Region                string
+	LoadFromSharedConfig  bool
+	CredentialsNamespace  string
+	CredentialsSecretName string
 }
 
 func loadConfig(obj metav1.Object) (Config, error) {
@@ -46,6 +53,22 @@ func loadConfig(obj metav1.Object) (Config, error) {
 		config.LoadFromSharedConfig, _ = strconv.ParseBool(val)
 	} else {
 		config.LoadFromSharedConfig = viper.GetBool(common.AWSLoadFromSharedConfigEnvVar)
+	}
+
+	if val, ok := annotations[common.AWSCredentialsNamespaceAnnotation]; ok {
+		config.CredentialsNamespace = val
+	} else if viper.IsSet(common.AWSCredentialsNamespaceEnvVar) {
+		config.CredentialsNamespace = viper.GetString(common.AWSCredentialsNamespaceEnvVar)
+	} else {
+		config.CredentialsNamespace = defaultCredentialsNamespace
+	}
+
+	if val, ok := annotations[common.AWSCredentialsSecretNameAnnotation]; ok {
+		config.CredentialsSecretName = val
+	} else if viper.IsSet(common.AWSCredentialsSecretNameEnvVar) {
+		config.CredentialsSecretName = viper.GetString(common.AWSCredentialsSecretNameEnvVar)
+	} else {
+		config.CredentialsSecretName = defaultCredentialsSecretName
 	}
 
 	return config, nil

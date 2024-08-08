@@ -85,13 +85,13 @@ func (m *mutator) createAWSSession(ctx context.Context, k8sClient kubernetes.Int
 }
 
 func (m *mutator) createSessionUsingK8sSecretCredentials(ctx context.Context, k8sClient kubernetes.Interface) (session.Options, error) {
-	secret, err := k8sClient.CoreV1().Secrets("default").Get(
+	secret, err := k8sClient.CoreV1().Secrets(m.config.CredentialsNamespace).Get(
 		ctx,
-		"aws-credentials",
+		m.config.CredentialsSecretName,
 		metav1.GetOptions{},
 	)
 	if err != nil {
-		return session.Options{}, fmt.Errorf("failed to get secret: %w", err)
+		return session.Options{}, fmt.Errorf("failed to get AWS credentials secret: %w", err)
 	}
 
 	return session.Options{
