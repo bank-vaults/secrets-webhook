@@ -76,7 +76,6 @@ func (m *mutator) MutateSecret(ctx context.Context, mutateRequest provider.Secre
 
 func mutateDockerCreds(secret *corev1.Secret, dc *common.DockerCredentials, injector *baoinjector.SecretInjector) error {
 	assembled := common.DockerCredentials{Auths: map[string]common.DockerAuthConfig{}}
-
 	for key, creds := range dc.Auths {
 		authBytes, err := base64.StdEncoding.DecodeString(creds.Auth.(string))
 		if err != nil {
@@ -114,12 +113,12 @@ func mutateDockerCreds(secret *corev1.Secret, dc *common.DockerCredentials, inje
 }
 
 func mutateSecretData(secret *corev1.Secret, injector *baoinjector.SecretInjector) error {
-	convertedData := make(map[string]string, len(secret.Data))
+	data := make(map[string]string, len(secret.Data))
 	for k := range secret.Data {
-		convertedData[k] = string(secret.Data[k])
+		data[k] = string(secret.Data[k])
 	}
 
-	convertedData, err := injector.GetDataFromBao(convertedData)
+	convertedData, err := injector.GetDataFromBao(data)
 	if err != nil {
 		return err
 	}
@@ -148,8 +147,7 @@ func secretNeedsMutation(secret *corev1.Secret) (bool, error) {
 						return false, errors.Wrap(err, "auth base64 decoding failed")
 					}
 
-					auth := string(authBytes)
-					if isValidPrefix(auth) {
+					if isValidPrefix(string(authBytes)) {
 						return true, nil
 					}
 
@@ -160,7 +158,7 @@ func secretNeedsMutation(secret *corev1.Secret) (bool, error) {
 						return false, errors.New("invalid auth type")
 					}
 
-					// check if any of the sub-keys have a vault prefix
+					// check if any of the sub-keys have a Bao prefix
 					for _, v := range authMap {
 						if isValidPrefix(v.(string)) {
 							return true, nil
@@ -184,11 +182,11 @@ func secretNeedsMutation(secret *corev1.Secret) (bool, error) {
 }
 
 // determineAuthType takes a byte slice of authentication data and determines its type.
-// It supports three formats: "username:usr:password:pass", JSON keys, and valid vault paths.
+// It supports three formats: "usr:pass", JSON keys, and valid bao paths.
 func determineAuthType(auth []byte) (map[string]string, error) {
 	creds := make(map[string]string)
 
-	// if the auth string is formatted as "username:usr:password:pass",
+	// if the auth string is formatted as "usr:pass",
 	// split the string into username and password
 	split := strings.Split(string(auth), ":")
 	if len(split) == 4 {
@@ -204,7 +202,7 @@ func determineAuthType(auth []byte) (map[string]string, error) {
 		return creds, nil
 	}
 
-	// if none of the above, the auth string can still be a valid vault path
+	// if none of the above, the auth string can still be a valid Bao path
 	if isValidPrefix(string(auth)) {
 		creds["auth"] = string(auth)
 		return creds, nil

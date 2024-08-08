@@ -32,6 +32,7 @@ import (
 
 	"github.com/bank-vaults/secrets-webhook/pkg/common"
 	"github.com/bank-vaults/secrets-webhook/pkg/provider"
+	awsprov "github.com/bank-vaults/secrets-webhook/pkg/provider/aws"
 	baoprov "github.com/bank-vaults/secrets-webhook/pkg/provider/bao"
 	vaultprov "github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 	"github.com/bank-vaults/secrets-webhook/pkg/registry"
@@ -67,6 +68,13 @@ func (mw *MutatingWebhook) SecretsMutator(ctx context.Context, ar *model.Admissi
 		mutator, err = provider.NewMutator(obj, mw.logger)
 		if err != nil {
 			return &mutating.MutatorResult{}, errors.Wrap(err, "failed to create Bao mutator")
+		}
+
+	case awsprov.ProviderName:
+		provider := awsprov.Provider{}
+		mutator, err = provider.NewMutator(obj, mw.logger)
+		if err != nil {
+			return &mutating.MutatorResult{}, errors.Wrap(err, "failed to create AWS mutator")
 		}
 
 	default:

@@ -19,12 +19,12 @@ help: ## Display this help
 
 .PHONY: up
 up: ## Start development environment
-	$(KIND_BIN) create cluster
+	$(KIND_BIN) create cluster --name secrets-webhook
 	docker compose up -d
 
 .PHONY: down
 down: ## Destroy development environment
-	$(KIND_BIN) delete cluster
+	$(KIND_BIN) delete cluster --name secrets-webhook
 	docker compose down -v
 
 .PHONY: run
