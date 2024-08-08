@@ -16,10 +16,90 @@ package aws
 
 import (
 	"context"
+	"fmt"
+
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/provider"
+	"github.com/bank-vaults/secrets-webhook/pkg/provider/common"
 )
 
-func (m *mutator) MutateConfigMap(_ context.Context, _ provider.ConfigMapMutateRequest) error {
+func (m *mutator) MutateConfigMap(ctx context.Context, mutateRequest provider.ConfigMapMutateRequest) error {
+	// do an early exit if no mutation is needed
+	if !configMapNeedsMutation(mutateRequest.ConfigMap) {
+		return nil
+	}
+
+	err := m.newClient(ctx, mutateRequest.K8sClient)
+	if err != nil {
+		return fmt.Errorf("failed to create new AWS client: %w", err)
+	}
+
+	err = m.mutateConfigMapData(ctx, &mutateRequest)
+	if err != nil {
+		return fmt.Errorf("failed to mutate config map data: %w", err)
+	}
+
+	err = m.mutateConfigMapBinaryData(ctx, &mutateRequest)
+	if err != nil {
+		return fmt.Errorf("failed to mutate config map binary data: %w", err)
+	}
+
 	return nil
+}
+
+// New function to process ConfigMap data
+func (m *mutator) mutateConfigMapData(ctx context.Context, mutateRequest *provider.ConfigMapMutateRequest) error {
+	for key, value := range mutateRequest.ConfigMap.Data {
+		if valid, storeType := isValidPrefixWithStoreType(value); valid {
+			mapData, err := getDataFromStore(ctx, *m.client, storeType,
+				map[string]string{
+					key: value,
+				})
+			if err != nil {
+				return fmt.Errorf("failed to get data from store: %w", err)
+			}
+
+			mutateRequest.ConfigMap.Data[key] = mapData[key]
+		}
+	}
+
+	return nil
+}
+
+func (m *mutator) mutateConfigMapBinaryData(ctx context.Context, mutateRequest *provider.ConfigMapMutateRequest) error {
+	for key, value := range mutateRequest.ConfigMap.BinaryData {
+		if valid, storeType := isValidPrefixWithStoreType(string(value)); valid {
+			mapData, err := getDataFromStore(ctx, *m.client, storeType,
+				map[string]string{
+					key: string(value),
+				})
+			if err != nil {
+				return fmt.Errorf("failed to get data from store: %w", err)
+			}
+
+			err = common.MutateConfigMapBinaryData(mutateRequest.ConfigMap, mapData)
+			if err != nil {
+				return fmt.Errorf("failed to mutate config map binary data: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func configMapNeedsMutation(configMap *corev1.ConfigMap) bool {
+	for _, value := range configMap.Data {
+		if isValidPrefix(value) {
+			return true
+		}
+	}
+
+	for _, value := range configMap.BinaryData {
+		if isValidPrefix(string(value)) {
+			return true
+		}
+	}
+
+	return false
 }
