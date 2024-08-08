@@ -34,19 +34,17 @@ func (m *mutator) MutateObject(ctx context.Context, mutateRequest provider.Objec
 	}
 	defer m.client.Close()
 
-	injectorConfig := baoinjector.Config{
+	injector := baoinjector.NewSecretInjector(baoinjector.Config{
 		TransitKeyID:     m.config.TransitKeyID,
 		TransitPath:      m.config.TransitPath,
 		TransitBatchSize: m.config.TransitBatchSize,
-	}
-	injector := baoinjector.NewSecretInjector(injectorConfig, m.client, nil, m.logger)
+	}, m.client, nil, m.logger)
 
 	return traverseObject(mutateRequest.Object.Object, &injector)
 }
 
 func traverseObject(o interface{}, injector *baoinjector.SecretInjector) error {
 	var iterator common.Iterator
-
 	switch value := o.(type) {
 	case map[string]interface{}:
 		iterator = common.MapIterator(value)

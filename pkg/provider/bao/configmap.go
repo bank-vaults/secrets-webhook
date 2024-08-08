@@ -36,12 +36,12 @@ func (m *mutator) MutateConfigMap(ctx context.Context, mutateRequest provider.Co
 	}
 	defer m.client.Close()
 
-	config := baoinjector.Config{
-		TransitKeyID:     m.config.TransitKeyID,
-		TransitPath:      m.config.TransitPath,
-		TransitBatchSize: m.config.TransitBatchSize,
-	}
-	injector := baoinjector.NewSecretInjector(config, m.client, nil, m.logger)
+	injector := baoinjector.NewSecretInjector(
+		baoinjector.Config{
+			TransitKeyID:     m.config.TransitKeyID,
+			TransitPath:      m.config.TransitPath,
+			TransitBatchSize: m.config.TransitBatchSize,
+		}, m.client, nil, m.logger)
 
 	mutateRequest.ConfigMap.Data, err = injector.GetDataFromBao(mutateRequest.ConfigMap.Data)
 	if err != nil {
@@ -50,11 +50,9 @@ func (m *mutator) MutateConfigMap(ctx context.Context, mutateRequest provider.Co
 
 	for key, value := range mutateRequest.ConfigMap.BinaryData {
 		if isValidPrefix(string(value)) {
-			binaryData := map[string]string{
+			mapData, err := injector.GetDataFromBao(map[string]string{
 				key: string(value),
-			}
-
-			mapData, err := injector.GetDataFromBao(binaryData)
+			})
 			if err != nil {
 				return err
 			}
