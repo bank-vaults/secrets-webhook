@@ -46,12 +46,11 @@ func (m *mutator) MutateSecret(ctx context.Context, mutateRequest provider.Secre
 	}
 	defer m.client.Close()
 
-	injectorConfig := baoinjector.Config{
+	injector := baoinjector.NewSecretInjector(baoinjector.Config{
 		TransitKeyID:     m.config.TransitKeyID,
 		TransitPath:      m.config.TransitPath,
 		TransitBatchSize: m.config.TransitBatchSize,
-	}
-	injector := baoinjector.NewSecretInjector(injectorConfig, m.client, nil, m.logger)
+	}, m.client, nil, m.logger)
 
 	if value, ok := mutateRequest.Secret.Data[corev1.DockerConfigJsonKey]; ok {
 		var dc common.DockerCredentials
