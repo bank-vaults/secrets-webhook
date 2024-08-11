@@ -4,7 +4,7 @@ go 1.22.3
 
 require (
 	emperror.dev/errors v0.8.1
-	github.com/aws/aws-sdk-go v1.53.14
+	github.com/aws/aws-sdk-go v1.55.5
 	github.com/bank-vaults/internal v0.3.1
 	github.com/bank-vaults/secret-init v0.2.0
 	github.com/bank-vaults/vault-sdk v0.9.4
