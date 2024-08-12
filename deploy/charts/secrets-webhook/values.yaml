@@ -186,6 +186,17 @@ readinessProbe:
   successThreshold: 1
   timeoutSeconds: 1
 
+autoscaling:
+  hpa:
+    # -- Enable autoscaling for the webhook deployment
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 5
+    # -- Target CPU utilization percentage
+    targetCPU: 80
+    # -- Target memory utilization percentage
+    targetMemory: 80
+
 rbac:
   psp:
     # -- Use pod security policy

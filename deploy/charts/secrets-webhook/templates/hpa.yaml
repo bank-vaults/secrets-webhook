@@ -1,0 +1,36 @@
+{{- if .Values.autoscaling.hpa.enabled }}
+apiVersion: {{ include "common.capabilities.hpa.apiVersion" ( dict "context" $ ) }}
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ template "secrets-webhook.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    chart: {{ include "secrets-webhook.chart" . }}
+spec:
+  scaleTargetRef:
+    apiVersion: {{ include "common.capabilities.deployment.apiVersion" . }}
+    kind: Deployment
+    name: {{ template "secrets-webhook.fullname" . }}
+  minReplicas: {{ .Values.autoscaling.hpa.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.hpa.maxReplicas }}
+  metrics:
+    {{- if .Values.autoscaling.hpa.targetCPU }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+            type: Utilization
+            averageUtilization: {{ .Values.autoscaling.hpa.targetCPU }}
+    {{- end }}
+    {{- if .Values.autoscaling.hpa.targetMemory }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+            type: Utilization
+            averageUtilization: {{ .Values.autoscaling.hpa.targetMemory }}
+    {{- end }}
+    {{- if .Values.autoscaling.hpa.customRules -}}
+      {{- toYaml .Values.autoscaling.hpa.customRules | nindent 4 }}
+    {{- end }}
+{{- end }}
