@@ -49,6 +49,16 @@ func HasTLSVolume(volumes []corev1.Volume, tlsVolumeName string) bool {
 	return false
 }
 
+func HasTLSSecret(secret []corev1.Secret, tlsSecretName string) bool {
+	for _, s := range secret {
+		if s.Name == tlsSecretName {
+			return true
+		}
+	}
+
+	return false
+}
+
 // isLogLevelSet checks if the SECRET_INIT_LOG_LEVEL environment variable
 // has already been set in the container, so it doesn't get overridden.
 func IsLogLevelSet(envVars []corev1.EnvVar) bool {

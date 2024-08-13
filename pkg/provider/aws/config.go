@@ -34,6 +34,7 @@ type Config struct {
 	LoadFromSharedConfig  bool
 	CredentialsNamespace  string
 	CredentialsSecretName string
+	TLSSecretARN          string
 }
 
 func loadConfig(obj metav1.Object) (Config, error) {
@@ -69,6 +70,12 @@ func loadConfig(obj metav1.Object) (Config, error) {
 		config.CredentialsSecretName = viper.GetString(common.AWSCredentialsSecretNameEnvVar)
 	} else {
 		config.CredentialsSecretName = defaultCredentialsSecretName
+	}
+
+	if val, ok := annotations[common.AWSTLSSecretARNAnnotation]; ok {
+		config.TLSSecretARN = val
+	} else {
+		config.TLSSecretARN = viper.GetString(common.AWSTLSSecretARNEnvVar)
 	}
 
 	return config, nil

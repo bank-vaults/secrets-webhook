@@ -140,6 +140,7 @@ const (
 	AWSLoadFromSharedConfigAnnotation  = WebhookAnnotationPrefix + "aws-load-from-shared-config"
 	AWSCredentialsNamespaceAnnotation  = WebhookAnnotationPrefix + "credentials-namespace"
 	AWSCredentialsSecretNameAnnotation = WebhookAnnotationPrefix + "credentials-secret-name"
+	AWSTLSSecretARNAnnotation          = WebhookAnnotationPrefix + "aws-tls-secret-arn"
 )
 
 // ENVIRONMENT VARIABLES
@@ -227,10 +228,11 @@ const (
 	BaoSATokenVolumeNameEnvVar          = "bao_service_account_token_volume_name"
 
 	// AWS environment variables
-	AWSRegionEnvVar                = "AWS_REGION"
-	AWSLoadFromSharedConfigEnvVar  = "AWS_LOAD_FROM_SHARED_CONFIG"
-	AWSCredentialsNamespaceEnvVar  = "AWS_CREDENTIALS_NAMESPACE"
-	AWSCredentialsSecretNameEnvVar = "AWS_CREDENTIALS_SECRET_NAME"
+	AWSRegionEnvVar                = "aws_region"
+	AWSLoadFromSharedConfigEnvVar  = "aws_load_from_shared_config"
+	AWSCredentialsNamespaceEnvVar  = "aws_credentials_namespace"
+	AWSCredentialsSecretNameEnvVar = "aws_credentials_secret_name"
+	AWSTLSSecretARNEnvVar          = "aws_tls_secret_arn"
 )
 
 // DEPRECATED ANNOTATIONS AND ENVIRONMENT VARIABLES

@@ -268,21 +268,17 @@ func (m *mutator) MutateContainers(ctx context.Context, containers []corev1.Cont
 		container.Command = []string{"/vault/secret-init"}
 		container.Args = args
 
-		// mutate probes if needed
 		if webhookConfig.MutateProbes {
-			// mutate LivenessProbes
 			if container.LivenessProbe != nil && container.LivenessProbe.Exec != nil {
 				lProbeCmd := container.LivenessProbe.Exec.Command
 				container.LivenessProbe.Exec.Command = []string{"/vault/secret-init"}
 				container.LivenessProbe.Exec.Command = append(container.LivenessProbe.Exec.Command, lProbeCmd...)
 			}
-			// mutate ReadinessProbes
 			if container.ReadinessProbe != nil && container.ReadinessProbe.Exec != nil {
 				rProbeCmd := container.ReadinessProbe.Exec.Command
 				container.ReadinessProbe.Exec.Command = []string{"/vault/secret-init"}
 				container.ReadinessProbe.Exec.Command = append(container.ReadinessProbe.Exec.Command, rProbeCmd...)
 			}
-			// mutate StartupProbes
 			if container.StartupProbe != nil && container.StartupProbe.Exec != nil {
 				sProbeCmd := container.StartupProbe.Exec.Command
 				container.StartupProbe.Exec.Command = []string{"/vault/secret-init"}
