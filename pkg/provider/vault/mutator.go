@@ -39,11 +39,9 @@ func (m *mutator) newClient(ctx context.Context, k8sClient kubernetes.Interface,
 	if clientConfig.Error != nil {
 		return clientConfig.Error
 	}
-
 	clientConfig.Address = m.config.Addr
 
-	tlsConfig := vaultapi.TLSConfig{Insecure: m.config.SkipVerify}
-	err := clientConfig.ConfigureTLS(&tlsConfig)
+	err := clientConfig.ConfigureTLS(&vaultapi.TLSConfig{Insecure: m.config.SkipVerify})
 	if err != nil {
 		return err
 	}
@@ -58,16 +56,12 @@ func (m *mutator) newClient(ctx context.Context, k8sClient kubernetes.Interface,
 			return errors.Wrap(err, "failed to read Vault TLS Secret")
 		}
 
-		clientTLSConfig := clientConfig.HttpClient.Transport.(*http.Transport).TLSClientConfig
-
 		pool := x509.NewCertPool()
-
 		ok := pool.AppendCertsFromPEM(tlsSecret.Data["ca.crt"])
 		if !ok {
 			return errors.Errorf("error loading Vault CA PEM from TLS Secret: %s", tlsSecret.Name)
 		}
-
-		clientTLSConfig.RootCAs = pool
+		clientConfig.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs = pool
 	}
 
 	if m.config.VaultServiceAccount != "" {
@@ -137,7 +131,6 @@ func (m *mutator) newClient(ctx context.Context, k8sClient kubernetes.Interface,
 	if err != nil {
 		return errors.Wrap(err, "failed to create Vault client")
 	}
-
 	m.client = vaultClient
 
 	return nil

@@ -29,7 +29,7 @@ func MutateConfigMapBinaryData(configMap *corev1.ConfigMap, mapData map[string]s
 		valueBytes, err := base64.StdEncoding.DecodeString(value)
 		if err != nil {
 			// If the value is not base64 encoded, use the value as is
-			configMap.Data[key] = value
+			configMap.BinaryData[key] = []byte(value)
 		} else {
 			// If the value is base64 encoded, use the decoded value
 			configMap.BinaryData[key] = valueBytes
