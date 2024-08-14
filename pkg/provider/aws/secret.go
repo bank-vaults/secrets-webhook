@@ -159,7 +159,7 @@ func secretNeedsMutation(secret *corev1.Secret) (bool, string, error) {
 						return false, "", fmt.Errorf("invalid auth type")
 					}
 
-					// check if any of the sub-keys have a vault prefix
+					// check if any of the sub-keys have a valid prefix
 					for _, v := range authMap {
 						if valid, storeType := isValidPrefixWithStoreType(v.(string)); valid {
 							return true, storeType, nil

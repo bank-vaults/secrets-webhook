@@ -39,31 +39,31 @@ func getDataFromStore(ctx context.Context, storeClient client, storeType string,
 func getDataFromSM(ctx context.Context, storeClient client, data map[string]string) (map[string]string, error) {
 	var secretsMap = make(map[string]string, len(data))
 	for key, value := range data {
-		if strings.Contains(value, "secretsmanager:") {
-			secret, err := storeClient.smClient.GetSecretValueWithContext(
-				ctx,
-				&secretsmanager.GetSecretValueInput{
-					SecretId: aws.String(value),
-				})
-			if err != nil {
-				return nil, fmt.Errorf("failed to get secret from AWS secrets manager: %w", err)
-			}
-
-			secretBytes, err := extractSecretValueFromSM(secret)
-			if err != nil {
-				return nil, fmt.Errorf("failed to extract secret value from AWS secrets manager: %w", err)
-			}
-
-			secretValue, err := parseSecretValueFromSM(secretBytes)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse secret value from AWS secrets manager: %w", err)
-			}
-
-			secretsMap[key] = string(secretValue)
+		if !strings.Contains(value, "secretsmanager:") {
+			secretsMap[key] = value
 			continue
 		}
 
-		secretsMap[key] = value
+		secret, err := storeClient.smClient.GetSecretValueWithContext(
+			ctx,
+			&secretsmanager.GetSecretValueInput{
+				SecretId: aws.String(value),
+			})
+		if err != nil {
+			return nil, fmt.Errorf("failed to get secret from AWS secrets manager: %w", err)
+		}
+
+		secretBytes, err := extractSecretValueFromSM(secret)
+		if err != nil {
+			return nil, fmt.Errorf("failed to extract secret value from AWS secrets manager: %w", err)
+		}
+
+		secretValue, err := parseSecretValueFromSM(secretBytes)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse secret value from AWS secrets manager: %w", err)
+		}
+
+		secretsMap[key] = string(secretValue)
 	}
 
 	return secretsMap, nil
@@ -126,39 +126,43 @@ func parseSecretValueFromSM(secretBytes []byte) ([]byte, error) {
 func getDataFromSSM(ctx context.Context, storeClient client, data map[string]string) (map[string]string, error) {
 	var secretsMap = make(map[string]string, len(data))
 	for key, value := range data {
-		if strings.Contains(value, "ssm:") {
-			parameteredSecret, err := storeClient.ssmClient.GetParameterWithContext(
-				ctx,
-				&ssm.GetParameterInput{
-					Name:           aws.String(value),
-					WithDecryption: aws.Bool(true),
-				})
-			if err != nil {
-				return nil, fmt.Errorf("failed to get secret from AWS SSM: %w", err)
-			}
-
-			secretsMap[key] = aws.StringValue(parameteredSecret.Parameter.Value)
+		if !strings.Contains(value, "ssm:") {
+			secretsMap[key] = value
 			continue
 		}
 
-		secretsMap[key] = value
+		parameteredSecret, err := storeClient.ssmClient.GetParameterWithContext(
+			ctx,
+			&ssm.GetParameterInput{
+				Name:           aws.String(value),
+				WithDecryption: aws.Bool(true),
+			})
+		if err != nil {
+			return nil, fmt.Errorf("failed to get secret from AWS SSM: %w", err)
+		}
+
+		secretsMap[key] = aws.StringValue(parameteredSecret.Parameter.Value)
 	}
 
 	return secretsMap, nil
 }
 func checkOtherStoreForSecrets(ctx context.Context, storeClient client, data map[string]string) (map[string]string, error) {
-	// we might ARN's that are from the other store type
+	// we might have ARN's that are from the other store type
 	for k, v := range data {
-		if valid, storeType := isValidPrefixWithStoreType(v); valid {
-			secretFromOtherStore, err := getDataFromStore(ctx, storeClient, storeType, map[string]string{k: v})
-			if err != nil {
-				return nil, fmt.Errorf("getting data from store failed: %w", err)
-			}
-
-			for key, value := range secretFromOtherStore {
-				data[key] = value
-			}
+		valid, storeType := isValidPrefixWithStoreType(v)
+		if !valid {
+			continue
 		}
+
+		secretFromOtherStore, err := getDataFromStore(ctx, storeClient, storeType, map[string]string{k: v})
+		if err != nil {
+			return nil, fmt.Errorf("getting data from store failed: %w", err)
+		}
+
+		for key, value := range secretFromOtherStore {
+			data[key] = value
+		}
+
 	}
 
 	return data, nil
