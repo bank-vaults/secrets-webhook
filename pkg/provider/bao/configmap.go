@@ -41,7 +41,7 @@ func (m *mutator) MutateConfigMap(ctx context.Context, mutateRequest provider.Co
 			TransitKeyID:     m.config.TransitKeyID,
 			TransitPath:      m.config.TransitPath,
 			TransitBatchSize: m.config.TransitBatchSize,
-		}, m.client, nil, m.logger)
+		}, m.client, nil /* baoinjector.SecretRenewer */, m.logger)
 
 	mutateRequest.ConfigMap.Data, err = injector.GetDataFromBao(mutateRequest.ConfigMap.Data)
 	if err != nil {

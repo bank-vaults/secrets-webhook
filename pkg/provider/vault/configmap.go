@@ -36,11 +36,12 @@ func (m *mutator) MutateConfigMap(ctx context.Context, mutateRequest provider.Co
 	}
 	defer m.client.Close()
 
-	injector := vaultinjector.NewSecretInjector(vaultinjector.Config{
-		TransitKeyID:     m.config.TransitKeyID,
-		TransitPath:      m.config.TransitPath,
-		TransitBatchSize: m.config.TransitBatchSize,
-	}, m.client, nil, m.logger)
+	injector := vaultinjector.NewSecretInjector(
+		vaultinjector.Config{
+			TransitKeyID:     m.config.TransitKeyID,
+			TransitPath:      m.config.TransitPath,
+			TransitBatchSize: m.config.TransitBatchSize,
+		}, m.client, nil /* vaultinjector.SecretRenewer */, m.logger)
 
 	mutateRequest.ConfigMap.Data, err = injector.GetDataFromVault(mutateRequest.ConfigMap.Data)
 	if err != nil {
