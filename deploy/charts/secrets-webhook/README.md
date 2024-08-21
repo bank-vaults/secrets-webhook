@@ -148,6 +148,11 @@ The following table lists the configurable parameters of the Helm chart.
 | `readinessProbe.periodSeconds` | int | `10` |  |
 | `readinessProbe.successThreshold` | int | `1` |  |
 | `readinessProbe.timeoutSeconds` | int | `1` |  |
+| `autoscaling.hpa.enabled` | bool | `true` | Enable autoscaling for the webhook deployment |
+| `autoscaling.hpa.minReplicas` | int | `1` |  |
+| `autoscaling.hpa.maxReplicas` | int | `5` |  |
+| `autoscaling.hpa.targetCPU` | int | `80` | Target CPU utilization percentage |
+| `autoscaling.hpa.targetMemory` | int | `80` | Target memory utilization percentage |
 | `rbac.psp.enabled` | bool | `false` | Use pod security policy |
 | `rbac.authDelegatorRole.enabled` | bool | `false` | Bind `system:auth-delegator` ClusterRoleBinding to given `serviceAccount` |
 | `serviceAccount.create` | bool | `true` | Specifies whether a service account should be created |
