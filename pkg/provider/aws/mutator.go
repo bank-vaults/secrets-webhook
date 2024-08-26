@@ -85,20 +85,29 @@ func (m *mutator) createAWSSession(ctx context.Context, k8sClient kubernetes.Int
 }
 
 func (m *mutator) createSessionUsingK8sSecretCredentials(ctx context.Context, k8sClient kubernetes.Interface) (session.Options, error) {
-	secret, err := k8sClient.CoreV1().Secrets(m.config.CredentialsNamespace).Get(
-		ctx,
-		m.config.CredentialsSecretName,
-		metav1.GetOptions{},
-	)
+	secret, err := m.getK8sSecretCredentials(ctx, k8sClient)
 	if err != nil {
-		return session.Options{}, fmt.Errorf("failed to get AWS credentials secret: %w", err)
+		return session.Options{}, fmt.Errorf("failed to get Kubernetes secret credentials: %w", err)
 	}
 
 	return session.Options{
 		SharedConfigState: session.SharedConfigDisable,
 		Config: aws.Config{
 			Region:      aws.String(m.config.Region),
-			Credentials: credentials.NewStaticCredentials(string(secret.Data["AWS_ACCESS_KEY_ID"]), string(secret.Data["AWS_SECRET_ACCESS_KEY"]), ""),
+			Credentials: credentials.NewStaticCredentials(string(secret["AWS_ACCESS_KEY_ID"]), string(secret["AWS_SECRET_ACCESS_KEY"]), ""),
 		},
 	}, nil
+}
+
+func (m *mutator) getK8sSecretCredentials(ctx context.Context, k8sClient kubernetes.Interface) (map[string][]byte, error) {
+	secret, err := k8sClient.CoreV1().Secrets(m.config.CredentialsNamespace).Get(
+		ctx,
+		m.config.CredentialsSecretName,
+		metav1.GetOptions{},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get AWS credentials secret: %w", err)
+	}
+
+	return secret.Data, nil
 }
