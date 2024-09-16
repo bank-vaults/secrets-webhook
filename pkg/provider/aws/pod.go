@@ -286,7 +286,6 @@ func (m *mutator) MutateContainers(ctx context.Context, containers []corev1.Cont
 					if err != nil {
 						return false, fmt.Errorf("failed to update secret: %w", err)
 					}
-
 				} else {
 					return false, fmt.Errorf("failed to create secret: %w", err)
 				}

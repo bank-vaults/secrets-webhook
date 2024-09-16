@@ -593,7 +593,6 @@ func Test_mutator_mutateContainers(t *testing.T) {
 	for _, tt := range tests {
 		ttp := tt
 		t.Run(ttp.name, func(t *testing.T) {
-
 			mutator := mutator{client: nil, config: &ttp.args.vaultConfig, logger: slog.Default()}
 			got, err := mutator.MutateContainers(context.Background(), ttp.args.containers, ttp.args.podSpec, ttp.args.webhookConfig, ttp.args.SecretInitConfig, ttp.fields.k8sClient, ttp.fields.registry)
 			if (err != nil) != ttp.wantErr {

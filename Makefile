@@ -45,6 +45,10 @@ build: ## Build binary
 	@mkdir -p build
 	go build -race -o build/webhook .
 
+.PHONY: artifacts
+artifacts: container-image helm-chart
+artifacts: ## Build docker image and helm chart
+
 .PHONY: container-image
 container-image: ## Build container image
 	docker build -t ${CONTAINER_IMAGE_REF} .
@@ -54,14 +58,10 @@ helm-chart: ## Build Helm chart
 	@mkdir -p build
 	$(HELM_BIN) package -d build/ deploy/charts/secrets-webhook
 
-.PHONY: artifacts
-artifacts: container-image helm-chart
-artifacts: ## Build docker image and helm chart
-
 ##@ Checks
 
 .PHONY: check
-check: test lint ## Run lint checks and tests
+check: test lint ## Run tests and lint checks
 
 .PHONY: test
 test: ## Run tests
@@ -81,7 +81,7 @@ lint: ## Run linters
 
 .PHONY: lint-go
 lint-go:
-	$(GOLANGCI_LINT_BIN) run $(if ${CI},--out-format github-actions,)
+	$(GOLANGCI_LINT_BIN) run $(if ${CI},--out-format colored-line-number,)
 
 .PHONY: lint-helm
 lint-helm:
@@ -95,14 +95,14 @@ lint-docker:
 lint-yaml:
 	$(YAMLLINT_BIN) $(if ${CI},-f github,) --no-warnings .
 
+.PHONY: fmt
+fmt: ## Format code
+	$(GOLANGCI_LINT_BIN) run --fix
+
 .PHONY: license-check
 license-check: ## Run license check
 	$(LICENSEI_BIN) check
 	$(LICENSEI_BIN) header
-
-.PHONY: fmt
-fmt: ## Format code
-	$(GOLANGCI_LINT_BIN) run --fix
 
 ##@ Autogeneration
 
@@ -120,11 +120,12 @@ deps: bin/golangci-lint bin/licensei bin/kind bin/kurun bin/helm bin/helm-docs
 deps: ## Install dependencies
 
 # Dependency versions
-GOLANGCI_VERSION = 1.53.3
-LICENSEI_VERSION = 0.8.0
-KIND_VERSION = 0.20.0
+GOLANGCI_LINT_VERSION = 1.61.0
+LICENSEI_VERSION = 0.9.0
+KIND_VERSION = 0.24.0
 KURUN_VERSION = 0.7.0
-HELM_DOCS_VERSION = 1.11.0
+HELM_VERSION = 3.16.1
+HELM_DOCS_VERSION = 1.14.2
 
 # Dependency binaries
 GOLANGCI_LINT_BIN := golangci-lint
@@ -150,7 +151,7 @@ endif
 
 bin/golangci-lint:
 	@mkdir -p bin
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | bash -s -- v${GOLANGCI_VERSION}
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | bash -s -- v${GOLANGCI_LINT_VERSION}
 
 bin/licensei:
 	@mkdir -p bin
@@ -168,7 +169,7 @@ bin/kurun:
 
 bin/helm:
 	@mkdir -p bin
-	curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | USE_SUDO=false HELM_INSTALL_DIR=bin bash
+	curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | USE_SUDO=false HELM_INSTALL_DIR=bin DESIRED_VERSION=v$(HELM_VERSION) bash
 	@chmod +x bin/helm
 
 bin/helm-docs:

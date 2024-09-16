@@ -37,7 +37,7 @@ type Config struct {
 	TLSSecretARN          string
 }
 
-func loadConfig(obj metav1.Object) (Config, error) {
+func loadConfig(obj metav1.Object) *Config {
 	config := Config{
 		ObjectNamespace: obj.GetNamespace(),
 	}
@@ -78,5 +78,5 @@ func loadConfig(obj metav1.Object) (Config, error) {
 		config.TLSSecretARN = viper.GetString(common.AWSTLSSecretARNEnvVar)
 	}
 
-	return config, nil
+	return &config
 }
