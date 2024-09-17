@@ -18,7 +18,6 @@ import (
 	"log/slog"
 	"strings"
 
-	"emperror.dev/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/provider"
@@ -29,13 +28,8 @@ const ProviderName = "aws"
 type Provider struct{}
 
 func (p *Provider) NewMutator(obj metav1.Object, logger *slog.Logger) (provider.Mutator, error) {
-	config, err := loadConfig(obj)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not load AWS configuration")
-	}
-
 	return &mutator{
-		config: &config,
+		config: loadConfig(obj),
 		logger: logger,
 	}, nil
 }

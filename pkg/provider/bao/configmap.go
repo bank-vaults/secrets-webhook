@@ -17,7 +17,7 @@ package bao
 import (
 	"context"
 
-	baoinjector "github.com/bank-vaults/internal/pkg/injector/bao"
+	baoinjector "github.com/bank-vaults/vault-sdk/injector/bao"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/provider"

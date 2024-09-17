@@ -138,11 +138,11 @@ The following table lists the configurable parameters of the Helm chart.
 | `podAnnotations` | object | `{}` | Extra annotations to add to pod metadata |
 | `labels` | object | `{}` | Extra labels to add to the deployment and pods |
 | `resources` | object | `{}` | Resources to request for the deployment and pods |
-| `nodeSelector` | object | `{}` | Node labels for pod assignment. Check: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector |
-| `tolerations` | list | `[]` | List of node tolerations for the pods. Check: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/ |
-| `affinity` | object | `{}` | Node affinity settings for the pods. Check: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/ |
-| `topologySpreadConstraints` | object | `{}` | TopologySpreadConstraints to add for the pods. Check: https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/ |
-| `priorityClassName` | string | `""` | Assign a PriorityClassName to pods if set. Check: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/ |
+| `nodeSelector` | object | `{}` | Node labels for pod assignment. Check: <https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector> |
+| `tolerations` | list | `[]` | List of node tolerations for the pods. Check: <https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/> |
+| `affinity` | object | `{}` | Node affinity settings for the pods. Check: <https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/> |
+| `topologySpreadConstraints` | object | `{}` | TopologySpreadConstraints to add for the pods. Check: <https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/> |
+| `priorityClassName` | string | `""` | Assign a PriorityClassName to pods if set. Check: <https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/> |
 | `livenessProbe` | object | `{"failureThreshold":3,"initialDelaySeconds":30,"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` | Liveness and readiness probes for the webhook container |
 | `readinessProbe.failureThreshold` | int | `3` |  |
 | `readinessProbe.periodSeconds` | int | `10` |  |
@@ -167,7 +167,7 @@ The following table lists the configurable parameters of the Helm chart.
 | `configMapFailurePolicy` | string | `"Ignore"` |  |
 | `podsFailurePolicy` | string | `"Ignore"` |  |
 | `secretsFailurePolicy` | string | `"Ignore"` |  |
-| `apiSideEffectValue` | string | `"NoneOnDryRun"` | Webhook sideEffect value Check: https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#side-effects |
+| `apiSideEffectValue` | string | `"NoneOnDryRun"` | Webhook sideEffect value Check: <https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#side-effects> |
 | `namespaceSelector` | object | `{}` | Namespace selector to use, will limit webhook scope (K8s version 1.15+) |
 | `objectSelector` | object | `{}` | Object selector to use, will limit webhook scope (K8s version 1.15+) |
 | `secrets.objectSelector` | object | `{}` | Object selector for secrets (overrides `objectSelector`); Requires K8s 1.15+ |

@@ -171,7 +171,6 @@ func secretNeedsMutation(secret *corev1.Secret) (bool, string, error) {
 					return false, "", fmt.Errorf("invalid auth type")
 				}
 			}
-
 		} else if valid, storeType := isValidPrefixWithStoreType(string(value)); valid {
 			return true, storeType, nil
 		}

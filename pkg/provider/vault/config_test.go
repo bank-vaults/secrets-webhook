@@ -227,7 +227,7 @@ func TestLoadConfig(t *testing.T) {
 				Path:                          "kubernetes",
 				SkipVerify:                    false,
 				TLSSecret:                     "",
-				ClientTimeout:                 time.Duration(10 * time.Second),
+				ClientTimeout:                 10 * time.Second,
 				UseAgent:                      false,
 				CtConfigMap:                   "",
 				CtImage:                       "hashicorp/consul-template:0.32.0",

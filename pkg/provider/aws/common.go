@@ -37,7 +37,7 @@ func getDataFromStore(ctx context.Context, storeClient client, storeType string,
 }
 
 func getDataFromSM(ctx context.Context, storeClient client, data map[string]string) (map[string]string, error) {
-	var secretsMap = make(map[string]string, len(data))
+	secretsMap := make(map[string]string, len(data))
 	for key, value := range data {
 		if !strings.Contains(value, "secretsmanager:") {
 			secretsMap[key] = value
@@ -124,7 +124,7 @@ func parseSecretValueFromSM(secretBytes []byte) ([]byte, error) {
 }
 
 func getDataFromSSM(ctx context.Context, storeClient client, data map[string]string) (map[string]string, error) {
-	var secretsMap = make(map[string]string, len(data))
+	secretsMap := make(map[string]string, len(data))
 	for key, value := range data {
 		if !strings.Contains(value, "ssm:") {
 			secretsMap[key] = value
@@ -146,6 +146,7 @@ func getDataFromSSM(ctx context.Context, storeClient client, data map[string]str
 
 	return secretsMap, nil
 }
+
 func checkOtherStoreForSecrets(ctx context.Context, storeClient client, data map[string]string) (map[string]string, error) {
 	// we might have ARN's that are from the other store type
 	for k, v := range data {
@@ -162,7 +163,6 @@ func checkOtherStoreForSecrets(ctx context.Context, storeClient client, data map
 		for key, value := range secretFromOtherStore {
 			data[key] = value
 		}
-
 	}
 
 	return data, nil
