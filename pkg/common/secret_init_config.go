@@ -91,25 +91,25 @@ func LoadSecretInitConfig(annotations map[string]string) SecretInitConfig {
 	if val, err := resource.ParseQuantity(viper.GetString(SecretInitCPURequestEnvVar)); err == nil {
 		secretInitConfig.CPURequest = val
 	} else {
-		secretInitConfig.CPURequest = resource.MustParse("50m")
+		secretInitConfig.CPURequest = resource.MustParse("100m")
 	}
 
 	if val, err := resource.ParseQuantity(viper.GetString(SecretInitMemoryRequestEnvVar)); err == nil {
 		secretInitConfig.MemoryRequest = val
 	} else {
-		secretInitConfig.MemoryRequest = resource.MustParse("64Mi")
+		secretInitConfig.MemoryRequest = resource.MustParse("128Mi")
 	}
 
 	if val, err := resource.ParseQuantity(viper.GetString(SecretInitCPULimitEnvVar)); err == nil {
 		secretInitConfig.CPULimit = val
 	} else {
-		secretInitConfig.CPULimit = resource.MustParse("250m")
+		secretInitConfig.CPULimit = resource.MustParse("500m")
 	}
 
 	if val, err := resource.ParseQuantity(viper.GetString(SecretInitMemoryLimitEnvVar)); err == nil {
 		secretInitConfig.MemoryLimit = val
 	} else {
-		secretInitConfig.MemoryLimit = resource.MustParse("64Mi")
+		secretInitConfig.MemoryLimit = resource.MustParse("256Mi")
 	}
 
 	return secretInitConfig
