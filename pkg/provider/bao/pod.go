@@ -177,6 +177,10 @@ func (m *mutator) MutatePod(ctx context.Context, mutateRequest provider.PodMutat
 		m.logger.Debug("Successfully appended pod spec volumes")
 	}
 
+	if m.config.AgentConfigMap != "" && m.config.UseAgent {
+		m.addAgentSecretsVolToContainers(mutateRequest.Pod.Spec.Containers)
+	}
+
 	if m.config.AgentConfigMap != "" && !m.config.UseAgent {
 		m.logger.Debug("Bao Agent config found")
 
@@ -598,6 +602,13 @@ func (m *mutator) getInitContainers(originalContainers []corev1.Container, podSe
 			Name:      "bao-agent-config",
 			MountPath: "/bao/agent/",
 		})
+
+		if m.config.CtConfigMap == "" {
+			containerVolMounts = append(containerVolMounts, corev1.VolumeMount{
+				Name:      "agent-secrets",
+				MountPath: m.config.ConfigfilePath,
+			})
+		}
 
 		securityContext := common.GetBaseSecurityContext(podSecurityContext, webhookConfig)
 		securityContext.Capabilities.Add = []corev1.Capability{

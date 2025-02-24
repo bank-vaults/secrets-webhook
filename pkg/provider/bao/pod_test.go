@@ -1695,6 +1695,200 @@ func Test_mutator_mutatePod(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "Will mutate pod and add agent-secrets volume when running bao agent as initcontainer",
+			fields: fields{
+				k8sClient: fake.NewSimpleClientset(),
+				registry: &MockRegistry{
+					Image: v1.Config{},
+				},
+			},
+			args: args{
+				pod: &corev1.Pod{
+					Spec: corev1.PodSpec{
+						InitContainers: []corev1.Container{
+							{
+								Name:    "MyInitContainer",
+								Image:   "myInitimage",
+								Command: []string{"/bin/bash"},
+								Args:    nil,
+								VolumeMounts: []corev1.VolumeMount{
+									{
+										MountPath: "/var/run/secrets/bao",
+									},
+								},
+							},
+						},
+						Containers: []corev1.Container{
+							{
+								Name:    "MyContainer",
+								Image:   "myimage",
+								Command: []string{"/bin/bash"},
+								Args:    nil,
+								VolumeMounts: []corev1.VolumeMount{
+									{
+										MountPath: "/var/run/secrets/bao",
+									},
+								},
+							},
+						},
+					},
+				},
+				webhookConfig: appCommon.Config{
+					RunAsNonRoot: true,
+					RunAsUser:    int64(1000),
+					RunAsGroup:   int64(1000),
+				},
+				secretInitConfig: appCommon.SecretInitConfig{
+					CPURequest:    resource.MustParse("50m"),
+					MemoryRequest: resource.MustParse("64Mi"),
+					CPULimit:      resource.MustParse("250m"),
+					MemoryLimit:   resource.MustParse("64Mi"),
+				},
+				baoConfig: Config{
+					AgentConfigMap: "config-map-test",
+					UseAgent:       true,
+					ConfigfilePath: "/bao/secrets",
+					// the rest are just defaults for the wantedPod spec..
+					Addr:                 "test",
+					SkipVerify:           false,
+					AgentImage:           "openbao/bao:latest",
+					AgentImagePullPolicy: "IfNotPresent",
+					// EnvCPURequest:                 resource.MustParse("50m"),
+					// EnvMemoryRequest:              resource.MustParse("64Mi"),
+					// EnvCPULimit:                   resource.MustParse("250m"),
+					// EnvMemoryLimit:                resource.MustParse("64Mi"),
+					ServiceAccountTokenVolumeName: "/var/run/secrets/bao",
+					// RunAsNonRoot:                  true,
+					// RunAsUser:                     int64(1000),
+					// RunAsGroup:                    int64(1000),
+				},
+			},
+			wantedPod: &corev1.Pod{
+				Spec: corev1.PodSpec{
+					InitContainers: []corev1.Container{
+						{
+							Name:            "bao-agent",
+							Image:           "openbao/bao:latest",
+							Command:         []string{"bao", "agent", "-config=/bao/agent/config.hcl", "-exit-after-auth"},
+							ImagePullPolicy: "IfNotPresent",
+							Env: []corev1.EnvVar{
+								{
+									Name:  "BAO_ADDR",
+									Value: "test",
+								},
+								{
+									Name:  "BAO_SKIP_VERIFY",
+									Value: "false",
+								},
+							},
+							Resources: corev1.ResourceRequirements{
+								Limits: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("250m"),
+									corev1.ResourceMemory: resource.MustParse("64Mi"),
+								},
+								Requests: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("50m"),
+									corev1.ResourceMemory: resource.MustParse("64Mi"),
+								},
+							},
+							SecurityContext: agentInitContainerSecurityContext,
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "secret-init",
+									MountPath: "/bao/",
+								},
+								{
+									MountPath: "/var/run/secrets/bao",
+								},
+								{
+									Name:      "bao-agent-config",
+									MountPath: "/bao/agent/",
+								},
+								{
+									Name:      "agent-secrets",
+									MountPath: "/bao/secrets",
+								},
+							},
+						},
+						{
+							Name:    "MyInitContainer",
+							Image:   "myInitimage",
+							Command: []string{"/bin/bash"},
+							Args:    nil,
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									MountPath: "/var/run/secrets/bao",
+								},
+							},
+						},
+					},
+					Containers: []corev1.Container{
+						{
+							Name:    "MyContainer",
+							Image:   "myimage",
+							Command: []string{"/bin/bash"},
+							Args:    nil,
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									MountPath: "/var/run/secrets/bao",
+								},
+								{
+									Name:      "agent-secrets",
+									MountPath: "/bao/secrets",
+								},
+							},
+						},
+					},
+					Volumes: []corev1.Volume{
+						{
+							Name: "secret-init",
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									Medium: corev1.StorageMediumMemory,
+								},
+							},
+						},
+						{
+							Name: "bao-agent-config",
+							VolumeSource: corev1.VolumeSource{
+								ConfigMap: &corev1.ConfigMapVolumeSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: "config-map-test",
+									},
+								},
+							},
+						},
+						{
+							Name: "agent-secrets",
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									Medium: corev1.StorageMediumMemory,
+								},
+							},
+						},
+						{
+							Name: "agent-configmap",
+							VolumeSource: corev1.VolumeSource{
+								ConfigMap: &corev1.ConfigMapVolumeSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: "config-map-test",
+									},
+									Items: []corev1.KeyToPath{
+										{
+											Key:  "config.hcl",
+											Path: "config.hcl",
+										},
+									},
+									DefaultMode: &defaultMode,
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
