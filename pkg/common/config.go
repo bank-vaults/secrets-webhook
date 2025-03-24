@@ -103,6 +103,8 @@ func LoadWebhookConfig(annotations map[string]string) Config {
 
 	if val, ok := annotations[ProviderAnnotation]; ok {
 		config.Provider = val
+	} else {
+		config.Provider = viper.GetString("PROVIDER")
 	}
 
 	return config
