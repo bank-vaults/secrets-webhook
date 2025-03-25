@@ -161,6 +161,7 @@ const (
 	ListenAddressEnvVar               = "listen_address"
 	TelemetryListenAddressEnvVar      = "telemetry_listen_address"
 	LogLevelEnvVar                    = "log_level"
+	ProviderEnvVar                    = "provider"
 
 	// Secret-init environment variables
 	SecretInitDaemonEnvVar          = "secret_init_daemon"
