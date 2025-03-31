@@ -74,7 +74,7 @@ func traverseObject(o interface{}, injector *vaultinjector.SecretInjector) error
 						return err
 					}
 
-					dataFromVault = strings.Replace(dataFromVault, vaultSecretReference[0], mapData["data"], -1)
+					dataFromVault = strings.ReplaceAll(dataFromVault, vaultSecretReference[0], mapData["data"])
 				}
 
 				e.Set(dataFromVault)
