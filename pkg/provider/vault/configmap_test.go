@@ -21,6 +21,7 @@ import (
 	"log/slog"
 	"testing"
 
+	"github.com/bank-vaults/secrets-webhook/pkg/provider"
 	"github.com/bank-vaults/vault-sdk/vault"
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/stretchr/testify/assert"
@@ -64,8 +65,13 @@ func TestMutateConfigMap(t *testing.T) {
 	k8sClient, err := kubernetes.NewForConfig(kubeConfig)
 	assert.NoError(t, err)
 
+	mutateRequest := &provider.ConfigMapMutateRequest{
+		ConfigMap:    &configMap,
+		K8sClient:    k8sClient,
+		K8sNamespace: "default",
+	}
 	mutator := mutator{client: client, config: &Config{}, logger: slog.Default()}
-	err = mutator.MutateConfigMap(context.Background(), &configMap, k8sClient, "default")
+	err = mutator.MutateConfigMap(context.Background(), *mutateRequest)
 
 	assert.NoError(t, err)
 

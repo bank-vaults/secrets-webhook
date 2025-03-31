@@ -74,7 +74,7 @@ func traverseObject(o interface{}, injector *baoinjector.SecretInjector) error {
 						return err
 					}
 
-					dataFromBao = strings.Replace(dataFromBao, baoSecretReference[0], mapData["data"], -1)
+					dataFromBao = strings.ReplaceAll(dataFromBao, baoSecretReference[0], mapData["data"])
 				}
 
 				e.Set(dataFromBao)
