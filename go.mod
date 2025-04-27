@@ -4,7 +4,7 @@ go 1.24.1
 
 require (
 	emperror.dev/errors v0.8.1
-	github.com/aws/aws-sdk-go v1.55.6
+	github.com/aws/aws-sdk-go v1.55.7
 	github.com/bank-vaults/secret-init v0.2.2
 	github.com/bank-vaults/vault-sdk v0.10.2
 	github.com/fsnotify/fsnotify v1.9.0
