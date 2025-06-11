@@ -143,7 +143,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	mutatingWebhook, err := webhook.NewMutatingWebhook(logger, k8sClient)
+	promRegistry := prometheus.NewRegistry()
+
+	mutatingWebhook, err := webhook.NewMutatingWebhook(logger, k8sClient, promRegistry)
 	if err != nil {
 		logger.Error(fmt.Errorf("error creating mutating webhook: %w", err).Error())
 		os.Exit(1)
@@ -153,7 +155,6 @@ func main() {
 
 	mutator := webhook.ErrorLoggerMutator(mutatingWebhook.SecretsMutator, whLogger)
 
-	promRegistry := prometheus.NewRegistry()
 	metricsRecorder, err := whmetrics.NewRecorder(whmetrics.RecorderConfig{Registry: promRegistry})
 	if err != nil {
 		logger.Error(fmt.Errorf("error creating metrics recorder: %w", err).Error())
