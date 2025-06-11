@@ -24,6 +24,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/secretsmanager"
 	"github.com/aws/aws-sdk-go/service/ssm"
+	"github.com/bank-vaults/secrets-webhook/pkg/provider/common"
+	"github.com/hashicorp/go-cleanhttp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -54,6 +56,8 @@ func (m *mutator) newClient(ctx context.Context, k8sClient kubernetes.Interface)
 }
 
 func (m *mutator) createAWSSession(ctx context.Context, k8sClient kubernetes.Interface) (*session.Session, error) {
+	common.AuthAttempts.WithLabelValues("aws").Inc()
+
 	// Loading session data from shared config is disabled by default and needs to be
 	// explicitly enabled via AWS_LOAD_FROM_SHARED_CONFIG
 	options := session.Options{
@@ -71,13 +75,19 @@ func (m *mutator) createAWSSession(ctx context.Context, k8sClient kubernetes.Int
 		var err error
 		options, err = m.createSessionUsingK8sSecretCredentials(ctx, k8sClient)
 		if err != nil {
+			common.AuthAttemptsErrors.WithLabelValues("aws", "kubernetes_error").Inc()
 			return nil, fmt.Errorf("failed to create session using Kubernetes secret credentials: %w", err)
 		}
 	}
 
+	client := cleanhttp.DefaultPooledClient()
+	client.Transport = common.InstrumentRoundTripper(client.Transport, "aws")
+	options.Config = *options.Config.WithHTTPClient(client)
+
 	// Create session
 	sess, err := session.NewSessionWithOptions(options)
 	if err != nil {
+		common.AuthAttemptsErrors.WithLabelValues("aws", "config_error").Inc()
 		return nil, fmt.Errorf("failed to create AWS session: %w", err)
 	}
 
