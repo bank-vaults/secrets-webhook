@@ -21,6 +21,7 @@ import (
 	"net/http"
 
 	"emperror.dev/errors"
+	"github.com/bank-vaults/secrets-webhook/pkg/provider/common"
 	bao "github.com/bank-vaults/vault-sdk/vault"
 	baoapi "github.com/hashicorp/vault/api"
 	authenticationv1 "k8s.io/api/authentication/v1"
@@ -35,8 +36,10 @@ type mutator struct {
 }
 
 func (m *mutator) newClient(ctx context.Context, k8sClient kubernetes.Interface, k8sNamespace string) error {
+	common.AuthAttempts.WithLabelValues("bao").Inc()
 	clientConfig := baoapi.DefaultConfig()
 	if clientConfig.Error != nil {
+		common.AuthAttemptsErrors.WithLabelValues("bao", "config_error").Inc()
 		return clientConfig.Error
 	}
 	clientConfig.Address = m.config.Addr
@@ -53,20 +56,32 @@ func (m *mutator) newClient(ctx context.Context, k8sClient kubernetes.Interface,
 			metav1.GetOptions{},
 		)
 		if err != nil {
+			common.AuthAttemptsErrors.WithLabelValues("bao", "kubernetes_error").Inc()
 			return errors.Wrap(err, "failed to read Bao TLS Secret")
 		}
 
 		pool := x509.NewCertPool()
 		ok := pool.AppendCertsFromPEM(tlsSecret.Data["ca.crt"])
 		if !ok {
+			common.AuthAttemptsErrors.WithLabelValues("bao", "config_error").Inc()
 			return errors.Errorf("error loading Bao CA PEM from TLS Secret: %s", tlsSecret.Name)
 		}
 		clientConfig.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs = pool
 	}
 
+	clientConfig.HttpClient.Transport = common.InstrumentRoundTripper(clientConfig.HttpClient.Transport, "bao")
+
+	clientOptions := []bao.ClientOption{
+		bao.ClientRole(m.config.Role),
+		bao.ClientAuthPath(m.config.Path),
+		bao.ClientLogger(&ClientLogger{Logger: m.logger}),
+		bao.VaultNamespace(m.config.BaoNamespace),
+	}
+
 	if m.config.BaoServiceAccount != "" {
 		sa, err := k8sClient.CoreV1().ServiceAccounts(m.config.ObjectNamespace).Get(ctx, m.config.BaoServiceAccount, metav1.GetOptions{})
 		if err != nil {
+			common.AuthAttemptsErrors.WithLabelValues("bao", "kubernetes_error").Inc()
 			return errors.Wrap(err, "Failed to retrieve specified service account on namespace "+m.config.ObjectNamespace)
 		}
 
@@ -74,6 +89,7 @@ func (m *mutator) newClient(ctx context.Context, k8sClient kubernetes.Interface,
 		if len(sa.Secrets) > 0 {
 			secret, err := k8sClient.CoreV1().Secrets(m.config.ObjectNamespace).Get(ctx, sa.Secrets[0].Name, metav1.GetOptions{})
 			if err != nil {
+				common.AuthAttemptsErrors.WithLabelValues("bao", "kubernetes_error").Inc()
 				return errors.Wrap(err, "Failed to retrieve secret for service account "+sa.Secrets[0].Name+" in namespace "+m.config.ObjectNamespace)
 			}
 
@@ -96,41 +112,32 @@ func (m *mutator) newClient(ctx context.Context, k8sClient kubernetes.Interface,
 				metav1.CreateOptions{},
 			)
 			if err != nil {
+				common.AuthAttemptsErrors.WithLabelValues("bao", "kubernetes_error").Inc()
 				return errors.Wrap(err, "Failed to create a token for the specified service account "+m.config.BaoServiceAccount+" on namespace "+m.config.ObjectNamespace)
 			}
 
 			saToken = token.Status.Token
 		}
 
-		baoClient, err := bao.NewClientFromConfig(
-			clientConfig,
-			bao.ClientRole(m.config.Role),
-			bao.ClientAuthPath(m.config.Path),
+		clientOptions = append(
+			clientOptions,
 			bao.NamespacedSecretAuthMethod,
-			bao.ClientLogger(&ClientLogger{Logger: m.logger}),
 			bao.ExistingSecret(saToken),
-			bao.VaultNamespace(m.config.BaoNamespace),
 		)
-		if err != nil {
-			return errors.Wrap(err, "failed to create Bao client")
-		}
-
-		m.client = baoClient
-
-		return nil
+	} else {
+		clientOptions = append(clientOptions, bao.ClientAuthMethod(m.config.AuthMethod))
 	}
 
 	baoClient, err := bao.NewClientFromConfig(
 		clientConfig,
-		bao.ClientRole(m.config.Role),
-		bao.ClientAuthPath(m.config.Path),
-		bao.ClientAuthMethod(m.config.AuthMethod),
-		bao.ClientLogger(&ClientLogger{Logger: m.logger}),
-		bao.VaultNamespace(m.config.BaoNamespace),
+		clientOptions...,
 	)
+
 	if err != nil {
+		common.AuthAttemptsErrors.WithLabelValues("bao", "config_error").Inc()
 		return errors.Wrap(err, "failed to create Bao client")
 	}
+
 	m.client = baoClient
 
 	return nil
