@@ -35,7 +35,7 @@ import (
 	"github.com/bank-vaults/secrets-webhook/pkg/provider"
 	awsprov "github.com/bank-vaults/secrets-webhook/pkg/provider/aws"
 	baoprov "github.com/bank-vaults/secrets-webhook/pkg/provider/bao"
-	commonprov "github.com/bank-vaults/secrets-webhook/pkg/provider/common"
+	providercommon "github.com/bank-vaults/secrets-webhook/pkg/provider/common"
 	vaultprov "github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 	"github.com/bank-vaults/secrets-webhook/pkg/registry"
 )
@@ -148,7 +148,7 @@ func NewMutatingWebhook(logger *slog.Logger, k8sClient kubernetes.Interface, met
 		namespace = string(namespaceBytes)
 	}
 
-	commonprov.RegisterMetrics(metricsRegistry)
+	providercommon.RegisterMetrics(metricsRegistry)
 
 	return &MutatingWebhook{
 		k8sClient: k8sClient,
