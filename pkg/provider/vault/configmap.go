@@ -43,14 +43,14 @@ func (m *mutator) MutateConfigMap(ctx context.Context, mutateRequest provider.Co
 			TransitBatchSize: m.config.TransitBatchSize,
 		}, m.client, nil /* vaultinjector.SecretRenewer */, m.logger)
 
-	mutateRequest.ConfigMap.Data, err = injector.GetDataFromVault(mutateRequest.ConfigMap.Data)
+	mutateRequest.ConfigMap.Data, err = injector.GetDataFromVaultWithContext(ctx, mutateRequest.ConfigMap.Data)
 	if err != nil {
 		return err
 	}
 
 	for key, value := range mutateRequest.ConfigMap.BinaryData {
 		if isValidPrefix(string(value)) {
-			mapData, err := injector.GetDataFromVault(map[string]string{
+			mapData, err := injector.GetDataFromVaultWithContext(ctx, map[string]string{
 				key: string(value),
 			})
 			if err != nil {

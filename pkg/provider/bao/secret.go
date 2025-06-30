@@ -59,13 +59,13 @@ func (m *mutator) MutateSecret(ctx context.Context, mutateRequest provider.Secre
 			return errors.Wrap(err, "unmarshal dockerconfig json failed")
 		}
 
-		err = mutateDockerCreds(mutateRequest.Secret, &dc, &injector)
+		err = mutateDockerCreds(ctx, mutateRequest.Secret, &dc, &injector)
 		if err != nil {
 			return errors.Wrap(err, "mutate dockerconfig json failed")
 		}
 	}
 
-	err = mutateSecretData(mutateRequest.Secret, &injector)
+	err = mutateSecretData(ctx, mutateRequest.Secret, &injector)
 	if err != nil {
 		return errors.Wrap(err, "mutate generic secret failed")
 	}
@@ -73,7 +73,7 @@ func (m *mutator) MutateSecret(ctx context.Context, mutateRequest provider.Secre
 	return nil
 }
 
-func mutateDockerCreds(secret *corev1.Secret, dc *common.DockerCredentials, injector *baoinjector.SecretInjector) error {
+func mutateDockerCreds(ctx context.Context, secret *corev1.Secret, dc *common.DockerCredentials, injector *baoinjector.SecretInjector) error {
 	assembled := common.DockerCredentials{Auths: map[string]common.DockerAuthConfig{}}
 	for key, creds := range dc.Auths {
 		authBytes, err := base64.StdEncoding.DecodeString(creds.Auth.(string))
@@ -92,7 +92,7 @@ func mutateDockerCreds(secret *corev1.Secret, dc *common.DockerCredentials, inje
 				return errors.Wrap(err, "assembling credential data failed")
 			}
 
-			dcCreds, err := injector.GetDataFromBao(credentialData)
+			dcCreds, err := injector.GetDataFromBaoWithContext(ctx, credentialData)
 			if err != nil {
 				return errors.Wrap(err, "retrieving data from bao failed")
 			}
@@ -111,13 +111,13 @@ func mutateDockerCreds(secret *corev1.Secret, dc *common.DockerCredentials, inje
 	return nil
 }
 
-func mutateSecretData(secret *corev1.Secret, injector *baoinjector.SecretInjector) error {
+func mutateSecretData(ctx context.Context, secret *corev1.Secret, injector *baoinjector.SecretInjector) error {
 	data := make(map[string]string, len(secret.Data))
 	for k := range secret.Data {
 		data[k] = string(secret.Data[k])
 	}
 
-	convertedData, err := injector.GetDataFromBao(data)
+	convertedData, err := injector.GetDataFromBaoWithContext(ctx, data)
 	if err != nil {
 		return err
 	}
