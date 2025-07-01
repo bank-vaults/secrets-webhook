@@ -129,7 +129,8 @@ func (m *mutator) newClient(ctx context.Context, k8sClient kubernetes.Interface,
 		)
 	}
 
-	vaultClient, err := vault.NewClientFromConfig(
+	vaultClient, err := vault.NewClientFromConfigWithContext(
+		ctx,
 		clientConfig,
 		clientOptions...,
 	)

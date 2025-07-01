@@ -179,6 +179,7 @@ func getImageConfig(ctx context.Context, client kubernetes.Interface, container 
 
 	options := []remote.Option{
 		remote.WithAuthFromKeychain(authChain),
+		remote.WithContext(ctx),
 	}
 
 	if registrySkipVerify {

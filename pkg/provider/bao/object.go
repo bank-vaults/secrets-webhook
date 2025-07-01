@@ -40,10 +40,10 @@ func (m *mutator) MutateObject(ctx context.Context, mutateRequest provider.Objec
 		TransitBatchSize: m.config.TransitBatchSize,
 	}, m.client, nil, m.logger)
 
-	return traverseObject(mutateRequest.Object.Object, &injector)
+	return traverseObject(ctx, mutateRequest.Object.Object, &injector)
 }
 
-func traverseObject(o interface{}, injector *baoinjector.SecretInjector) error {
+func traverseObject(ctx context.Context, o interface{}, injector *baoinjector.SecretInjector) error {
 	var iterator common.Iterator
 	switch value := o.(type) {
 	case map[string]interface{}:
@@ -60,7 +60,7 @@ func traverseObject(o interface{}, injector *baoinjector.SecretInjector) error {
 		switch s := e.Get().(type) {
 		case string:
 			if isValidPrefix(s) {
-				dataFromBao, err := injector.GetDataFromBao(map[string]string{"data": s})
+				dataFromBao, err := injector.GetDataFromBaoWithContext(ctx, map[string]string{"data": s})
 				if err != nil {
 					return err
 				}
@@ -69,7 +69,7 @@ func traverseObject(o interface{}, injector *baoinjector.SecretInjector) error {
 			} else if baoinjector.HasInlineBaoDelimiters(s) {
 				dataFromBao := s
 				for _, baoSecretReference := range baoinjector.FindInlineBaoDelimiters(s) {
-					mapData, err := injector.GetDataFromBao(map[string]string{"data": baoSecretReference[1]})
+					mapData, err := injector.GetDataFromBaoWithContext(ctx, map[string]string{"data": baoSecretReference[1]})
 					if err != nil {
 						return err
 					}
@@ -81,7 +81,7 @@ func traverseObject(o interface{}, injector *baoinjector.SecretInjector) error {
 			}
 
 		case map[string]interface{}, []interface{}:
-			err := traverseObject(e.Get(), injector)
+			err := traverseObject(ctx, e.Get(), injector)
 			if err != nil {
 				return err
 			}

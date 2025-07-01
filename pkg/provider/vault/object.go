@@ -40,10 +40,10 @@ func (m *mutator) MutateObject(ctx context.Context, mutateRequest provider.Objec
 		TransitBatchSize: m.config.TransitBatchSize,
 	}, m.client, nil, m.logger)
 
-	return traverseObject(mutateRequest.Object.Object, &injector)
+	return traverseObject(ctx, mutateRequest.Object.Object, &injector)
 }
 
-func traverseObject(o interface{}, injector *vaultinjector.SecretInjector) error {
+func traverseObject(ctx context.Context, o interface{}, injector *vaultinjector.SecretInjector) error {
 	var iterator common.Iterator
 	switch value := o.(type) {
 	case map[string]interface{}:
@@ -60,7 +60,7 @@ func traverseObject(o interface{}, injector *vaultinjector.SecretInjector) error
 		switch s := e.Get().(type) {
 		case string:
 			if isValidPrefix(s) {
-				dataFromVault, err := injector.GetDataFromVault(map[string]string{"data": s})
+				dataFromVault, err := injector.GetDataFromVaultWithContext(ctx, map[string]string{"data": s})
 				if err != nil {
 					return err
 				}
@@ -69,7 +69,7 @@ func traverseObject(o interface{}, injector *vaultinjector.SecretInjector) error
 			} else if vaultinjector.HasInlineVaultDelimiters(s) {
 				dataFromVault := s
 				for _, vaultSecretReference := range vaultinjector.FindInlineVaultDelimiters(s) {
-					mapData, err := injector.GetDataFromVault(map[string]string{"data": vaultSecretReference[1]})
+					mapData, err := injector.GetDataFromVaultWithContext(ctx, map[string]string{"data": vaultSecretReference[1]})
 					if err != nil {
 						return err
 					}
@@ -81,7 +81,7 @@ func traverseObject(o interface{}, injector *vaultinjector.SecretInjector) error
 			}
 
 		case map[string]interface{}, []interface{}:
-			err := traverseObject(e.Get(), injector)
+			err := traverseObject(ctx,e.Get(), injector)
 			if err != nil {
 				return err
 			}
