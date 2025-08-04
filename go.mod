@@ -14,7 +14,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/vault/api v1.20.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/prometheus/client_golang v1.22.0
+	github.com/prometheus/client_golang v1.23.0
 	github.com/samber/slog-multi v1.4.1
 	github.com/slok/kubewebhook/v2 v2.7.0
 	github.com/spf13/viper v1.20.1
