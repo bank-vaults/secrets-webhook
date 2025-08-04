@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/secretsmanager"
-	"github.com/aws/aws-sdk-go/service/ssm"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+	"github.com/aws/aws-sdk-go-v2/service/ssm"
 )
 
 func getDataFromStore(ctx context.Context, storeClient client, storeType string, data map[string]string) (map[string]string, error) {
@@ -44,7 +44,7 @@ func getDataFromSM(ctx context.Context, storeClient client, data map[string]stri
 			continue
 		}
 
-		secret, err := storeClient.smClient.GetSecretValueWithContext(
+		secret, err := storeClient.sm.GetSecretValue(
 			ctx,
 			&secretsmanager.GetSecretValueInput{
 				SecretId: aws.String(value),
@@ -78,7 +78,7 @@ func getDataFromSM(ctx context.Context, storeClient client, data map[string]stri
 func extractSecretValueFromSM(secret *secretsmanager.GetSecretValueOutput) ([]byte, error) {
 	// Secret available as string
 	if secret.SecretString != nil {
-		return []byte(aws.StringValue(secret.SecretString)), nil
+		return []byte(aws.ToString(secret.SecretString)), nil
 	}
 
 	// Secret available as binary
@@ -131,7 +131,7 @@ func getDataFromSSM(ctx context.Context, storeClient client, data map[string]str
 			continue
 		}
 
-		parameteredSecret, err := storeClient.ssmClient.GetParameterWithContext(
+		parameteredSecret, err := storeClient.ssm.GetParameter(
 			ctx,
 			&ssm.GetParameterInput{
 				Name:           aws.String(value),
@@ -141,7 +141,7 @@ func getDataFromSSM(ctx context.Context, storeClient client, data map[string]str
 			return nil, fmt.Errorf("failed to get secret from AWS SSM: %w", err)
 		}
 
-		secretsMap[key] = aws.StringValue(parameteredSecret.Parameter.Value)
+		secretsMap[key] = aws.ToString(parameteredSecret.Parameter.Value)
 	}
 
 	return secretsMap, nil

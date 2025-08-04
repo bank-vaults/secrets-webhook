@@ -18,12 +18,13 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/secretsmanager"
-	"github.com/aws/aws-sdk-go/service/ssm"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/bank-vaults/secrets-webhook/pkg/provider/common"
 	"github.com/hashicorp/go-cleanhttp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,76 +38,80 @@ type mutator struct {
 }
 
 type client struct {
-	smClient  *secretsmanager.SecretsManager
-	ssmClient *ssm.SSM
+	sm  *secretsmanager.Client
+	ssm *ssm.Client
 }
 
 func (m *mutator) newClient(ctx context.Context, k8sClient kubernetes.Interface) error {
-	sess, err := m.createAWSSession(ctx, k8sClient)
+	config, err := m.createAWSConfig(ctx, k8sClient)
 	if err != nil {
-		return fmt.Errorf("failed to create AWS session: %w", err)
+		return fmt.Errorf("failed to create AWS config: %w", err)
 	}
 
 	m.client = &client{
-		smClient:  secretsmanager.New(sess),
-		ssmClient: ssm.New(sess),
+		sm:  secretsmanager.NewFromConfig(*config),
+		ssm: ssm.NewFromConfig(*config),
 	}
 
 	return nil
 }
 
-func (m *mutator) createAWSSession(ctx context.Context, k8sClient kubernetes.Interface) (*session.Session, error) {
+func (m *mutator) createAWSConfig(ctx context.Context, k8sClient kubernetes.Interface) (*aws.Config, error) {
 	common.AuthAttempts.WithLabelValues("aws").Inc()
 
-	// Loading session data from shared config is disabled by default and needs to be
-	// explicitly enabled via AWS_LOAD_FROM_SHARED_CONFIG
-	options := session.Options{
-		SharedConfigState: session.SharedConfigDisable,
-		Config: aws.Config{
-			Region: aws.String(m.config.Region),
-		},
+	httpClient := cleanhttp.DefaultPooledClient()
+	httpClient.Transport = common.InstrumentRoundTripper(httpClient.Transport, "aws")
+
+	if m.config.LoadFromSecret {
+		return m.createConfigUsingK8sSecretCredentials(ctx, k8sClient, httpClient)
 	}
 
-	// Enable loading session data from mounted .aws directory
-	if m.config.LoadFromSharedConfig {
-		options.SharedConfigState = session.SharedConfigEnable
-	} else {
-		// Create session using Kubernetes secret credentials
-		var err error
-		options, err = m.createSessionUsingK8sSecretCredentials(ctx, k8sClient)
-		if err != nil {
-			common.AuthAttemptsErrors.WithLabelValues("aws", "kubernetes_error").Inc()
-			return nil, fmt.Errorf("failed to create session using Kubernetes secret credentials: %w", err)
-		}
-	}
-
-	client := cleanhttp.DefaultPooledClient()
-	client.Transport = common.InstrumentRoundTripper(client.Transport, "aws")
-	options.Config = *options.Config.WithHTTPClient(client)
-
-	// Create session
-	sess, err := session.NewSessionWithOptions(options)
+	config, err := config.LoadDefaultConfig(ctx, config.WithRegion(m.config.Region), config.WithHTTPClient(httpClient))
 	if err != nil {
 		common.AuthAttemptsErrors.WithLabelValues("aws", "config_error").Inc()
-		return nil, fmt.Errorf("failed to create AWS session: %w", err)
+		return nil, fmt.Errorf("failed to load AWS config: %w", err)
 	}
 
-	return sess, nil
+	return &config, nil
 }
 
-func (m *mutator) createSessionUsingK8sSecretCredentials(ctx context.Context, k8sClient kubernetes.Interface) (session.Options, error) {
+func (m *mutator) createConfigUsingK8sSecretCredentials(ctx context.Context, k8sClient kubernetes.Interface, httpClient *http.Client) (*aws.Config, error) {
 	secret, err := m.getK8sSecretCredentials(ctx, k8sClient)
 	if err != nil {
-		return session.Options{}, fmt.Errorf("failed to get Kubernetes secret credentials: %w", err)
+		common.AuthAttemptsErrors.WithLabelValues("aws", "kubernetes_error").Inc()
+		return nil, fmt.Errorf("failed to get AWS credentials from Kubernetes secret: %w", err)
 	}
 
-	return session.Options{
-		SharedConfigState: session.SharedConfigDisable,
-		Config: aws.Config{
-			Region:      aws.String(m.config.Region),
-			Credentials: credentials.NewStaticCredentials(string(secret["AWS_ACCESS_KEY_ID"]), string(secret["AWS_SECRET_ACCESS_KEY"]), ""),
-		},
-	}, nil
+	awsAccessKeyID, ok := secret["aws_access_key_id"]
+	if !ok {
+		common.AuthAttemptsErrors.WithLabelValues("aws", "kubernetes_error").Inc()
+		return nil, fmt.Errorf("AWS access key ID not found in Kubernetes secret")
+	}
+	awsSecretAccessKey, ok := secret["aws_secret_access_key"]
+	if !ok {
+		common.AuthAttemptsErrors.WithLabelValues("aws", "kubernetes_error").Inc()
+		return nil, fmt.Errorf("AWS secret access key not found in Kubernetes secret")
+	}
+	sessionToken, ok := secret["aws_session_token"]
+	if !ok {
+		sessionToken = []byte("")
+	}
+
+	config, err := config.LoadDefaultConfig(ctx,
+		config.WithRegion(m.config.Region),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+			string(awsAccessKeyID),
+			string(awsSecretAccessKey),
+			string(sessionToken),
+		)),
+		config.WithHTTPClient(httpClient),
+	)
+	if err != nil {
+		common.AuthAttemptsErrors.WithLabelValues("aws", "kubernetes_error").Inc()
+		return nil, fmt.Errorf("failed to load AWS config with Kubernetes credentials: %w", err)
+	}
+
+	return &config, nil
 }
 
 func (m *mutator) getK8sSecretCredentials(ctx context.Context, k8sClient kubernetes.Interface) (map[string][]byte, error) {

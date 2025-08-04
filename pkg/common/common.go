@@ -137,7 +137,7 @@ const (
 
 	// AWS annotations
 	AWSRegionAnnotation                = WebhookAnnotationPrefix + "aws-region"
-	AWSLoadFromSharedConfigAnnotation  = WebhookAnnotationPrefix + "aws-load-from-shared-config"
+	AWSLoadFromSecret                  = WebhookAnnotationPrefix + "aws-load-from-secret"
 	AWSCredentialsNamespaceAnnotation  = WebhookAnnotationPrefix + "credentials-namespace"
 	AWSCredentialsSecretNameAnnotation = WebhookAnnotationPrefix + "credentials-secret-name"
 	AWSTLSSecretARNAnnotation          = WebhookAnnotationPrefix + "aws-tls-secret-arn"
@@ -230,7 +230,7 @@ const (
 
 	// AWS environment variables
 	AWSRegionEnvVar                = "aws_region"
-	AWSLoadFromSharedConfigEnvVar  = "aws_load_from_shared_config"
+	AWSLoadFromSecretEnvVar        = "aws_load_from_secret"
 	AWSCredentialsNamespaceEnvVar  = "aws_credentials_namespace"
 	AWSCredentialsSecretNameEnvVar = "aws_credentials_secret_name"
 	AWSTLSSecretARNEnvVar          = "aws_tls_secret_arn"

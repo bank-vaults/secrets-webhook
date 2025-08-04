@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws/arn"
+	"github.com/aws/aws-sdk-go-v2/aws/arn"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/provider"

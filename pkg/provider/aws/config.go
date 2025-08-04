@@ -31,7 +31,7 @@ const (
 type Config struct {
 	ObjectNamespace       string
 	Region                string
-	LoadFromSharedConfig  bool
+	LoadFromSecret        bool
 	CredentialsNamespace  string
 	CredentialsSecretName string
 	TLSSecretARN          string
@@ -50,10 +50,10 @@ func loadConfig(obj metav1.Object) *Config {
 		config.Region = viper.GetString(common.AWSRegionEnvVar)
 	}
 
-	if val, ok := annotations[common.AWSLoadFromSharedConfigAnnotation]; ok {
-		config.LoadFromSharedConfig, _ = strconv.ParseBool(val)
+	if val, ok := annotations[common.AWSLoadFromSecret]; ok {
+		config.LoadFromSecret, _ = strconv.ParseBool(val)
 	} else {
-		config.LoadFromSharedConfig = viper.GetBool(common.AWSLoadFromSharedConfigEnvVar)
+		config.LoadFromSecret = viper.GetBool(common.AWSLoadFromSecretEnvVar)
 	}
 
 	if val, ok := annotations[common.AWSCredentialsNamespaceAnnotation]; ok {
