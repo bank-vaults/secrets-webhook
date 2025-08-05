@@ -40,7 +40,7 @@ func TestNewVaultClientMetrics(t *testing.T) {
 		setupK8s      func(t *testing.T) *fake.Clientset
 	}{
 		{
-			name: "successful aws session with secret",
+			name: "successful aws config with secret",
 			config: Config{
 				CredentialsNamespace:  defaultCredentialsNamespace,
 				CredentialsSecretName: defaultCredentialsSecretName,
@@ -62,8 +62,10 @@ func TestNewVaultClientMetrics(t *testing.T) {
 			expectedError: false,
 		},
 		{
-			name:   "error when secret not found",
-			config: Config{},
+			name: "error when secret not found",
+			config: Config{
+				LoadFromSecret: true,
+			},
 			setupK8s: func(t *testing.T) *fake.Clientset {
 				return fake.NewSimpleClientset()
 			},
@@ -82,17 +84,16 @@ func TestNewVaultClientMetrics(t *testing.T) {
 				logger: logger,
 			}
 
-			sess, err := mutator.createAWSSession(t.Context(), k8sClient)
-
+			config, err := mutator.createAWSConfig(t.Context(), k8sClient)
 			assert.Equal(t, float64(1), testutil.ToFloat64(common.AuthAttempts.WithLabelValues("aws")), "AuthAttempts should be incremented")
 			if tt.expectedError {
 				assert.Equal(t, float64(1), testutil.ToFloat64(common.AuthAttemptsErrors.WithLabelValues("aws", "kubernetes_error")), "AuthAttemptsErrors should be incremented on error")
 				assert.Error(t, err)
-				assert.Nil(t, sess)
+				assert.Nil(t, config)
 			} else {
 				assert.Equal(t, float64(0), testutil.ToFloat64(common.AuthAttemptsErrors.WithLabelValues("aws", "kubernetes_error")), "AuthAttemptsErrors should not be incremented on success")
 				assert.NoError(t, err)
-				assert.NotNil(t, sess)
+				assert.NotNil(t, config)
 			}
 		})
 	}

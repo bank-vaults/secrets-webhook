@@ -19,10 +19,9 @@ import (
 	"context"
 	"encoding/pem"
 	"fmt"
-	"strconv"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/acm"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/acm"
 	secretInitCommon "github.com/bank-vaults/secret-init/pkg/common"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -170,10 +169,6 @@ func (m *mutator) MutateContainers(ctx context.Context, containers []corev1.Cont
 				Name:  secretInitCommon.JSONLogEnv,
 				Value: secretInitConfig.JSONLog,
 			},
-			{
-				Name:  "AWS_LOAD_FROM_SHARED_CONFIG",
-				Value: strconv.FormatBool(m.config.LoadFromSharedConfig),
-			},
 		}...)
 
 		if !common.IsLogLevelSet(container.Env) && secretInitConfig.LogLevel != "" {
@@ -206,12 +201,12 @@ func (m *mutator) MutateContainers(ctx context.Context, containers []corev1.Cont
 			})
 		}
 
-		sess, err := m.createAWSSession(ctx, k8sClient)
+		config, err := m.createAWSConfig(ctx, k8sClient)
 		if err != nil {
-			return false, fmt.Errorf("failed to create AWS session: %w", err)
+			return false, fmt.Errorf("failed to create AWS config: %w", err)
 		}
 
-		creds, err := sess.Config.Credentials.GetWithContext(ctx)
+		creds, err := config.Credentials.Retrieve(ctx)
 		if err != nil {
 			return false, fmt.Errorf("failed to get AWS credentials: %w", err)
 		}
@@ -238,7 +233,7 @@ func (m *mutator) MutateContainers(ctx context.Context, containers []corev1.Cont
 		}
 
 		if m.config.TLSSecretARN != "" {
-			cert, err := acm.New(sess).GetCertificate(&acm.GetCertificateInput{
+			cert, err := acm.NewFromConfig(*config).GetCertificate(ctx, &acm.GetCertificateInput{
 				CertificateArn: aws.String(m.config.TLSSecretARN),
 			})
 			if err != nil {
@@ -414,7 +409,7 @@ func encodeCertificates(cert *acm.GetCertificateOutput) (bytes.Buffer, error) {
 	var pemBuffer bytes.Buffer
 
 	// Decode and re-encode the main certificate
-	if block, _ := pem.Decode([]byte(aws.StringValue(cert.Certificate))); block != nil {
+	if block, _ := pem.Decode([]byte(aws.ToString(cert.Certificate))); block != nil {
 		err := pem.Encode(&pemBuffer, block)
 		if err != nil {
 			return pemBuffer, fmt.Errorf("failed to encode main certificate: %w", err)
@@ -424,7 +419,7 @@ func encodeCertificates(cert *acm.GetCertificateOutput) (bytes.Buffer, error) {
 	}
 
 	// Decode and re-encode the certificate chain
-	chainData := []byte(aws.StringValue(cert.CertificateChain))
+	chainData := []byte(aws.ToString(cert.CertificateChain))
 	for len(chainData) > 0 {
 		var block *pem.Block
 		block, chainData = pem.Decode(chainData)
