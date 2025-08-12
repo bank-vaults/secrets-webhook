@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.37.2
 	github.com/aws/aws-sdk-go-v2/config v1.29.17
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.70
-	github.com/aws/aws-sdk-go-v2/service/acm v1.34.1
+	github.com/aws/aws-sdk-go-v2/service/acm v1.35.0
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.35.2
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.62.0
 	github.com/bank-vaults/secret-init v0.3.1
