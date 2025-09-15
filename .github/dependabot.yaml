@@ -17,6 +17,9 @@ updates:
       sigs.k8s.io:
         patterns:
           - "sigs.k8s.io/*"
+      github.com/aws/aws-sdk-go-v2:
+        patterns:
+          - "github.com/aws/aws-sdk-go-v2*"
 
   - package-ecosystem: "docker"
     directory: "/"
