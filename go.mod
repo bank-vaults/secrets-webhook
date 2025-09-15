@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.18.12
 	github.com/aws/aws-sdk-go-v2/service/acm v1.37.2
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.39.4
-	github.com/aws/aws-sdk-go-v2/service/ssm v1.64.2
+	github.com/aws/aws-sdk-go-v2/service/ssm v1.64.4
 	github.com/bank-vaults/secret-init v0.3.1
 	github.com/bank-vaults/vault-sdk v0.11.1
 	github.com/fsnotify/fsnotify v1.9.0
