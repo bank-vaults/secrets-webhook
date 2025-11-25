@@ -12,8 +12,6 @@ kind: Build
 type: container
 name: secrets-webhook-image
 exclude:
-  - .direnv/**/*
-  - .devenv/**/*
   - build/**/*
   - e2e/**/*
   - examples/**/*
