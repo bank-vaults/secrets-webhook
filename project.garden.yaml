@@ -17,8 +17,6 @@ providers:
 
 scan:
   exclude:
-    - .direnv/**/*
-    - .devenv/**/*
     - build/**/*
     - e2e/**/*
     - examples/**/*
