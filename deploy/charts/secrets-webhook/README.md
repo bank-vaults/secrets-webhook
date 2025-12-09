@@ -122,7 +122,7 @@ The following table lists the configurable parameters of the Helm chart.
 | `webhookClientConfig.useUrl` | bool | `false` | Use url if webhook should be contacted over loadbalancer or ingress instead of service object. By default, the mutating webhook uses the service of the webhook directly to contact webhook. |
 | `webhookClientConfig.url` | string | `"https://example.com"` | Set the url how the webhook should be contacted, including the protocol |
 | `secretInit.repository` | string | `"ghcr.io/bank-vaults/secret-init"` | Container image repo that contains the secret-init container |
-| `secretInit.tag` | string | `"v0.3.1"` | Container image tag for the secret-init container |
+| `secretInit.tag` | string | `"v0.3.2"` | Container image tag for the secret-init container |
 | `env` | object | `{}` | Custom environment variables available to webhook |
 | `initContainers` | list | `[]` | Containers to run before the webhook containers are started |
 | `metrics.enabled` | bool | `false` | Enable metrics service for the webhook |
