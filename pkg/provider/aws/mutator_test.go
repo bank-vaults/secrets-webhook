@@ -46,7 +46,7 @@ func TestNewVaultClientMetrics(t *testing.T) {
 				CredentialsSecretName: defaultCredentialsSecretName,
 			},
 			setupK8s: func(t *testing.T) *fake.Clientset {
-				return fake.NewSimpleClientset(
+				return fake.NewClientset(
 					&corev1.Secret{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "aws-credentials",
@@ -67,7 +67,7 @@ func TestNewVaultClientMetrics(t *testing.T) {
 				LoadFromSecret: true,
 			},
 			setupK8s: func(t *testing.T) *fake.Clientset {
-				return fake.NewSimpleClientset()
+				return fake.NewClientset()
 			},
 			expectedError: true,
 		},
