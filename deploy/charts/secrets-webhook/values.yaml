@@ -73,12 +73,12 @@ secretInit:
   # -- Container image repo that contains the secret-init container
   repository: ghcr.io/bank-vaults/secret-init
   # -- Container image tag for the secret-init container
-  tag: "v0.3.2"
+  tag: "v0.4.0"
 
 # -- Custom environment variables available to webhook
 env: {}
   ## -- Vault image
-  # VAULT_IMAGE: hashicorp/vault:1.14.8
+  # VAULT_IMAGE: hashicorp/vault:2.0.1
   # VAULT_CAPATH: /vault/tls
 
   ## -- Used when the pod that should get secret injected does not specify an imagePullSecret
