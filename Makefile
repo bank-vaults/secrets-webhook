@@ -126,9 +126,9 @@ deps: ## Install dependencies
 # Dependency versions
 GOLANGCI_LINT_VERSION = 2.12.2
 LICENSEI_VERSION = 0.9.0
-KIND_VERSION = 0.30.0
+KIND_VERSION = 0.31.0
 KURUN_VERSION = 0.7.0
-HELM_VERSION = 4.0.1
+HELM_VERSION = 4.2.0
 HELM_DOCS_VERSION = 1.14.2
 
 # Dependency binaries
