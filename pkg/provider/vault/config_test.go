@@ -36,6 +36,10 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			name: "Handle deprecated annotations all",
+			envVars: map[string]string{
+				common.VaultAddrAllowlistEnvVar:         "http://vault.example.com",
+				common.VaultAllowObjectSkipVerifyEnvVar: "true",
+			},
 			annotations: map[string]string{
 				common.VaultAddrAnnotationDeprecated:                                 "http://vault.example.com",
 				common.VaultImageAnnotationDeprecated:                                "vault:latest",
@@ -124,6 +128,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			name: "Handle deprecated annotations mixed",
+			envVars: map[string]string{
+				common.VaultAddrAllowlistEnvVar: "https://vault.newexample.com",
+			},
 			annotations: map[string]string{
 				common.VaultAddrAnnotationDeprecated:                                 "https://vault.newexample.com",
 				common.VaultImageAnnotation:                                          "vault:1.7.0",
@@ -279,6 +286,105 @@ func TestLoadConfig(t *testing.T) {
 			assert.NoError(t, err)
 
 			assert.Equal(t, ttp.configWant, config)
+		})
+	}
+}
+
+func TestLoadConfig_AddressHardening(t *testing.T) {
+	tests := []struct {
+		name           string
+		annotations    map[string]string
+		envVars        map[string]string
+		wantErr        bool
+		wantAddr       string
+		wantSkipVerify bool
+	}{
+		{
+			name: "object addr override rejected when not in allowlist",
+			annotations: map[string]string{
+				common.VaultAddrAnnotation: "https://evil.attacker.com",
+			},
+			wantErr: true,
+		},
+		{
+			name: "object addr override rejected for IMDS link-local",
+			annotations: map[string]string{
+				common.VaultAddrAnnotation: "http://169.254.169.254/latest/meta-data/",
+			},
+			envVars: map[string]string{
+				common.VaultAddrAllowlistEnvVar: "http://169.254.169.254/latest/meta-data/",
+			},
+			wantErr: true,
+		},
+		{
+			name: "object addr override accepted when allowlisted",
+			annotations: map[string]string{
+				common.VaultAddrAnnotation: "https://vault.prod.svc:8200",
+			},
+			envVars: map[string]string{
+				common.VaultAddrAllowlistEnvVar: "https://vault.prod.svc:8200",
+			},
+			wantErr:  false,
+			wantAddr: "https://vault.prod.svc:8200",
+		},
+		{
+			name:        "operator-configured addr is trusted and never validated",
+			annotations: map[string]string{},
+			envVars: map[string]string{
+				common.VaultAddrEnvVar: "https://10.0.0.5:8200",
+			},
+			wantErr:  false,
+			wantAddr: "https://10.0.0.5:8200",
+		},
+		{
+			name: "object skip-verify ignored by default",
+			annotations: map[string]string{
+				common.VaultAddrAnnotation:       "https://vault.prod.svc:8200",
+				common.VaultSkipVerifyAnnotation: "true",
+			},
+			envVars: map[string]string{
+				common.VaultAddrAllowlistEnvVar: "https://vault.prod.svc:8200",
+			},
+			wantErr:        false,
+			wantAddr:       "https://vault.prod.svc:8200",
+			wantSkipVerify: false,
+		},
+		{
+			name: "object skip-verify honored when operator opts in",
+			annotations: map[string]string{
+				common.VaultAddrAnnotation:       "https://vault.prod.svc:8200",
+				common.VaultSkipVerifyAnnotation: "true",
+			},
+			envVars: map[string]string{
+				common.VaultAddrAllowlistEnvVar:         "https://vault.prod.svc:8200",
+				common.VaultAllowObjectSkipVerifyEnvVar: "true",
+			},
+			wantErr:        false,
+			wantAddr:       "https://vault.prod.svc:8200",
+			wantSkipVerify: true,
+		},
+	}
+
+	for _, tt := range tests {
+		ttp := tt
+		t.Run(ttp.name, func(t *testing.T) {
+			for key, value := range ttp.envVars {
+				viper.Set(key, value)
+			}
+			t.Cleanup(func() {
+				viper.Reset()
+				os.Clearenv()
+			})
+
+			config, err := loadConfig(&metav1.ObjectMeta{Annotations: ttp.annotations})
+			if ttp.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.Equal(t, ttp.wantAddr, config.Addr)
+			assert.Equal(t, ttp.wantSkipVerify, config.SkipVerify)
 		})
 	}
 }
