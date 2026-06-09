@@ -88,12 +88,21 @@ func loadConfig(obj metav1.Object) (Config, error) {
 
 	annotations := obj.GetAnnotations()
 
+	addrFromObject := false
 	if val, ok := annotations[common.VaultAddrAnnotation]; ok {
 		config.Addr = val
+		addrFromObject = true
 	} else if val, ok := annotations[common.VaultAddrAnnotationDeprecated]; ok {
 		config.Addr = val
+		addrFromObject = true
 	} else {
 		config.Addr = viper.GetString(common.VaultAddrEnvVar)
+	}
+
+	if addrFromObject {
+		if err := common.ValidateObjectAddr(config.Addr, vaultAddrPolicy()); err != nil {
+			return Config{}, errors.Wrap(err, "rejected Vault address from object annotation")
+		}
 	}
 
 	if val, ok := annotations[common.VaultRoleAnnotation]; ok {
@@ -139,9 +148,9 @@ func loadConfig(obj metav1.Object) (Config, error) {
 	}
 
 	if val, ok := annotations[common.VaultSkipVerifyAnnotation]; ok {
-		config.SkipVerify, _ = strconv.ParseBool(val)
+		config.SkipVerify = common.ResolveObjectSkipVerify(val, common.VaultAllowObjectSkipVerifyEnvVar, common.VaultSkipVerifyEnvVar)
 	} else if val, ok := annotations[common.VaultSkipVerifyAnnotationDeprecated]; ok {
-		config.SkipVerify, _ = strconv.ParseBool(val)
+		config.SkipVerify = common.ResolveObjectSkipVerify(val, common.VaultAllowObjectSkipVerifyEnvVar, common.VaultSkipVerifyEnvVar)
 	} else {
 		config.SkipVerify = viper.GetBool(common.VaultSkipVerifyEnvVar)
 	}
@@ -445,6 +454,18 @@ func loadConfig(obj metav1.Object) (Config, error) {
 	return config, nil
 }
 
+func vaultAddrPolicy() common.AddrPolicy {
+	allowlist := common.SplitAndTrim(viper.GetString(common.VaultAddrAllowlistEnvVar))
+	if addr := viper.GetString(common.VaultAddrEnvVar); addr != "" {
+		allowlist = append(allowlist, addr) // trusted operator default is implicitly allowed
+	}
+
+	return common.AddrPolicy{
+		Allowlist:    allowlist,
+		AllowPrivate: viper.GetBool(common.VaultAllowPrivateAddrEnvVar),
+	}
+}
+
 func setDefaults() {
 	viper.SetDefault(common.VaultImageEnvVar, "hashicorp/vault:latest")
 	viper.SetDefault(common.VaultImagePullPolicyEnvVar, string(corev1.PullIfNotPresent))
@@ -452,6 +473,9 @@ func setDefaults() {
 	viper.SetDefault(common.VaultCTPullPolicyEnvVar, string(corev1.PullIfNotPresent))
 	viper.SetDefault(common.VaultAddrEnvVar, "https://vault:8200")
 	viper.SetDefault(common.VaultSkipVerifyEnvVar, "false")
+	viper.SetDefault(common.VaultAddrAllowlistEnvVar, "")
+	viper.SetDefault(common.VaultAllowObjectSkipVerifyEnvVar, "false")
+	viper.SetDefault(common.VaultAllowPrivateAddrEnvVar, "false")
 	viper.SetDefault(common.VaultPathEnvVar, "kubernetes")
 	viper.SetDefault(common.VaultAuthMethodEnvVar, "jwt")
 	viper.SetDefault(common.VaultRoleEnvVar, "")

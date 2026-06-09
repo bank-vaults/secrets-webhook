@@ -85,10 +85,18 @@ func LoadConfig(obj metav1.Object) (Config, error) {
 
 	annotations := obj.GetAnnotations()
 
+	addrFromObject := false
 	if val, ok := annotations[common.BaoAddrAnnotation]; ok {
 		config.Addr = val
+		addrFromObject = true
 	} else {
 		config.Addr = viper.GetString(common.BaoAddrEnvVar)
+	}
+
+	if addrFromObject {
+		if err := common.ValidateObjectAddr(config.Addr, baoAddrPolicy()); err != nil {
+			return Config{}, errors.Wrap(err, "rejected Bao address from object annotation")
+		}
 	}
 
 	if val, ok := annotations[common.BaoRoleAnnotation]; ok {
@@ -126,7 +134,7 @@ func LoadConfig(obj metav1.Object) (Config, error) {
 	}
 
 	if val, ok := annotations[common.BaoSkipVerifyAnnotation]; ok {
-		config.SkipVerify, _ = strconv.ParseBool(val)
+		config.SkipVerify = common.ResolveObjectSkipVerify(val, common.BaoAllowObjectSkipVerifyEnvVar, common.BaoSkipVerifyEnvVar)
 	} else {
 		config.SkipVerify = viper.GetBool(common.BaoSkipVerifyEnvVar)
 	}
@@ -355,6 +363,18 @@ func LoadConfig(obj metav1.Object) (Config, error) {
 	return config, nil
 }
 
+func baoAddrPolicy() common.AddrPolicy {
+	allowlist := common.SplitAndTrim(viper.GetString(common.BaoAddrAllowlistEnvVar))
+	if addr := viper.GetString(common.BaoAddrEnvVar); addr != "" {
+		allowlist = append(allowlist, addr) // trusted operator default is implicitly allowed
+	}
+
+	return common.AddrPolicy{
+		Allowlist:    allowlist,
+		AllowPrivate: viper.GetBool(common.BaoAllowPrivateAddrEnvVar),
+	}
+}
+
 func setDefaults() {
 	viper.SetDefault(common.BaoImageEnvVar, "openbao/openbao:latest")
 	viper.SetDefault(common.BaoImagePullPolicyEnvVar, string(corev1.PullIfNotPresent))
@@ -362,6 +382,9 @@ func setDefaults() {
 	viper.SetDefault(common.BaoCTPullPolicyEnvVar, string(corev1.PullIfNotPresent))
 	viper.SetDefault(common.BaoAddrEnvVar, "https://bao:8300")
 	viper.SetDefault(common.BaoSkipVerifyEnvVar, "false")
+	viper.SetDefault(common.BaoAddrAllowlistEnvVar, "")
+	viper.SetDefault(common.BaoAllowObjectSkipVerifyEnvVar, "false")
+	viper.SetDefault(common.BaoAllowPrivateAddrEnvVar, "false")
 	viper.SetDefault(common.BaoPathEnvVar, "kubernetes")
 	viper.SetDefault(common.BaoAuthMethodEnvVar, "jwt")
 	viper.SetDefault(common.BaoRoleEnvVar, "")

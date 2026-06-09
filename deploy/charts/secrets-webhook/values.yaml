@@ -79,6 +79,14 @@ secretInit:
 env: {}
   ## -- Vault image
   # VAULT_IMAGE: hashicorp/vault:2.0.1
+
+  ## -- Object-annotation hardening
+  # VAULT_ADDR_ALLOWLIST: "https://vault.prod.svc:8200,https://vault.dr.svc:8200"
+  # BAO_ADDR_ALLOWLIST: "https://bao.prod.svc:8300"
+  # VAULT_ALLOW_OBJECT_SKIP_VERIFY: "false"
+  # BAO_ALLOW_OBJECT_SKIP_VERIFY: "false"
+  # VAULT_ALLOW_PRIVATE_ADDR: "false"
+  # BAO_ALLOW_PRIVATE_ADDR: "false"
   # VAULT_CAPATH: /vault/tls
 
   ## -- Used when the pod that should get secret injected does not specify an imagePullSecret
