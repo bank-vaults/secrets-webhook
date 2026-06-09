@@ -201,6 +201,9 @@ const (
 	VaultTokenEnvVar                      = "vault_token"
 	VaultSAEnvVar                         = "vault_serviceaccount"
 	VaultSATokenVolumeNameEnvVar          = "vault_service_account_token_volume_name"
+	VaultAddrAllowlistEnvVar              = "vault_addr_allowlist"
+	VaultAllowObjectSkipVerifyEnvVar      = "vault_allow_object_skip_verify"
+	VaultAllowPrivateAddrEnvVar           = "vault_allow_private_addr"
 
 	// Bao environment variables
 	BaoImageEnvVar                      = "bao_image"
@@ -227,6 +230,9 @@ const (
 	BaoTokenEnvVar                      = "bao_token"
 	BaoSAEnvVar                         = "bao_serviceaccount"
 	BaoSATokenVolumeNameEnvVar          = "bao_service_account_token_volume_name"
+	BaoAddrAllowlistEnvVar              = "bao_addr_allowlist"
+	BaoAllowObjectSkipVerifyEnvVar      = "bao_allow_object_skip_verify"
+	BaoAllowPrivateAddrEnvVar           = "bao_allow_private_addr"
 
 	// AWS environment variables
 	AWSRegionEnvVar                = "aws_region"
