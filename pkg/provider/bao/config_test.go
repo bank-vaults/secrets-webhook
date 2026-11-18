@@ -110,6 +110,7 @@ func TestLoadConfig_AddressHardening(t *testing.T) {
 				viper.Reset()
 				os.Clearenv()
 			})
+			SetDefaults()
 
 			config, err := LoadConfig(&metav1.ObjectMeta{Annotations: ttp.annotations})
 			if ttp.wantErr {

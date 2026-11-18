@@ -76,9 +76,9 @@ type Config struct {
 	FromPath                      string
 }
 
+// LoadConfig only reads from viper, so it is safe to call from concurrent
+// admission requests. SetDefaults must run once before it, at startup.
 func LoadConfig(obj metav1.Object) (Config, error) {
-	setDefaults()
-
 	config := Config{
 		ObjectNamespace: obj.GetNamespace(),
 	}
@@ -373,6 +373,12 @@ func baoAddrPolicy() common.AddrPolicy {
 		Allowlist:    allowlist,
 		AllowPrivate: viper.GetBool(common.BaoAllowPrivateAddrEnvVar),
 	}
+}
+
+// SetDefaults registers the Bao provider defaults. It writes to the global
+// viper instance, so call it once at startup and not per request.
+func SetDefaults() {
+	setDefaults()
 }
 
 func setDefaults() {
