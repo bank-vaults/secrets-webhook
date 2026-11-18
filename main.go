@@ -38,11 +38,19 @@ import (
 	kubernetesConfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"github.com/bank-vaults/secrets-webhook/pkg/common"
+	baoprov "github.com/bank-vaults/secrets-webhook/pkg/provider/bao"
+	vaultprov "github.com/bank-vaults/secrets-webhook/pkg/provider/vault"
 	"github.com/bank-vaults/secrets-webhook/pkg/webhook"
 )
 
+// Viper is not safe for concurrent writes, so every default and deprecated
+// env var mapping is registered here, before the server handles requests.
+// The per-request config loaders only read.
 func init() {
 	common.SetConfigDefaults()
+	common.SetSecretInitConfigDefaults()
+	vaultprov.SetDefaults()
+	baoprov.SetDefaults()
 }
 
 func newK8SClient() (kubernetes.Interface, error) {

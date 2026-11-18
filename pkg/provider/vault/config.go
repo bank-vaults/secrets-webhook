@@ -76,12 +76,9 @@ type Config struct {
 	FromPath                      string
 }
 
+// loadConfig only reads from viper, so it is safe to call from concurrent
+// admission requests. SetDefaults must run once before it, at startup.
 func loadConfig(obj metav1.Object) (Config, error) {
-	setDefaults()
-
-	// This is done to preserve backwards compatibility with the deprecated environment variables
-	handleDeprecatedEnvVars()
-
 	config := Config{
 		ObjectNamespace: obj.GetNamespace(),
 	}
@@ -464,6 +461,16 @@ func vaultAddrPolicy() common.AddrPolicy {
 		Allowlist:    allowlist,
 		AllowPrivate: viper.GetBool(common.VaultAllowPrivateAddrEnvVar),
 	}
+}
+
+// SetDefaults registers the Vault provider defaults and maps the deprecated
+// environment variables. It writes to the global viper instance, so call it
+// once at startup and not per request.
+func SetDefaults() {
+	setDefaults()
+
+	// This is done to preserve backwards compatibility with the deprecated environment variables
+	handleDeprecatedEnvVars()
 }
 
 func setDefaults() {

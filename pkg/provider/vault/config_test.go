@@ -281,6 +281,7 @@ func TestLoadConfig(t *testing.T) {
 				viper.Reset()
 				os.Clearenv()
 			})
+			SetDefaults()
 
 			config, err := loadConfig(&metav1.ObjectMeta{Annotations: ttp.annotations})
 			assert.NoError(t, err)
@@ -375,6 +376,7 @@ func TestLoadConfig_AddressHardening(t *testing.T) {
 				viper.Reset()
 				os.Clearenv()
 			})
+			SetDefaults()
 
 			config, err := loadConfig(&metav1.ObjectMeta{Annotations: ttp.annotations})
 			if ttp.wantErr {

@@ -16,6 +16,7 @@ package common
 
 import (
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -93,9 +94,35 @@ func TestLoadSecretInitConfig(t *testing.T) {
 				viper.Reset()
 				os.Clearenv()
 			})
+			SetSecretInitConfigDefaults()
 
 			secretInitConfig := LoadSecretInitConfig(ttp.annotations)
 			assert.Equal(t, ttp.secretInitConfigWant, secretInitConfig)
 		})
 	}
+}
+
+// Admission requests load the config concurrently. Run with -race: loading must
+// not write to viper, or this reports a data race (and production webhooks crash
+// with "concurrent map read and map write").
+func TestLoadSecretInitConfigConcurrent(t *testing.T) {
+	viper.Set(VaultEnvImageEnvVarDeprecated, "deprecated-image")
+	t.Cleanup(func() {
+		viper.Reset()
+		os.Clearenv()
+	})
+	SetSecretInitConfigDefaults()
+
+	var wg sync.WaitGroup
+	for range 32 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for range 50 {
+				cfg := LoadSecretInitConfig(map[string]string{})
+				assert.Equal(t, "deprecated-image", cfg.Image)
+			}
+		}()
+	}
+	wg.Wait()
 }

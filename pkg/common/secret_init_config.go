@@ -38,10 +38,10 @@ type SecretInitConfig struct {
 	MemoryLimit     resource.Quantity
 }
 
+// LoadSecretInitConfig only reads from viper, so it is safe to call from
+// concurrent admission requests. SetSecretInitConfigDefaults must run once
+// before it, at startup.
 func LoadSecretInitConfig(annotations map[string]string) SecretInitConfig {
-	setSecretInitConfigDefaults()
-	handleDeprecatedSecretInitEnvVars()
-
 	secretInitConfig := SecretInitConfig{}
 
 	if val, ok := annotations[SecretInitDaemonAnnotation]; ok {
@@ -113,6 +113,14 @@ func LoadSecretInitConfig(annotations map[string]string) SecretInitConfig {
 	}
 
 	return secretInitConfig
+}
+
+// SetSecretInitConfigDefaults registers the secret-init defaults and maps the
+// deprecated environment variables. It writes to the global viper instance, so
+// call it once at startup and not per request.
+func SetSecretInitConfigDefaults() {
+	setSecretInitConfigDefaults()
+	handleDeprecatedSecretInitEnvVars()
 }
 
 func setSecretInitConfigDefaults() {
